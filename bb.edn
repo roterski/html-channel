@@ -1,0 +1,17 @@
+{:tasks
+ {serve {:doc "Start the decision server (args pass through, e.g. --root docs)"
+         :task (apply shell "bb serve.clj" *command-line-args*)}
+
+  build {:doc "Compile src/decide.cljs -> kit/decide.mjs (needs `npm i` once)"
+         :requires ([babashka.fs :as fs]
+                    [clojure.string :as str])
+         :task (do
+                 (shell "npx squint compile src/decide.cljs --output-dir build")
+                 (fs/create-dirs "kit")
+                 ;; make the module self-contained: point at a local copy of squint core
+                 (spit "kit/decide.mjs"
+                       (str/replace (slurp "build/src/decide.mjs")
+                                    "'squint-cljs/core.js'" "'./squint-core.js'"))
+                 (fs/copy "node_modules/squint-cljs/src/squint/core.js" "kit/squint-core.js"
+                          {:replace-existing true})
+                 (println "built kit/decide.mjs"))}}}

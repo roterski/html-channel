@@ -1,0 +1,18 @@
+/* Minimal styling for decision controls. Pages can override freely. */
+button[data-decision] {
+  font: inherit; padding: .4rem .9rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid #b9bcc4; background: #fff; color: #1d2026;
+}
+button[data-decision]:hover { border-color: #5a6170; }
+button[data-decision].chosen { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+
+[data-decision][data-state="pending"] { outline: 2px dashed #d97706; outline-offset: 2px; }
+textarea[data-decision][data-state="saved"],
+input[data-decision][data-state="saved"] { outline: 2px solid #16a34a33; outline-offset: 1px; }
+
+html.decide-is-offline [data-decision] { opacity: .75; }
+
+@media (prefers-color-scheme: dark) {
+  button[data-decision] { background: #23262d; color: #e6e8ec; border-color: #4a4f5a; }
+  button[data-decision].chosen { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+}

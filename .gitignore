@@ -1,2 +1,6 @@
 .lsp/
 .clj-kondo/
+node_modules/
+build/
+decisions.jsonl
+.venv/

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review: cache layer</title>
+<link rel="stylesheet" href="http://127.0.0.1:8787/_kit/decide.css">
+<style>
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 46rem; margin: 2.5rem auto; padding: 0 1rem; }
+  section { border-top: 1px solid #ddd; padding: 1rem 0; }
+  .choices { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
+  textarea { width: 100%; min-height: 4rem; font: inherit; }
+  pre { background: #f4f5f7; padding: .75rem; overflow-x: auto; }
+</style>
+</head>
+<body data-page="cache-layer-review">
+
+<!-- Visible by default; the runtime hides it once the server answers.
+     If the server is down, the runtime never loads, so this stays up. -->
+<div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
+  <strong>Decision server is not running</strong> — your choices won't be saved.
+  Start it with <code>bb serve.clj --root examples</code> (from the html-channel folder), then this banner disappears on its own.
+</div>
+
+<h1>Cache layer review</h1>
+
+<section>
+  <h2>1. Eviction strategy</h2>
+  <p>The agent proposed two options for <code>SessionCache</code>.</p>
+  <pre>(defn evict! [cache] ...)</pre>
+  <div class="choices">
+    <button data-decision="eviction" data-choice="lru">LRU</button>
+    <button data-decision="eviction" data-choice="ttl">TTL (15 min)</button>
+    <button data-decision="eviction" data-choice="neither">Neither, discuss</button>
+  </div>
+</section>
+
+<section>
+  <h2>2. Keep the metrics hook?</h2>
+  <label><input type="checkbox" data-decision="keep-metrics"> Keep it</label>
+</section>
+
+<section>
+  <h2>3. Notes for the agent</h2>
+  <textarea data-decision="notes" placeholder="Anything else…"></textarea>
+</section>
+
+<section>
+  <div class="choices">
+    <button data-decision="status" data-choice="done">Done reviewing</button>
+  </div>
+</section>
+
+<script type="module" src="http://127.0.0.1:8787/_kit/decide.mjs"></script>
+</body>
+</html>
