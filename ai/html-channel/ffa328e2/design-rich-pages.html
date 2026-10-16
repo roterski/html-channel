@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design: rich context pages</title>
+<link rel="stylesheet" href="/_kit/decide.css">
+<style>
+  :root { color-scheme: light dark;
+    --bg:#ffffff; --fg:#14161a; --muted:#3f4652; --line:#cfd3da; --card:#f3f4f6;
+    --good:#166534; --mid:#92400e; --bad:#b91c1c; --accent:#1d4ed8; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#111317; --fg:#eceef2; --muted:#b4bac5; --line:#3a3f48; --card:#1c1f25;
+    --good:#4ade80; --mid:#fbbf24; --bad:#f87171; --accent:#93c5fd; } }
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 56rem; margin: 2rem auto; padding: 0 1rem; color: var(--fg); background: var(--bg); }
+  h1 { margin-bottom: .2rem; } .sub { color: var(--muted); margin-top: 0; }
+  h2 { margin: 0 0 .2rem; font-size: 1.2rem; }
+  section { border-top: 1px solid var(--line); padding: 1.2rem 0; }
+  .lead { margin: .2rem 0 .7rem; }
+  .wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 40rem; }
+  th, td { text-align: left; vertical-align: top; padding: .45rem .5rem; border-bottom: 1px solid var(--line); }
+  th { font-weight: 700; } td:first-child { width: 30%; }
+  .g { color: var(--good); font-weight: 700; } .m { color: var(--mid); font-weight: 700; } .b { color: var(--bad); font-weight: 700; }
+  .rec { font-size: .75rem; font-weight: 700; color: var(--accent); border: 1px solid currentColor; border-radius: 4px; padding: 0 .3rem; margin-left: .3rem; }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .8rem; margin: .6rem 0; }
+  summary { cursor: pointer; font-size: .93rem; font-weight: 600; }
+  details p, details li { font-size: .93rem; }
+  .choices { display: flex; gap: .5rem; flex-wrap: wrap; margin: .6rem 0; }
+  textarea { width: 100%; min-height: 2.6rem; font: inherit; box-sizing: border-box; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: .4rem; }
+  code { font-size: .88em; }
+  .legend { font-size: .88rem; color: var(--muted); }
+  svg { width: 100%; height: auto; max-width: 52rem; display: block; margin: .6rem 0; }
+  svg .box { fill: var(--card); stroke: var(--line); }
+  svg .hl { stroke: var(--accent); stroke-width: 2; }
+  svg text { fill: var(--fg); font: 13px system-ui, sans-serif; }
+  svg .lbl { fill: var(--muted); font-size: 11px; }
+  svg .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; marker-end: url(#ah); }
+  svg #ah path { fill: var(--muted); }
+</style>
+</head>
+<body>
+
+<h1>Rich context pages: design</h1>
+<p class="sub">Six independent choices, each with 3–4 candidates. Pick one per axis.<br>
+The diagram shows how axes 1–3 fit together. Folds hold the provenance.</p>
+
+<p class="legend">The same five dimensions apply to every candidate.
+<strong>Reliability</strong>: how likely a blind agent gets it right.
+<strong>Reach</strong>: Claude Code, Desktop, ECA, CLI.
+<strong>Deps</strong>: what the install gains.
+<strong>Fit</strong>: how well it meets frame constraints (<code>ai/frame.md</code>).
+<strong>Cost</strong>: build plus upkeep.
+<span class="g">●</span> good <span class="m">●</span> mixed <span class="b">●</span> poor</p>
+
+<svg viewBox="0 0 840 170" role="img" aria-label="Authoring loop: write page, check headless, fix, ask human, reader answers Done or Deeper, agent revises">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="10" y="20" width="130" height="50" rx="8"/><text x="75" y="42" text-anchor="middle">Agent writes</text><text x="75" y="59" text-anchor="middle" class="lbl">page + declared libs (1)</text>
+  <rect class="box hl" x="200" y="20" width="140" height="50" rx="8"/><text x="270" y="42" text-anchor="middle">Check page</text><text x="270" y="59" text-anchor="middle" class="lbl">errors + screenshots (2)</text>
+  <rect class="box" x="400" y="20" width="130" height="50" rx="8"/><text x="465" y="42" text-anchor="middle">ask_human</text><text x="465" y="59" text-anchor="middle" class="lbl">reader reads, answers</text>
+  <rect class="box" x="600" y="5" width="110" height="36" rx="8"/><text x="655" y="28" text-anchor="middle">Done</text>
+  <rect class="box hl" x="600" y="55" width="110" height="36" rx="8"/><text x="655" y="78" text-anchor="middle">Go deeper (3)</text>
+  <rect class="box" x="745" y="5" width="85" height="36" rx="8"/><text x="787" y="28" text-anchor="middle">act</text>
+  <path class="arrow" d="M140,45 H198"/>
+  <path class="arrow" d="M340,45 H398"/>
+  <path class="arrow" d="M530,38 L598,24"/>
+  <path class="arrow" d="M530,52 L598,72"/>
+  <path class="arrow" d="M710,23 H743"/>
+  <path class="arrow" d="M655,91 V140 H75 V72"/><text x="365" y="134" text-anchor="middle" class="lbl">revise: new revision, answers carry over</text>
+  <path class="arrow" d="M270,70 V105 H110 V72"/><text x="190" y="100" text-anchor="middle" class="lbl">fix</text>
+</svg>
+
+<!-- 1 -->
+<section>
+  <h2>1. How a page declares and uses libraries</h2>
+  <p class="lead">Settled: libraries are declared in <code>&lt;head&gt;</code>, come from a pinned CDN, may be any library, and the kit suggests some. Open: whether the agent writes glue code for each library.</p>
+  <div class="wrap"><table>
+    <tr><th>Candidate</th><th>Reliability</th><th>Reach</th><th>Deps</th><th>Fit</th><th>Cost</th></tr>
+    <tr><td><strong>1a Raw tags.</strong> CONVENTION lists pinned URLs; the page adds a <code>&lt;script src&gt;</code> plus its own init code.</td>
+      <td><span class="m">●</span> init glue each time; errors silent</td><td><span class="g">●</span> all</td><td><span class="g">●</span> none</td><td><span class="g">●</span> declared, any library</td><td><span class="g">●</span> docs only</td></tr>
+    <tr><td><strong>1b Kit adapters + escape hatch.</strong><span class="rec">rec</span><br>For suggested libraries, the page writes <code>&lt;pre data-viz="mermaid"&gt;…&lt;/pre&gt;</code> and lists them in <code>&lt;meta name="hc-libs"&gt;</code>; the kit loads the pinned CDN build, renders, and routes parse errors to axis 2. Any other library uses 1a.</td>
+      <td><span class="g">●</span> no glue for suggested libraries; errors caught</td><td><span class="g">●</span> all</td><td><span class="g">●</span> none at install</td><td><span class="g">●</span> declared, any library, answers still via runtime</td><td><span class="m">●</span> one adapter per library plus version bumps</td></tr>
+    <tr><td><strong>1c Server-injected import map.</strong> The server adds an <code>&lt;script type="importmap"&gt;</code> aliasing <code>mermaid</code> etc.; the page writes module code with bare imports.</td>
+      <td><span class="m">●</span> still glue; no version typos</td><td><span class="g">●</span> all</td><td><span class="g">●</span> none</td><td><span class="m">●</span> server rewrites agent HTML, which is new</td><td><span class="m">●</span> rewriting in the server</td></tr>
+  </table></div>
+  <details><summary>Provenance</summary><ul>
+    <li>"Declared, pinned CDN, any library, kit suggests": user input (frame rev 1–2).</li>
+    <li>1a: established pattern; this session's Artifact tool spec does the same (pinned-version CDN allowlist). Research finding.</li>
+    <li>1b: LLM inference. Its error path relies on Mermaid's <code>parse(…, {suppressErrors})</code>/<code>parseError</code> (research finding) and on the render-constraint gap: 51% → 60% → 96% with verifier repair (research finding).</li>
+    <li>1c: established web pattern (import maps); the server-injection variant is LLM inference.</li>
+  </ul></details>
+  <div class="choices">
+    <button data-decision="libs" data-choice="1a">1a Raw tags</button>
+    <button data-decision="libs" data-choice="1b">1b Adapters + escape hatch</button>
+    <button data-decision="libs" data-choice="1c">1c Import map</button>
+  </div>
+  <textarea data-decision="libs-notes" placeholder="Notes; first adapters you'd want (Mermaid, Vega-Lite, Graphviz, tables…)"></textarea>
+</section>
+
+<!-- 2 -->
+<section>
+  <h2>2. How the agent learns what rendered</h2>
+  <p class="lead">Settled: render feedback is in scope. Open: whether it arrives before the reader sees the page, and at what install cost.</p>
+  <div class="wrap"><table>
+    <tr><th>Candidate</th><th>Reliability</th><th>Reach</th><th>Deps</th><th>Fit</th><th>Cost</th></tr>
+    <tr><td><strong>2a In-page capture.</strong> The runtime listens for <code>error</code> (capture phase) and <code>unhandledrejection</code>, posts them to the server, and <code>ask_human</code> returns <code>errors</code>.</td>
+      <td><span class="m">●</span> JS and load errors yes; visuals no; only after a human opens the page</td><td><span class="g">●</span> all</td><td><span class="g">●</span> none</td><td><span class="m">●</span> reader sees the broken page first</td><td><span class="g">●</span> small</td></tr>
+    <tr><td><strong>2b 2a + headless check.</strong><span class="rec">rec</span><br>New <code>check_page</code> tool and <code>html-channel check</code> command: they run system Chrome headless (light and dark), the 2a runtime reports errors during that load, and the result returns <code>{errors, screenshots}</code>. Without Chrome it falls back to 2a.</td>
+      <td><span class="g">●</span> JS, load and visual problems, before the human</td><td><span class="g">●</span> all (tool and CLI)</td><td><span class="m">●</span> optional system Chrome</td><td><span class="g">●</span> bb-only install kept</td><td><span class="m">●</span> medium</td></tr>
+    <tr><td><strong>2c Playwright check.</strong> Same as 2b, driven by Playwright.</td>
+      <td><span class="g">●</span> catches everything, verified locally</td><td><span class="g">●</span> all</td><td><span class="b">●</span> Python or Node plus a browser download</td><td><span class="b">●</span> breaks the bb-only install</td><td><span class="m">●</span> medium</td></tr>
+  </table></div>
+  <details><summary>Provenance and test results</summary><ul>
+    <li>2a: research finding (MDN). Resource load failures skip <code>window.onerror</code> but reach a capture-phase listener.</li>
+    <li>2b: research test on this machine. Chrome <code>--screenshot</code> took 1.4 s; <code>--force-dark-mode</code> reproduced the rev 1 contrast bug; <code>--virtual-time-budget</code> was needed for the runtime to run. Chrome's stderr <em>missed</em> the failed CDN load. Letting the kit runtime report during the headless load closes that gap: LLM inference, untested.</li>
+    <li>2b limit, observed while checking this page: the Chrome CLI keeps the window at least ~500 px wide, so <code>--window-size=420</code> clips even a trivial page. Checking at phone width needs device emulation over the DevTools protocol, which the plain CLI doesn't offer.</li>
+    <li>2c: research test. Playwright caught <code>pageerror</code>, console errors and <code>requestfailed</code>.</li>
+    <li>"bb-only install" constraint: README (repo).</li>
+  </ul></details>
+  <div class="choices">
+    <button data-decision="feedback" data-choice="2a">2a In-page only</button>
+    <button data-decision="feedback" data-choice="2b">2b In-page + headless Chrome</button>
+    <button data-decision="feedback" data-choice="2c">2c Playwright</button>
+  </div>
+  <textarea data-decision="feedback-notes" placeholder="Notes; should the agent always check before ask_human, or only when the page uses libraries?"></textarea>
+</section>
+
+<!-- 3 -->
+<section>
+  <h2>3. How "go deeper" reaches the agent</h2>
+  <p class="lead">Settled: depth comes both from folds and from requests to go deeper. Open: the wake signal, since today only Done ends <code>ask_human</code>.</p>
+  <div class="wrap"><table>
+    <tr><th>Candidate</th><th>Reliability</th><th>Reach</th><th>Deps</th><th>Fit</th><th>Cost</th></tr>
+    <tr><td><strong>3a Deeper ends the wait.</strong> A reserved control, <code>data-deeper="section-id"</code>, saves a request; <code>ask_human</code> returns <code>status: "deeper"</code> with the target; the agent revises and waits again.</td>
+      <td><span class="g">●</span> same path as Done</td><td><span class="g">●</span> every client with ask_human; CLI via decisions</td><td><span class="g">●</span> none</td><td><span class="m">●</span> only while the agent is blocked; can't wake an idle session</td><td><span class="g">●</span> small</td></tr>
+    <tr><td><strong>3b Claude Code channel push.</strong> The MCP server declares <code>claude/channel</code> and emits a notification on Deeper, which wakes an idle session.</td>
+      <td><span class="m">●</span> delivery isn't acknowledged</td><td><span class="b">●</span> Claude Code only, dev flag, interactive only</td><td><span class="g">●</span> none</td><td><span class="m">●</span> research preview</td><td><span class="m">●</span> medium</td></tr>
+    <tr><td><strong>3c 3a, plus 3b when registered.</strong><span class="rec">rec</span><br>3a always; if the session loaded html-channel as a channel, Deeper (and Done) on a page nobody is waiting on also pushes a notification.</td>
+      <td><span class="g">●</span> 3a path is the baseline</td><td><span class="g">●</span> all, plus idle wake in Claude Code</td><td><span class="g">●</span> none</td><td><span class="g">●</span> preview risk confined to an extra</td><td><span class="m">●</span> both</td></tr>
+  </table></div>
+  <details><summary>Provenance</summary><ul>
+    <li>3a: LLM inference on existing mechanisms (revisions, carry-over, <code>status</code> reserved id).</li>
+    <li>3b: research finding (Claude Code channels reference): <code>notifications/claude/channel</code>, idle wake, <code>--dangerously-load-development-channels</code>, ignored under <code>-p</code>/SDK.</li>
+    <li>3c: LLM inference. html-channel already has the same shape as the docs' channel example, a stdio MCP server plus an HTTP port (observed).</li>
+  </ul></details>
+  <div class="choices">
+    <button data-decision="deeper" data-choice="3a">3a Deeper ends the wait</button>
+    <button data-decision="deeper" data-choice="3b">3b Channel push</button>
+    <button data-decision="deeper" data-choice="3c">3c Both</button>
+  </div>
+  <textarea data-decision="deeper-notes" placeholder="Notes…"></textarea>
+</section>
+
+<!-- 4 -->
+<section>
+  <h2>4. Base theme</h2>
+  <p class="lead">Settled: the kit ships a base theme, plus short guidance. Open: how much it styles without the page asking.</p>
+  <div class="wrap"><table>
+    <tr><th>Candidate</th><th>Reliability</th><th>Reach</th><th>Deps</th><th>Fit</th><th>Cost</th></tr>
+    <tr><td><strong>4a Classless base in decide.css.</strong><span class="rec">rec</span><br>Styles bare <code>body</code>, headings, tables, <code>details</code>, code and inputs with tokens (<code>--hc-fg</code>…), <code>color-scheme</code>, light and dark, and a readable width. Pages add layout only.</td>
+      <td><span class="g">●</span> a page with no styles is readable</td><td><span class="g">●</span> all</td><td><span class="g">●</span> none</td><td><span class="g">●</span> matches "pages build on it"</td><td><span class="m">●</span> medium; may restyle existing pages</td></tr>
+    <tr><td><strong>4b Tokens only.</strong> The kit defines color tokens and pages must use them.</td>
+      <td><span class="m">●</span> the rev 1 bug class stays if unused</td><td><span class="g">●</span> all</td><td><span class="g">●</span> none</td><td><span class="m">●</span> leans on guidance</td><td><span class="g">●</span> small</td></tr>
+    <tr><td><strong>4c Adopt a classless library</strong> (Pico, water.css) from the CDN.</td>
+      <td><span class="g">●</span> mature contrast</td><td><span class="g">●</span> all</td><td><span class="m">●</span> CDN at runtime</td><td><span class="m">●</span> their look; their tokens</td><td><span class="g">●</span> small; version upkeep</td></tr>
+  </table></div>
+  <details><summary>Provenance</summary><ul>
+    <li>"Kit defaults over guidance": user input (frame rev 2).</li>
+    <li>Tokens on <code>:root</code>, dark mode via <code>prefers-color-scheme</code>, an explicit body background: the Artifact tool spec pattern (research finding).</li>
+    <li>Classless CSS (Pico, water.css): established pattern; not researched this session.</li>
+    <li>Today decide.css styles only controls, and its own comment says "Pages can override freely" (repo).</li>
+  </ul></details>
+  <div class="choices">
+    <button data-decision="theme" data-choice="4a">4a Classless base</button>
+    <button data-decision="theme" data-choice="4b">4b Tokens only</button>
+    <button data-decision="theme" data-choice="4c">4c Pico / water.css</button>
+  </div>
+  <textarea data-decision="theme-notes" placeholder="Notes…"></textarea>
+</section>
+
+<!-- 5 -->
+<section>
+  <h2>5. Tiered depth vocabulary</h2>
+  <p class="lead">Open: whether depth is only per-fold, or the reader can also set the level for the whole page.</p>
+  <div class="wrap"><table>
+    <tr><th>Candidate</th><th>Reliability</th><th>Reach</th><th>Deps</th><th>Fit</th><th>Cost</th></tr>
+    <tr><td><strong>5a Plain <code>&lt;details&gt;</code> + guidance.</strong> Visible = the decision-critical summary; folds hold deeper material.</td>
+      <td><span class="g">●</span> native HTML</td><td><span class="g">●</span> all</td><td><span class="g">●</span> none</td><td><span class="m">●</span> no page-wide level</td><td><span class="g">●</span> docs only</td></tr>
+    <tr><td><strong>5b <code>data-tier="0–5"</code> + runtime level switch.</strong> A sticky "Overview · Shape · Flow · Detail" control shows or hides by tier.</td>
+      <td><span class="m">●</span> agent must tag everything; mis-tags hide content</td><td><span class="g">●</span> all</td><td><span class="g">●</span> none</td><td><span class="m">●</span> couples CONVENTION to #zoom names</td><td><span class="m">●</span> medium</td></tr>
+    <tr><td><strong>5c Both, with neutral tiers.</strong><span class="rec">rec</span><br>5a by default; optional numeric <code>data-tier</code> enables the switch; <code>#html</code> maps <code>#zoom</code> levels onto the numbers.</td>
+      <td><span class="g">●</span> untagged pages behave like 5a</td><td><span class="g">●</span> all</td><td><span class="g">●</span> none</td><td><span class="g">●</span> CONVENTION stays channel-mechanism; mapping lives in ai-behaviors</td><td><span class="m">●</span> medium</td></tr>
+  </table></div>
+  <details><summary>Provenance</summary><ul>
+    <li>"Put everything frequently needed in the first view": NN/g (research finding).</li>
+    <li>Tiers 0–5: <code>#zoom</code> prompt (ai-behaviors repo). Page-wide level switch: analogy to Victor's ladder of abstraction and Nelson's StretchText (research finding, secondary sources).</li>
+    <li><code>&lt;details&gt;</code> opens on find-in-page: research finding, probable.</li>
+    <li>Ownership: html-channel = mechanism, ai-behaviors = mapping (user input, frame Q5).</li>
+  </ul></details>
+  <div class="choices">
+    <button data-decision="tiers" data-choice="5a">5a details only</button>
+    <button data-decision="tiers" data-choice="5b">5b data-tier + switch</button>
+    <button data-decision="tiers" data-choice="5c">5c Both, neutral tiers</button>
+  </div>
+  <textarea data-decision="tiers-notes" placeholder="Notes…"></textarea>
+</section>
+
+<!-- 6 -->
+<section>
+  <h2>6. Where "which representation fits" guidance lives</h2>
+  <p class="lead">Settled: the agent chooses and may go beyond the suggested set. Open: where a mapping like "graph → diagram, series → chart, options × criteria → compare grid" lives.</p>
+  <div class="wrap"><table>
+    <tr><th>Candidate</th><th>Reliability</th><th>Reach</th><th>Deps</th><th>Fit</th><th>Cost</th></tr>
+    <tr><td><strong>6a Catalog in CONVENTION.</strong><span class="rec">rec</span><br>A short table mapping content shape to the suggested library or element. It lists what's available and doesn't prescribe.</td>
+      <td><span class="g">●</span> seen at every <code>channel_setup</code></td><td><span class="g">●</span> all</td><td><span class="g">●</span> none</td><td><span class="g">●</span> mechanism catalog; the choice stays with prompting</td><td><span class="m">●</span> adds tokens per setup</td></tr>
+    <tr><td><strong>6b New ai-behaviors modifier</strong> (e.g. <code>#visual</code>): pick a form by the shape of the content, in any channel.</td>
+      <td><span class="m">●</span> only when invoked</td><td><span class="m">●</span> ai-behaviors users only</td><td><span class="g">●</span> none</td><td><span class="m">●</span> frame says prompting owns the choice</td><td><span class="m">●</span> new behavior</td></tr>
+    <tr><td><strong>6c Prompting only.</strong> No written guidance.</td>
+      <td><span class="b">●</span> varies by model and session</td><td><span class="g">●</span> all</td><td><span class="g">●</span> none</td><td><span class="g">●</span> frame default</td><td><span class="g">●</span> none</td></tr>
+  </table></div>
+  <details><summary>Provenance</summary><ul>
+    <li>Ownership split and "basic guidance needed": user input (frame Q5 notes).</li>
+    <li>Shape → form heuristic: established pattern (dataviz form heuristics); available as a skill in this environment, not researched here.</li>
+    <li>6a vs the frame: the catalog says what exists; the choice per subject stays with prompting, so there's no contradiction. (#coherence)</li>
+  </ul></details>
+  <div class="choices">
+    <button data-decision="guidance" data-choice="6a">6a Catalog in CONVENTION</button>
+    <button data-decision="guidance" data-choice="6b">6b ai-behaviors modifier</button>
+    <button data-decision="guidance" data-choice="6c">6c Prompting only</button>
+  </div>
+  <textarea data-decision="guidance-notes" placeholder="Notes…"></textarea>
+</section>
+
+<section>
+  <details><summary>Cross-axis dependencies</summary><ul>
+    <li>1b's adapters feed parse errors into 2's report; 1a errors surface only through 2's capture listener.</li>
+    <li>2b's screenshots matter less once 4a makes unstyled pages readable, but they still catch overflow and diagram layout.</li>
+    <li>5b/5c's level switch and 3's Deeper button both live in the runtime's sticky bar, next to the offline banner.</li>
+    <li>Every candidate except 1a/6c requires the CONVENTION rewrite ("no JavaScript" → "page JS renders; answers through runtime"), along with the skill and <code>#html</code>.</li>
+  </ul></details>
+  <textarea data-decision="overall-notes" placeholder="Anything missing: an axis, a candidate, a dimension?"></textarea>
+  <div class="choices">
+    <button data-decision="status" data-choice="done">Done</button>
+  </div>
+</section>
+
+<div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
+  <strong>html-channel server is not running</strong>: your answers won't be saved.
+  Start it with <code>html-channel serve</code> in the project; this notice then disappears on its own.
+</div>
+<script type="module" src="/_kit/decide.mjs"></script>
+</body>
+</html>

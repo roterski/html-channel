@@ -68,6 +68,8 @@ The no-JS rule appears in three places, and they must be reworded together to "p
 - `skill/html-channel/SKILL.md`: "the page must contain no JavaScript of its own".
 - ai-behaviors `behaviors/html/prompt.md`: `InlinePageScript` in the forbidden set.
 
+Research: [research.md](research.md). Design: [design.md](design.md). Spec: [spec.md](spec.md).
+
 ## Next: research threads
 
 1. Libraries for the kit to suggest: diagrams, charts, tables and data exploration, editable diagrams.
