@@ -19,7 +19,7 @@
 (defn- body-json [r] (json/parse-string (:body r) true))
 
 (defn- setup []
-  (let [root (str (fs/path (temp-dir) "proj" ".ai"))
+  (let [root (str (fs/path (temp-dir) "proj" "ai" "html-channel"))
         mount (registry/register! root)]
     (write-page! root "s1" "p" "<p>v1</p>")
     {:root root :base (str "/" mount "/s1/")}))
@@ -78,7 +78,7 @@
 
 (deftest health-is-fast-with-1000-roots
   (let [d (temp-dir)]
-    (dotimes [i 1000] (registry/register! (str (fs/path d (str "p" i) ".ai"))))
+    (dotimes [i 1000] (registry/register! (str (fs/path d (str "p" i) "ai" "html-channel"))))
     (let [port 18732
           s (server/try-bind port)]
       (try

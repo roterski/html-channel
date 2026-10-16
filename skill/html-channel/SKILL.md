@@ -23,12 +23,12 @@ Pick the first branch that applies.
 
 ## 2. `html-channel` on PATH (no MCP tools)
 
-1. Run `html-channel health`. If it fails, start a server in the background: `html-channel serve --root .ai &`.
-2. Run `html-channel session new --root .ai`. It prints `session`, `dir` and `url_base` as JSON.
+1. Run `html-channel health`. If it fails, start a server in the background: `html-channel serve &`.
+2. Run `html-channel session new`. It prints `session`, `dir` and `url_base` as JSON.
    Reuse the same session for the rest of the conversation.
 3. Write `<dir>/<page>.html` and give the user `<url_base><page>.html`.
 4. Decision page: ask the user to click Done and then tell you in chat.
-   Then run `html-channel decisions <session>/<page> --root .ai`. Act only when `done` is `true`.
+   Then run `html-channel decisions <session>/<page>`. Act only when `done` is `true`.
 
 ## 3. Neither is available
 

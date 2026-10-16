@@ -1,0 +1,40 @@
+{"page":"frame-rich-context","id":"moment-design","value":true,"at":"2026-10-16T18:42:24.365Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"moment-design","value":false,"at":"2026-10-16T18:42:24.955Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"moment-design","value":true,"at":"2026-10-16T18:42:33.540Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"moment-review","value":true,"at":"2026-10-16T18:42:33.993Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"moment-spec","value":true,"at":"2026-10-16T18:42:34.557Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"moment-tour","value":true,"at":"2026-10-16T18:42:35.064Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"moment-spec","value":false,"at":"2026-10-16T18:42:36.371Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"moment-spec","value":true,"at":"2026-10-16T18:42:39.537Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"moment-research","value":true,"at":"2026-10-16T18:42:40.680Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"moment-debug","value":true,"at":"2026-10-16T18:42:42.188Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"js-boundary","value":"whitelisted-scripts","at":"2026-10-16T18:44:11.446Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"js-boundary-notes","value":"I wouldn't limit to whitelisted only - if agent wants to add different JS lib it should be okay, but the kit could suggest few useful/universal libs","at":"2026-10-16T18:45:25.029Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"lib-trigger","value":"declared","at":"2026-10-16T18:45:25.264Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"lib-source","value":"cdn","at":"2026-10-16T18:45:53.995Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"lib-notes","value":"I meant that agent can choose ","at":"2026-10-16T18:46:33.333Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"lib-notes","value":"I meant that agent can choose which representation fits the content  and if non of the suggested fit, it may suggest something else\n\nWhat does core vendored mean ?","at":"2026-10-16T18:47:12.047Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"depth-control","value":"author","at":"2026-10-16T18:47:12.128Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"depth-control","value":"author","at":"2026-10-16T18:47:12.646Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"depth-control","value":"both","at":"2026-10-16T18:47:13.070Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"split","value":"yes","at":"2026-10-16T18:50:17.395Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"split","value":"adjust","at":"2026-10-16T18:50:17.814Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"split","value":"yes","at":"2026-10-16T18:50:20.063Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"split-notes","value":"some basic guidance is needed too: eg. the page should always use good contrasted color - e.g. this page render has poor contrast and is hardly readable","at":"2026-10-16T18:52:32.536Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"ng-framework","value":true,"at":"2026-10-16T18:52:32.681Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"ng-publishing","value":true,"at":"2026-10-16T18:52:34.202Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"ng-live","value":true,"at":"2026-10-16T18:52:41.465Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"success","value":"better comprehension, faster more informed decisions","at":"2026-10-16T18:53:17.530Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"status","value":"done","at":"2026-10-16T18:53:17.605Z","session":"c60daa3f","rev":1}
+{"page":"frame-rich-context","id":"js-invariant","value":"answers-via-runtime","at":"2026-10-16T18:58:21.621Z","session":"c60daa3f","rev":2}
+{"page":"frame-rich-context","id":"basics","value":"kit-defaults","at":"2026-10-16T18:58:50.921Z","session":"c60daa3f","rev":2}
+{"page":"frame-rich-context","id":"render-feedback","value":"in","at":"2026-10-16T18:59:58.691Z","session":"c60daa3f","rev":2}
+{"page":"frame-rich-context","id":"scope-exploration","value":"in","at":"2026-10-16T19:00:05.931Z","session":"c60daa3f","rev":2}
+{"page":"frame-rich-context","id":"scope-editing","value":"in","at":"2026-10-16T19:00:10.567Z","session":"c60daa3f","rev":2}
+{"page":"frame-rich-context","id":"status","value":"done","at":"2026-10-16T19:00:12.729Z","session":"c60daa3f","rev":2}
+{"page":"ai-dir-layout","id":"dir","value":"ai","at":"2026-10-16T19:14:24.827Z","session":"c60daa3f","rev":1}
+{"page":"ai-dir-layout","id":"subdir","value":"html-channel","at":"2026-10-16T19:14:33.177Z","session":"c60daa3f","rev":1}
+{"page":"ai-dir-layout","id":"root","value":"project-ai","at":"2026-10-16T19:16:11.463Z","session":"c60daa3f","rev":1}
+{"page":"ai-dir-layout","id":"git","value":"tracked","at":"2026-10-16T19:16:44.580Z","session":"c60daa3f","rev":1}
+{"page":"ai-dir-layout","id":"migrate","value":"move","at":"2026-10-16T19:17:41.666Z","session":"c60daa3f","rev":1}
+{"page":"ai-dir-layout","id":"status","value":"done","at":"2026-10-16T19:17:52.266Z","session":"c60daa3f","rev":1}

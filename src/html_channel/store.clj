@@ -18,6 +18,16 @@
   (:import [java.nio.file Files FileAlreadyExistsException]
            [java.security MessageDigest]))
 
+(def default-root "ai/html-channel")
+
+(defn root-from
+  "The channel root: `opt`, else $HTML_CHANNEL_ROOT, else `default-root`.
+  A relative root resolves against the project: $CLAUDE_PROJECT_DIR, else the cwd."
+  ([opt] (root-from opt (System/getenv)))
+  ([opt env]
+   (let [project (or (not-empty (get env "CLAUDE_PROJECT_DIR")) (System/getProperty "user.dir"))]
+     (str (fs/path project (or opt (not-empty (get env "HTML_CHANNEL_ROOT")) default-root))))))
+
 (def name-re #"[a-z0-9][a-z0-9-]{0,63}")
 
 (defn valid-name? [s] (and (string? s) (boolean (re-matches name-re s))))

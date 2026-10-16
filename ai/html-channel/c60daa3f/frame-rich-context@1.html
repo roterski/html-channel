@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frame: rich context pages</title>
+<link rel="stylesheet" href="/_kit/decide.css">
+<style>
+  :root { --fg:#1d2026; --muted:#5a6170; --line:#e2e4e9; --card:#f7f8fa; --accent:#1d4ed8; --warn:#b45309; }
+  @media (prefers-color-scheme: dark) { :root { --fg:#e6e8ec; --muted:#9aa1ad; --line:#30343c; --card:#1b1e24; --accent:#60a5fa; --warn:#f59e0b; } }
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 50rem; margin: 2rem auto; padding: 0 1rem; color: var(--fg); background: Canvas; }
+  h1 { margin-bottom: .2rem; } .sub { color: var(--muted); margin-top: 0; }
+  section { border-top: 1px solid var(--line); padding: 1.1rem 0; }
+  .scq { display: grid; grid-template-columns: 8.5rem 1fr; gap: .45rem 1rem; }
+  .scq dt { font-weight: 600; color: var(--muted); } .scq dd { margin: 0; }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .8rem; margin: .6rem 0; }
+  summary { cursor: pointer; color: var(--muted); font-size: .92rem; }
+  .q { font-weight: 600; margin: 0 0 .4rem; }
+  .choices { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
+  .opts label { display: block; margin: .25rem 0; }
+  textarea { width: 100%; min-height: 3rem; font: inherit; box-sizing: border-box; }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+  th, td { text-align: left; vertical-align: top; padding: .4rem .5rem; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  .tension { border-left: 3px solid var(--warn); padding-left: .7rem; }
+  code { font-size: .9em; }
+</style>
+</head>
+<body>
+<div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
+  <strong>html-channel server is not running</strong>: your answers won't be saved.
+  Start it with <code>html-channel serve</code> in the project; this notice then disappears on its own.
+</div>
+
+<h1>Rich context pages — frame</h1>
+<p class="sub">Draft problem definition + 7 questions. Folds hold the reasoning; skip them if the headline is enough.</p>
+
+<section>
+  <h2>Draft frame</h2>
+  <dl class="scq">
+    <dt>Situation</dt>
+    <dd>html-channel delivers decision pages: static HTML, no page JS, form controls, revisions, answers back to the agent. <code>#html</code> routes decisions there.</dd>
+    <dt>Complication</dt>
+    <dd>Pages today are markdown-shaped: flat text, a few buttons. HTML's real advantages — diagrams, charts, folds, side-by-side, tiered depth — go unused, and the no-JS rule blocks every diagram/chart library.</dd>
+    <dt>Question</dt>
+    <dd>What page vocabulary lets a reader grasp a complex subject and decide fast — and which layer (html-channel, ai-behaviors, prompt) owns each part of it?</dd>
+    <dt>Constraints</dt>
+    <dd>Localhost, single user. Agent authors pages blind (never sees the render). Pages stay agent-writable in one pass. Answers stay plain <code>decisions.jsonl</code>.</dd>
+    <dt>Non-goals</dt>
+    <dd>Draft below in Q6 — pick what's out.</dd>
+  </dl>
+  <details>
+    <summary>Tensions found in the current design</summary>
+    <p class="tension"><strong>No-JS vs libraries.</strong> CONVENTION forbids page JS; <code>#html</code> lists <code>InlinePageScript</code> as forbidden. Mermaid, Vega-Lite, etc. all need JS. Something has to give, or move into the kit (Q2).</p>
+    <p class="tension"><strong>Reader-driven depth vs blocking wait.</strong> <code>ask_human</code> wakes only on Done. A "go deeper here" click can't reach the agent mid-page without either a Done or a new wake signal (Q4).</p>
+    <p class="tension"><strong>Blind authoring.</strong> The agent can't see whether a diagram rendered or overflowed. Declarative, validated vocab is safer than free-form SVG; a render-error report back to the agent would close the loop.</p>
+  </details>
+</section>
+
+<section>
+  <p class="q">Q1. Which decision moments must this serve first?</p>
+  <div class="opts">
+    <label><input type="checkbox" data-decision="moment-design"> Design: comparing candidate options/trade-offs (<code>#=design</code>)</label>
+    <label><input type="checkbox" data-decision="moment-review"> Review: findings with per-item verdicts (<code>#=review</code>)</label>
+    <label><input type="checkbox" data-decision="moment-spec"> Spec/frame: open questions, constraints (<code>#=spec</code>, <code>#=frame</code>)</label>
+    <label><input type="checkbox" data-decision="moment-tour"> Tour: building a mental model of existing code (<code>#=tour</code>, <code>#zoom</code>)</label>
+    <label><input type="checkbox" data-decision="moment-research"> Research synthesis: sources, evidence, disagreement</label>
+    <label><input type="checkbox" data-decision="moment-debug"> Debug: hypotheses, timelines, causal chains</label>
+  </div>
+  <textarea data-decision="moment-notes" placeholder="Ranking or a moment I missed…"></textarea>
+</section>
+
+<section>
+  <p class="q">Q2. Where does the JS boundary sit?</p>
+  <div class="choices">
+    <button data-decision="js-boundary" data-choice="kit-hydrates">Kit hydrates declarative blocks (rec.)</button>
+    <button data-decision="js-boundary" data-choice="whitelisted-scripts">Pages may script-tag whitelisted libs</button>
+    <button data-decision="js-boundary" data-choice="static-only">Static only: agent emits SVG/CSS</button>
+  </div>
+  <details>
+    <summary>What each means</summary>
+    <table>
+      <tr><th>Option</th><th>Page writes</th><th>Cost</th></tr>
+      <tr><td>Kit hydrates</td><td><code>&lt;pre data-viz="mermaid"&gt;graph LR…&lt;/pre&gt;</code> — still zero page JS</td><td>Kit grows a component vocabulary; CONVENTION documents it</td></tr>
+      <tr><td>Whitelisted scripts</td><td><code>&lt;script src="/_kit/lib/mermaid.js"&gt;</code> + init call</td><td>Breaks the no-JS invariant; agents write glue code that can fail silently</td></tr>
+      <tr><td>Static only</td><td>Hand-rolled <code>&lt;svg&gt;</code>, CSS grids, <code>&lt;details&gt;</code></td><td>Zero deps; diagrams expensive and error-prone for the agent to lay out</td></tr>
+    </table>
+  </details>
+  <textarea data-decision="js-boundary-notes" placeholder="Notes…"></textarea>
+</section>
+
+<section>
+  <p class="q">Q3. How do libraries get loaded?</p>
+  <p class="q" style="font-weight:400">Trigger:</p>
+  <div class="choices">
+    <button data-decision="lib-trigger" data-choice="on-demand">On demand: kit sees markup, lazy-loads (rec.)</button>
+    <button data-decision="lib-trigger" data-choice="default">Default: always loaded</button>
+    <button data-decision="lib-trigger" data-choice="declared">Declared: page lists needs in &lt;head&gt;</button>
+  </div>
+  <p class="q" style="font-weight:400">Source:</p>
+  <div class="choices">
+    <button data-decision="lib-source" data-choice="vendored">Vendored in kit (works offline)</button>
+    <button data-decision="lib-source" data-choice="cdn">CDN, pinned versions</button>
+    <button data-decision="lib-source" data-choice="vendored-core-cdn-rest">Core vendored, heavy ones CDN</button>
+  </div>
+  <details>
+    <summary>On "inference"</summary>
+    <p>"From inference" could mean two different things — which did you mean?</p>
+    <ul>
+      <li><strong>Kit infers</strong> from markup which libs the page needs (= on demand above).</li>
+      <li><strong>Agent infers</strong> which representation fits the content (graph → diagram, series → chart, hierarchy → folds). That's a prompting/behavior concern, not a loading one.</li>
+    </ul>
+  </details>
+  <textarea data-decision="lib-notes" placeholder="Which you meant by inference; libs you already have in mind…"></textarea>
+</section>
+
+<section>
+  <p class="q">Q4. Who controls depth?</p>
+  <div class="choices">
+    <button data-decision="depth-control" data-choice="author">Author: agent writes all tiers, folded</button>
+    <button data-decision="depth-control" data-choice="reader">Reader: "go deeper" → agent revises page</button>
+    <button data-decision="depth-control" data-choice="both">Both: folded tiers + deeper-on-request (rec.)</button>
+  </div>
+  <details>
+    <summary>Why this matters</summary>
+    <p>Author-only depth means the agent must guess every branch the reader will open — costly, and the bottom tiers mostly go unread.</p>
+    <p>Reader-driven depth matches <code>#zoom</code> ("the user turns the lens") and uses revisions as the zoom step. It needs a wake signal other than Done (see tensions).</p>
+  </details>
+  <textarea data-decision="depth-notes" placeholder="Should tiers map to #zoom levels 0–5, or be page-specific?"></textarea>
+</section>
+
+<section>
+  <p class="q">Q5. Is this the right ownership split to investigate?</p>
+  <table>
+    <tr><th>Layer</th><th>Owns (hypothesis)</th></tr>
+    <tr><td><strong>html-channel</strong></td><td>Mechanism. Component vocabulary (tiers/folds, diagram, chart, compare, callout), hydration + lib loading, theming, render-error feedback, CONVENTION as the single spec.</td></tr>
+    <tr><td><strong>ai-behaviors</strong></td><td>Shape of thought, channel-agnostic. <code>#zoom</code>/<code>#scq</code>/<code>#delta</code> already define tiers and sections. <code>#html</code> maps those structures onto the vocabulary (e.g. zoom level → fold depth) — nothing more.</td></tr>
+    <tr><td><strong>Prompting</strong></td><td>Per-subject choices: which representation fits this content, what to put above the fold.</td></tr>
+  </table>
+  <div class="choices">
+    <button data-decision="split" data-choice="yes">Yes, frame around this</button>
+    <button data-decision="split" data-choice="adjust">Adjust (see notes)</button>
+    <button data-decision="split" data-choice="different">Different cut entirely</button>
+  </div>
+  <details>
+    <summary>Open edge: where does "pick the right representation" live?</summary>
+    <p>It's the hardest part and fits none cleanly. Options: a reference section in CONVENTION ("graph-shaped → diagram"), a new behavior (e.g. <code>#visual</code>), or left to the model. Keeping it out of html-channel keeps the tool dumb; keeping it out of ai-behaviors keeps behaviors channel-agnostic.</p>
+  </details>
+  <textarea data-decision="split-notes" placeholder="Notes…"></textarea>
+</section>
+
+<section>
+  <p class="q">Q6. What's out of scope?</p>
+  <div class="opts">
+    <label><input type="checkbox" data-decision="ng-exploration"> Interactive data exploration (sort/filter/pivot)</label>
+    <label><input type="checkbox" data-decision="ng-editing"> Reader editing diagrams as an answer</label>
+    <label><input type="checkbox" data-decision="ng-framework"> General dashboard / app framework</label>
+    <label><input type="checkbox" data-decision="ng-publishing"> Publishing/sharing beyond localhost</label>
+    <label><input type="checkbox" data-decision="ng-live"> Live-updating pages (streaming partial content)</label>
+  </div>
+  <textarea data-decision="ng-notes" placeholder="Other non-goals…"></textarea>
+</section>
+
+<section>
+  <p class="q">Q7. How would you know it worked?</p>
+  <textarea data-decision="success" placeholder="e.g. same subject as markdown vs page: decide faster, fewer follow-up questions, fewer folds opened…"></textarea>
+</section>
+
+<section>
+  <div class="choices">
+    <button data-decision="status" data-choice="done">Done</button>
+  </div>
+</section>
+
+<script type="module" src="/_kit/decide.mjs"></script>
+</body>
+</html>

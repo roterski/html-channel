@@ -2,13 +2,13 @@
 
 Interactive HTML pages as an output channel for agents.
 
-The agent writes a static page into `<project>/.ai/<session>/`.
+The agent writes a static page into `<project>/ai/html-channel/<session>/`.
 You open it in a browser and answer with buttons and fields.
 The agent reads your answers back, either blocking on an MCP tool or through the CLI.
 
 - Pages contain no JavaScript of their own. The markup rules are in [CONVENTION.md](CONVENTION.md).
 - It runs on localhost only (`127.0.0.1:8787`), for a single user, with no auth.
-- Answers are appended to `.ai/<session>/decisions.jsonl`, which you can commit.
+- Answers are appended to `ai/html-channel/<session>/decisions.jsonl`, which you can commit.
 - Rewriting a page creates a new revision. Open tabs reload, and earlier answers carry over.
 
 ## Install
@@ -59,10 +59,10 @@ While one chat is waiting in `ask_human`, other chats' calls to html-channel que
 ### Without MCP (skill or by hand)
 
 ```sh
-html-channel serve --root .ai &          # serve; stands by if another process owns the port
-html-channel session new --root .ai      # {session, dir, url_base}
+html-channel serve &                     # serve; stands by if another process owns the port
+html-channel session new                 # {session, dir, url_base}
 # write <dir>/<page>.html, open <url_base><page>.html, click Done
-html-channel decisions <session>/<page> --root .ai
+html-channel decisions <session>/<page>
 ```
 
 The skill in [skill/html-channel/](skill/html-channel/) follows this flow when no MCP tools are available.
@@ -80,13 +80,19 @@ All of these processes try to bind the port.
 
 The port is 8787 by default. Change it with `--port` or `HTML_CHANNEL_PORT`.
 
+## Where sessions go
+
+Sessions go to `<project>/ai/html-channel/<session>/` by default, where `<project>` is `$CLAUDE_PROJECT_DIR`, else the cwd.
+Change the root with `--root` or `HTML_CHANNEL_ROOT`, for example in the project's `.mcp.json` `env`.
+A relative root resolves against `<project>`, and sessions go directly under it: `--root docs/decisions` writes `docs/decisions/<session>/`.
+
 ## CLI
 
 ```
-html-channel serve [--root .ai] [--port 8787]
-html-channel mcp [--max-wait 1500] [--port]
-html-channel session new [--root .ai]
-html-channel decisions <session>/<page> [--root .ai]
+html-channel serve [--root ai/html-channel] [--port 8787]
+html-channel mcp [--root] [--max-wait 1500] [--port]
+html-channel session new [--root]
+html-channel decisions <session>/<page> [--root]
 html-channel health [--port]
 html-channel version
 ```

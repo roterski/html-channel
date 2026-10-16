@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>html-channel guide</title>
+<link rel="stylesheet" href="/_kit/decide.css">
+<style>
+  :root {
+    --bg: #fbfbfa; --fg: #1d2026; --muted: #5d6470; --line: #e3e4e8; --card: #fff;
+    --accent: #1d4ed8; --code-bg: #f2f3f5; --tag-bg: #eef2ff; --tag-fg: #3730a3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171b; --fg: #e6e8ec; --muted: #9aa1ad; --line: #2b2f37; --card: #1c1f25;
+      --accent: #7aa2ff; --code-bg: #23262d; --tag-bg: #262a45; --tag-fg: #c7d2fe;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, sans-serif;
+         max-width: 52rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.9rem; margin: .5rem 0 .25rem; letter-spacing: -.01em; }
+  h2 { font-size: 1.2rem; margin: 2.5rem 0 .75rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1rem; margin: 1.25rem 0 .4rem; }
+  p, li { color: var(--fg); }
+  .lede { color: var(--muted); font-size: 1.05rem; margin: 0 0 1.5rem; }
+  nav { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1rem 0 0; }
+  nav a { font-size: .85rem; text-decoration: none; color: var(--tag-fg); background: var(--tag-bg);
+          padding: .2rem .6rem; border-radius: 999px; }
+  a { color: var(--accent); }
+  code { font: .88em ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code-bg);
+         padding: .1em .35em; border-radius: 4px; }
+  pre { background: var(--code-bg); padding: .8rem 1rem; border-radius: 8px; overflow-x: auto;
+        font: .85rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin: .5rem 0 1rem; }
+  pre code { background: none; padding: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .75rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: .9rem 1rem; }
+  .card h3 { margin-top: 0; }
+  .card p { margin: .3rem 0 0; font-size: .93rem; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; margin: .5rem 0 1rem; }
+  th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+  ol.flow { counter-reset: step; list-style: none; padding: 0; }
+  ol.flow li { counter-increment: step; position: relative; padding: .1rem 0 .6rem 2.4rem; }
+  ol.flow li::before { content: counter(step); position: absolute; left: 0; top: .05rem; width: 1.6rem; height: 1.6rem;
+                       border-radius: 50%; background: var(--accent); color: #fff; font-size: .8rem; font-weight: 600;
+                       display: grid; place-items: center; }
+  .note { border-left: 3px solid var(--accent); padding: .3rem 0 .3rem .9rem; color: var(--muted); margin: 1rem 0; }
+  footer { margin-top: 3rem; color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+
+<div id="decide-offline" style="position:sticky;top:0;z-index:10;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
+  <strong>html-channel server is not running</strong>: this page still reads fine, but it can't save anything.
+  Start it with <code>html-channel serve --root .ai</code> in the project; this notice then disappears on its own.
+</div>
+
+<h1>html-channel: quick guide</h1>
+<p class="lede">An agent writes a static HTML page. You answer on it in your browser. The agent reads your answers back.
+This page is itself an html-channel page: a report-only one, with nothing to answer.</p>
+
+<nav>
+  <a href="#use">Use it</a><a href="#pages">Writing pages</a><a href="#revisions">Revisions</a>
+  <a href="#server">Server</a><a href="#repo">Repo map</a><a href="#dev">Develop</a><a href="#gotchas">Gotchas</a>
+</nav>
+
+<h2 id="use">1. Use it</h2>
+
+<div class="grid">
+  <div class="card">
+    <h3>Claude Code (MCP)</h3>
+    <p>The agent calls <code>channel_setup</code>, writes the page, then blocks in <code>ask_human</code> until you click Done.</p>
+  </div>
+  <div class="card">
+    <h3>Skill or CLI</h3>
+    <p>The agent runs <code>session new</code> and gives you a URL. You click Done and say "done". The agent then runs <code>decisions</code>.</p>
+  </div>
+  <div class="card">
+    <h3>ai-behaviors <code>#html</code></h3>
+    <p>Add <code>#html</code> to a prompt and the agent puts its questions on a page instead of in markdown.</p>
+  </div>
+</div>
+
+<h3>Register the MCP server once</h3>
+<pre><code>claude mcp add --scope user html-channel -- html-channel mcp
+# Claude desktop: add "--max-wait", "50" to args (desktop is said to drop calls after ~60 s)</code></pre>
+
+<h3>Or drive it by hand</h3>
+<pre><code>html-channel serve --root .ai &amp;        # serves this project; stands by if the port is taken
+html-channel session new --root .ai    # → {session, dir, url_base}
+# write &lt;dir&gt;/&lt;page&gt;.html, open &lt;url_base&gt;&lt;page&gt;.html, answer, click Done
+html-channel decisions &lt;session&gt;/&lt;page&gt; --root .ai
+html-channel health                    # is a server up?</code></pre>
+
+<h2 id="pages">2. Writing pages</h2>
+<p>The full rules are in <code>CONVENTION.md</code>, the only hand-written copy. Here is the short version:</p>
+
+<table>
+  <tr><th>Markup</th><th>Saved as</th></tr>
+  <tr><td><code>&lt;button data-decision="id" data-choice="a"&gt;</code></td><td><code>"a"</code>. Buttons that share an id act as one choice.</td></tr>
+  <tr><td><code>&lt;textarea|input|select data-decision="id"&gt;</code></td><td>the field's text, saved on change</td></tr>
+  <tr><td><code>&lt;input type="checkbox" data-decision="id"&gt;</code></td><td><code>true</code> / <code>false</code></td></tr>
+  <tr><td><code>&lt;button data-decision="status" data-choice="done"&gt;</code></td><td>The Done button, required on decision pages</td></tr>
+</table>
+
+<ul>
+  <li><strong>Every page</strong> links <code>/_kit/decide.css</code>, loads <code>/_kit/decide.mjs</code>, and has a <code>#decide-offline</code> banner that is visible by default.</li>
+  <li><strong>No JavaScript</strong> of the page's own. Inline <code>&lt;style&gt;</code> is fine.</li>
+  <li><strong>Page names</strong> match <code>[a-z0-9-]+</code>. <code>@</code> is reserved for snapshots.</li>
+  <li><strong>Report-only pages</strong>, like this one, have no Done button, and the agent doesn't wait on them.</li>
+</ul>
+
+<h2 id="revisions">3. Revisions</h2>
+<ol class="flow">
+  <li>The agent rewrites the same file, <code>.ai/&lt;session&gt;/&lt;page&gt;.html</code>.</li>
+  <li>The server snapshots it as <code>&lt;page&gt;@&lt;n&gt;.html</code>. That's revision <em>n</em>.</li>
+  <li>Your open tab notices within 3 s and reloads. Clicks queued before the reload are saved first.</li>
+  <li>Earlier answers carry over, outlined in purple, with a <em>Clear carried answers</em> button.</li>
+  <li>Done never carries over: each revision needs its own click.</li>
+</ol>
+<p class="note">Every answer is appended to <code>.ai/&lt;session&gt;/decisions.jsonl</code> as
+<code>{page, session, rev, id, value, at}</code>. Nothing is ever rewritten, so the file is a full history you can commit.</p>
+
+<h2 id="server">4. How the server stays up</h2>
+<p>No daemon is needed. Every <code>html-channel mcp</code> and <code>serve</code> process is a standby:</p>
+<ol class="flow">
+  <li>It records its project root in <code>~/.local/state/html-channel/roots.jsonl</code>.</li>
+  <li>It tries to bind <code>127.0.0.1:8787</code>, and retries every second if the port is taken.</li>
+  <li>The owner serves every registered project at <code>/&lt;project&gt;-&lt;hash&gt;/&lt;session&gt;/&lt;page&gt;.html</code>.</li>
+  <li>When the owner exits, another process takes over in about 0.6 s, as the takeover test measured.</li>
+</ol>
+<p>Session ids are the first 8 characters of Claude Code's session id, or a fresh random id.
+That's why this page lives under <code>b658090c</code>.</p>
+
+<h2 id="repo">5. Repo map</h2>
+<table>
+  <tr><th>Path</th><th>What</th></tr>
+  <tr><td><code>src/html_channel/cli.clj</code></td><td>Entry point: serve, mcp, session, decisions, health, version</td></tr>
+  <tr><td><code>server.clj</code></td><td>HTTP routes, kit served from the classpath, standby bind loop</td></tr>
+  <tr><td><code>registry.clj</code></td><td><code>roots.jsonl</code> and mount names</td></tr>
+  <tr><td><code>store.clj</code></td><td>Decisions, snapshots, <code>current-rev!</code>, effective answers</td></tr>
+  <tr><td><code>mcp.clj</code> · <code>session.clj</code></td><td>The stdio JSON-RPC tools · choosing a session id</td></tr>
+  <tr><td><code>runtime/decide/{core,http}.cljs</code></td><td>The squint page runtime, with the transport kept separate for a later claude.ai version</td></tr>
+  <tr><td><code>resources/html_channel/</code></td><td>Build output: compiled kit and a copy of CONVENTION.md (committed)</td></tr>
+  <tr><td><code>skill/</code> · <code>plugin/</code></td><td>The skill · a Claude Code plugin (skill and .mcp.json)</td></tr>
+  <tr><td><code>ai/plan.md</code></td><td>Frame, research, design decisions and spec v2</td></tr>
+</table>
+
+<h2 id="dev">6. Develop</h2>
+<pre><code>npm i                 # squint, only needed to build the runtime
+bb build              # runtime/ → resources/html_channel/kit/, copies CONVENTION.md and the skill
+bb test               # unit tests, then B/D, takeover, MCP and revisions in Chromium
+bb serve --root examples   # demo at http://127.0.0.1:8787/</code></pre>
+<p>Edit <code>CONVENTION.md</code> at the repo root only; <code>bb build</code> regenerates its copies.
+CI fails if build outputs are stale.</p>
+
+<h2 id="gotchas">7. Gotchas</h2>
+<ul>
+  <li><strong>Stdout belongs to MCP.</strong> Log to stderr only, or clients break.</li>
+  <li><strong>Headless <code>claude -p</code></strong> won't exit while a background server it started is still running. Start the server yourself first.</li>
+  <li><strong>After <code>/clear</code></strong>, the MCP process keeps its original session id while Bash gets a new one. Pass <code>session</code> explicitly when you mix the two.</li>
+  <li><strong>ECA</strong> times out tool calls at 120 s and runs them one at a time. Use <code>--max-wait 100</code> and accept that other chats stall.</li>
+  <li><strong>bbin git installs</strong> need <code>deps.edn</code>. <code>bb.edn</code> alone fails with "Manifest file not found".</li>
+</ul>
+
+<footer>Generated by Claude for the html-channel repo · served from <code>.ai/b658090c/guide.html</code></footer>
+
+<script type="module" src="/_kit/decide.mjs"></script>
+</body>
+</html>

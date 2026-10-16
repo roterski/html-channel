@@ -8,9 +8,10 @@ The page itself contains **no JavaScript**: one shared runtime script handles ev
 ## Where pages live
 
 ```
-<project>/.ai/<session>/<page>.html
+<project>/ai/html-channel/<session>/<page>.html
 ```
 
+- `ai/html-channel` is the default root. A project can move it with `HTML_CHANNEL_ROOT` or `--root`; `dir` from `channel_setup` or `session new` is always where to write.
 - `<session>` groups one agent conversation's pages. Get it from `channel_setup` (MCP) or `html-channel session new` (CLI).
 - `<page>` is the page id. It must match `[a-z0-9-]+`, for example `cache-layer-review`.
   `@` is reserved: `<page>@<n>.html` files are revision snapshots, so don't write or edit them.
@@ -75,7 +76,7 @@ To revise a page, rewrite the same file.
 
 ## What the agent gets back
 
-Every saved answer is one line appended to `<project>/.ai/<session>/decisions.jsonl`:
+Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 
 ```json
 {"page":"cache-layer-review","session":"3f9c2a1b","rev":2,"id":"eviction","value":"lru","at":"2026-10-16T13:08:34.844Z"}

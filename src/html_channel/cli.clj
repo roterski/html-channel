@@ -14,10 +14,12 @@
 (def usage
   "html-channel — interactive HTML pages as an output channel for agents
 
-  serve [--root .ai] [--port 8787]    serve registered roots; stand by if the port is taken
-  mcp [--max-wait 1500] [--port]      MCP server on stdio (channel_setup, ask_human, get_decisions)
-  session new [--root .ai]            print {session, dir, url_base} for a new page session
-  decisions <session>/<page> [--root .ai]   print {done, rev, decisions} as JSON
+  serve [--root ai/html-channel] [--port 8787]   serve registered roots; stand by if the port is taken
+  mcp [--root] [--max-wait 1500] [--port]        MCP server on stdio (channel_setup, ask_human, get_decisions)
+  session new [--root]                           print {session, dir, url_base} for a new page session
+  decisions <session>/<page> [--root]            print {done, rev, decisions} as JSON
+
+  --root defaults to $HTML_CHANNEL_ROOT, else ai/html-channel; relative to $CLAUDE_PROJECT_DIR, else the cwd
   health [--port]                     print the running server's /_health; exit 1 if none
   version")
 
@@ -29,7 +31,7 @@
 (defn- url-base [port mount s] (str "http://127.0.0.1:" port "/" mount "/" s "/"))
 
 (defn- serve [{:keys [root port]}]
-  (let [root (or root ".ai")
+  (let [root (store/root-from root)
         port (server/port-from port)
         mount (registry/register! root)]
     (server/log "root" (str (fs/canonicalize root)) "->" (str "http://127.0.0.1:" port "/" mount "/"))
@@ -37,7 +39,7 @@
     @(promise)))
 
 (defn- session-new [{:keys [root port]}]
-  (let [root (or root ".ai")
+  (let [root (store/root-from root)
         mount (registry/register! root)
         s (session/pick nil)
         dir (store/session-dir root s)]
@@ -49,7 +51,7 @@
   (let [[s page] (some-> target (str/split #"/" 2))]
     (when-not (and s page)
       (throw (ex-info "usage: html-channel decisions <session>/<page>" {})))
-    (let [root (or root ".ai")
+    (let [root (store/root-from root)
           mount (registry/register! root)]
       (print-json (merge {:page page :url (str (url-base (server/port-from port) mount s) page ".html")}
                          (store/effective root s page))))))
@@ -69,7 +71,7 @@
     (try
       (case cmd
         "serve" (serve opts)
-        "mcp" (mcp/serve-stdio! {:port (:port opts) :max-wait-s (:max-wait opts)})
+        "mcp" (mcp/serve-stdio! {:root (:root opts) :port (:port opts) :max-wait-s (:max-wait opts)})
         "session" (if (= "new" (first args)) (session-new opts) (throw (ex-info usage {})))
         "decisions" (decisions (first args) opts)
         "health" (health opts)

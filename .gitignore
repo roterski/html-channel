@@ -2,7 +2,7 @@
 .clj-kondo/
 node_modules/
 build/
-decisions.jsonl
+examples/**/decisions.jsonl
 .venv/
 # revision snapshots written by the server
 examples/**/*@*.html

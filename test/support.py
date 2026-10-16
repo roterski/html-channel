@@ -41,7 +41,7 @@ class Sandbox:
         return env
 
     def project(self, name):
-        root = self.dir / name / ".ai"
+        root = self.dir / name / "ai/html-channel"
         root.mkdir(parents=True, exist_ok=True)
         return root
 
@@ -111,9 +111,14 @@ def mount_of(port, root):
     h = health(port)
     if not h:
         return None
-    name = root.parent.name
+    name = project_name(root)
     ms = [m for m in h["mounts"] if m.rsplit("-", 1)[0] == name.lower()]
     return ms[0] if len(ms) == 1 else None
+
+
+def project_name(root):
+    """Mirrors registry/project-name: <project> for <project>/ai/html-channel, else the root's own name."""
+    return root.parents[1].name if root.parts[-2:] == ("ai", "html-channel") else root.name
 
 
 def entries(root, session):
@@ -131,8 +136,8 @@ def write_page(root, session, page, html):
 class Mcp:
     """Drives `html-channel mcp` over stdio."""
 
-    def __init__(self, sandbox, project_dir, *args):
-        self.p = sandbox.cli("mcp", *args, env={"CLAUDE_PROJECT_DIR": str(project_dir)},
+    def __init__(self, sandbox, project_dir, *args, env=None):
+        self.p = sandbox.cli("mcp", *args, env={"CLAUDE_PROJECT_DIR": str(project_dir), **(env or {})},
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                              text=True, bufsize=1)
         self.next_id = 0

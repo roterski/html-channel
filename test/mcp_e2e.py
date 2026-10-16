@@ -2,7 +2,7 @@
 
   .venv/bin/python test/mcp_e2e.py
 """
-import json, shutil, subprocess, threading, time
+import json, pathlib, shutil, subprocess, threading, time
 from playwright.sync_api import sync_playwright, expect
 from support import DEMO, REPO, Mcp, Sandbox, fail, run, write_page
 
@@ -36,7 +36,7 @@ def main():
             fail("session not stable: %s vs %s" % (setup["session"], again["session"]))
         if setup["convention"] != (REPO / "CONVENTION.md").read_text():
             fail("convention differs from CONVENTION.md")
-        if setup["dir"] != str((project / ".ai" / setup["session"]).resolve()):
+        if setup["dir"] != str((project / "ai/html-channel" / setup["session"]).resolve()):
             fail(setup["dir"])
         print("setup ok: session", setup["session"], "url_base", setup["url_base"])
 
@@ -68,13 +68,26 @@ def main():
         # a stale done does not unblock the next revision; max-wait returns waiting
         short = Mcp(sb, project, "--max-wait", "2")
         short.init()
-        write_page(project / ".ai", setup["session"], "review", (REPO / "examples/demo/cache-layer-review.html")
+        write_page(project / "ai/html-channel", setup["session"], "review", (REPO / "examples/demo/cache-layer-review.html")
                    .read_text().replace("<h1>", "<h1>v2 "))
         t0 = time.time()
         w = short.call("ask_human", timeout=10, page="review", session=setup["session"])
         if w["status"] != "waiting" or w["rev"] != 2 or w["done"]:
             fail("expected waiting at rev 2, got %s" % w)
         print("waiting ok: rev-1 done ignored at rev 2, returned after %.1f s" % (time.time() - t0))
+
+        # the root can be moved: HTML_CHANNEL_ROOT, relative to the project; --root wins over it
+        moved = Mcp(sb, project, env={"HTML_CHANNEL_ROOT": "custom"})
+        moved.init()
+        d = moved.call("channel_setup")["dir"]
+        if d != str((project / "custom" / pathlib.Path(d).name).resolve()):
+            fail("HTML_CHANNEL_ROOT ignored: %s" % d)
+        flagged = Mcp(sb, project, "--root", "flagged", env={"HTML_CHANNEL_ROOT": "custom"})
+        flagged.init()
+        d = flagged.call("channel_setup")["dir"]
+        if d != str((project / "flagged" / pathlib.Path(d).name).resolve()):
+            fail("--root did not win over HTML_CHANNEL_ROOT: %s" % d)
+        print("root ok: HTML_CHANNEL_ROOT and --root move the sessions directory")
 
         missing = mcp.request("tools/call", {"name": "ask_human", "arguments": {"page": "nope"}})
         if not missing["result"].get("isError"):

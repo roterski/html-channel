@@ -1,9 +1,10 @@
 (ns html-channel.mcp
   "MCP server over stdio: newline-delimited JSON-RPC 2.0.
 
-  Tools: channel_setup, ask_human, get_decisions. The channel root is
-  $CLAUDE_PROJECT_DIR/.ai, else <cwd>/.ai. The process stands by for the HTTP
-  port for as long as it runs, so pages stay served while any session lives.
+  Tools: channel_setup, ask_human, get_decisions. The channel root is --root,
+  else $HTML_CHANNEL_ROOT, else <project>/ai/html-channel (`store/root-from`).
+  The process stands by for the HTTP port for as long as it runs, so pages stay
+  served while any session lives.
 
   Only JSON-RPC messages go to stdout; everything else is logged to stderr."
   (:require [babashka.fs :as fs]
@@ -29,9 +30,6 @@
     (locking stdout (.println stdout line))))
 
 ;; ---- channel context -------------------------------------------------------
-
-(defn channel-root []
-  (str (fs/path (or (System/getenv "CLAUDE_PROJECT_DIR") (System/getProperty "user.dir")) ".ai")))
 
 (defn convention []
   (some-> (io/resource "html_channel/CONVENTION.md") slurp))
@@ -153,9 +151,9 @@
 
 (defn serve-stdio!
   "Serves MCP on stdin/stdout until stdin closes, standing by for the HTTP port meanwhile."
-  [{:keys [port max-wait-s]}]
+  [{:keys [root port max-wait-s]}]
   (let [port (server/port-from port)
-        ctx {:root (channel-root) :port port :max-wait-s (or max-wait-s default-max-wait-s)}]
+        ctx {:root (store/root-from root) :port port :max-wait-s (or max-wait-s default-max-wait-s)}]
     (server/run-standby! port)
     (doseq [line (line-seq (io/reader System/in))
             :when (seq line)]

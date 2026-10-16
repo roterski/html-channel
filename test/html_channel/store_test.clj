@@ -6,6 +6,15 @@
             [html-channel.store :as store]
             [html-channel.test-support :refer [temp-dir write-page!]]))
 
+(deftest root-from-prefers-opt-then-env-then-default
+  (let [cwd (System/getProperty "user.dir")]
+    (is (= (str (fs/path cwd "ai/html-channel")) (store/root-from nil {})))
+    (is (= "/p/ai/html-channel" (store/root-from nil {"CLAUDE_PROJECT_DIR" "/p"})))
+    (is (= "/p/x" (store/root-from nil {"CLAUDE_PROJECT_DIR" "/p" "HTML_CHANNEL_ROOT" "x"})))
+    (is (= "/abs" (store/root-from nil {"CLAUDE_PROJECT_DIR" "/p" "HTML_CHANNEL_ROOT" "/abs"})))
+    (is (= "/p/y" (store/root-from "y" {"CLAUDE_PROJECT_DIR" "/p" "HTML_CHANNEL_ROOT" "x"})))
+    (is (= "/p/ai/html-channel" (store/root-from nil {"CLAUDE_PROJECT_DIR" "/p" "HTML_CHANNEL_ROOT" ""})))))
+
 (deftest current-rev-snapshots-each-change-once
   (let [root (temp-dir)]
     (testing "no page yet"

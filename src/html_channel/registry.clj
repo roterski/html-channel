@@ -9,7 +9,8 @@
   absolute path), so an entry is never rewritten, only appended once."
   (:require [babashka.fs :as fs]
             [cheshire.core :as json]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [html-channel.store :as store]))
 
 (defn state-dir []
   (or (System/getenv "HTML_CHANNEL_HOME")
@@ -24,10 +25,13 @@
        (apply str)))
 
 (defn project-name
-  "The directory a root belongs to: the parent of `<project>/.ai`, else the root itself."
+  "The directory a root belongs to: `<project>` for `<project>/ai/html-channel`,
+  else the root itself."
   [root]
   (let [root (fs/absolutize root)]
-    (str (fs/file-name (if (= ".ai" (str (fs/file-name root))) (fs/parent root) root)))))
+    (str (fs/file-name (if (fs/ends-with? root store/default-root)
+                         (nth (iterate fs/parent root) (count (fs/components store/default-root)))
+                         root)))))
 
 (defn mount-name
   "`<project-dir-name>-<first 6 hex of sha1(abs root)>`, sanitized for URLs.

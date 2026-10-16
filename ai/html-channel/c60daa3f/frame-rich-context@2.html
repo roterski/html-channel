@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frame: rich context pages</title>
+<link rel="stylesheet" href="/_kit/decide.css">
+<style>
+  :root { color-scheme: light dark; --bg:#ffffff; --fg:#14161a; --muted:#3f4652; --line:#d5d8de; --card:#f3f4f6; --warn:#92400e; --ok:#166534; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111317; --fg:#eceef2; --muted:#b4bac5; --line:#3a3f48; --card:#1c1f25; --warn:#fbbf24; --ok:#4ade80; } }
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 50rem; margin: 2rem auto; padding: 0 1rem; color: var(--fg); background: var(--bg); }
+  h1 { margin-bottom: .2rem; } .sub { color: var(--muted); margin-top: 0; }
+  section { border-top: 1px solid var(--line); padding: 1.1rem 0; }
+  .scq { display: grid; grid-template-columns: 8.5rem 1fr; gap: .5rem 1rem; }
+  .scq dt { font-weight: 700; } .scq dd { margin: 0; }
+  .scq ul { margin: 0; padding-left: 1.1rem; }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .8rem; margin: .6rem 0; }
+  summary { cursor: pointer; font-size: .93rem; font-weight: 600; }
+  .q { font-weight: 700; margin: 0 0 .4rem; }
+  .choices { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
+  .opts label { display: block; margin: .25rem 0; }
+  textarea { width: 100%; min-height: 3rem; font: inherit; box-sizing: border-box; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: .4rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .94rem; }
+  th, td { text-align: left; vertical-align: top; padding: .4rem .5rem; border-bottom: 1px solid var(--line); }
+  .tag { font-size: .8rem; font-weight: 700; padding: .05rem .4rem; border-radius: 4px; border: 1px solid currentColor; }
+  .new { color: var(--ok); } .changed { color: var(--warn); }
+  .tension { border-left: 3px solid var(--warn); padding-left: .7rem; }
+</style>
+</head>
+<body>
+<div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
+  <strong>html-channel server is not running</strong>: your answers won't be saved.
+  Start it with <code>html-channel serve</code> in the project; this notice then disappears on its own.
+</div>
+
+<h1>Rich context pages — frame, rev 2</h1>
+<p class="sub">Your answers folded in. 4 follow-ups below; then the frame is ready for research.</p>
+
+<section>
+  <h2>Frame</h2>
+  <dl class="scq">
+    <dt>Situation</dt>
+    <dd>html-channel delivers decision pages: static HTML, form controls, revisions, answers back as <code>decisions.jsonl</code>. <code>#html</code> routes decisions there.</dd>
+    <dt>Complication</dt>
+    <dd>
+      <ul>
+        <li>Pages are markdown-shaped. Diagrams, charts, folds, tiered depth go unused.</li>
+        <li>The no-JS rule blocks every visualization library.</li>
+        <li>The agent authors blind. Rev 1 of this page shipped light-on-white text in dark mode and the agent couldn't tell.</li>
+      </ul>
+    </dd>
+    <dt>Question</dt>
+    <dd>What page vocabulary, defaults and guidance give better comprehension and faster, better-informed decisions across design, review, spec, tour, research and debug — and which layer owns each piece?</dd>
+    <dt>Constraints</dt>
+    <dd>
+      <ul>
+        <li>Localhost, single user; agent writes each page in one pass.</li>
+        <li><span class="tag changed">changed</span> Pages may load any JS library, declared in <code>&lt;head&gt;</code>, from a pinned CDN. The kit suggests a few; it doesn't restrict. Pages therefore need network access.</li>
+        <li>The agent picks the representation that fits the content, and may go beyond the suggested set.</li>
+        <li>Depth is both: folded tiers authored up front, plus reader-requested "go deeper" via revision. <code>ask_human</code> wakes only on Done today.</li>
+        <li>Ownership split: html-channel = mechanism + suggestions + basic guidance; ai-behaviors = channel-agnostic thought structure, <code>#html</code> maps it onto pages; prompting = per-subject representation choice.</li>
+      </ul>
+    </dd>
+    <dt>Non-goals</dt>
+    <dd>General dashboard/app framework. Publishing beyond localhost. Live-streaming page content.</dd>
+  </dl>
+  <details>
+    <summary>Your question: what did "core vendored" mean?</summary>
+    <p>Shipping a few small libraries inside the html-channel install, served from <code>/_kit/lib/…</code> like <code>decide.mjs</code> is now, so they work offline and never change version. Heavy ones would come from a CDN. You picked CDN only, which is simpler, at the cost of needing network access.</p>
+  </details>
+  <details>
+    <summary>Coherence: what has to change in existing artifacts</summary>
+    <p class="tension">CONVENTION says "contains <strong>no JavaScript</strong>" and forbids <code>&lt;script&gt;</code> blocks; <code>#html</code> lists <code>InlinePageScript</code> as forbidden; the skill repeats it. All three conflict with the new JS constraint and must be reworded together. Q1 decides what the replacement rule is.</p>
+  </details>
+</section>
+
+<section>
+  <p class="q">Q1. With libraries allowed, what's the invariant that stays?</p>
+  <div class="choices">
+    <button data-decision="js-invariant" data-choice="answers-via-runtime">Page JS renders; answers flow only through data-decision controls (rec.)</button>
+    <button data-decision="js-invariant" data-choice="anything">No rule: page JS may do anything</button>
+  </div>
+  <details>
+    <summary>Why it matters</summary>
+    <p>The runtime currently owns every answer: saving, carry-over across revisions, the Done button. If page JS can write answers itself, carry-over and <code>decisions.jsonl</code> stop being trustworthy. The first option keeps that contract and frees everything visual.</p>
+    <p>Edge: a diagram the reader clicks to choose (e.g. pick a node) would need page JS to set a <code>data-decision</code> control's value — still through the runtime.</p>
+  </details>
+  <textarea data-decision="js-invariant-notes" placeholder="Notes…"></textarea>
+</section>
+
+<section>
+  <p class="q">Q2. Readability basics (contrast, dark mode, width): defaults or guidance?</p>
+  <div class="choices">
+    <button data-decision="basics" data-choice="kit-defaults">Kit ships a base theme pages build on, plus short guidance (rec.)</button>
+    <button data-decision="basics" data-choice="guidance-only">Guidance text in CONVENTION only</button>
+  </div>
+  <details>
+    <summary>Why defaults over guidance</summary>
+    <p>Rev 1's bug was an instruction-following failure the agent couldn't see. A base theme (tokens, contrast-checked colors, dark mode, readable measure) removes that class of failure instead of asking the agent to avoid it. Guidance alone relies on the same blind agent getting it right each time. (#scope)</p>
+  </details>
+  <textarea data-decision="basics-notes" placeholder="Notes…"></textarea>
+</section>
+
+<section>
+  <p class="q">Q3. Should the agent see what rendered?</p>
+  <div class="choices">
+    <button data-decision="render-feedback" data-choice="in">In scope: report JS/lib errors (and maybe a screenshot) back to the agent</button>
+    <button data-decision="render-feedback" data-choice="later">Later</button>
+    <button data-decision="render-feedback" data-choice="out">Out of scope</button>
+  </div>
+  <details>
+    <summary>Why ask</summary>
+    <p>Free JS from a CDN adds failure modes: lib fails to load, diagram syntax error, overflow. Today none of these reach the agent; the reader sees a broken page and the agent believes it succeeded.</p>
+  </details>
+  <textarea data-decision="render-feedback-notes" placeholder="Notes…"></textarea>
+</section>
+
+<section>
+  <p class="q">Q4. You left two possible non-goals unchecked. In scope or not targeted?</p>
+  <table>
+    <tr><th></th><th>In scope</th><th>Allowed, not targeted</th><th>Out</th></tr>
+    <tr><td>Interactive data exploration (sort/filter/pivot)</td>
+      <td><input type="radio" name="ng-exploration" data-decision="scope-exploration" value="in"></td>
+      <td><input type="radio" name="ng-exploration" data-decision="scope-exploration" value="allowed"></td>
+      <td><input type="radio" name="ng-exploration" data-decision="scope-exploration" value="out"></td></tr>
+    <tr><td>Reader editing a diagram as an answer</td>
+      <td><input type="radio" name="ng-editing" data-decision="scope-editing" value="in"></td>
+      <td><input type="radio" name="ng-editing" data-decision="scope-editing" value="allowed"></td>
+      <td><input type="radio" name="ng-editing" data-decision="scope-editing" value="out"></td></tr>
+  </table>
+</section>
+
+<section>
+  <textarea data-decision="frame-notes" placeholder="Anything wrong in the frame above?"></textarea>
+  <div class="choices">
+    <button data-decision="status" data-choice="done">Done</button>
+  </div>
+</section>
+
+<script type="module" src="/_kit/decide.mjs"></script>
+</body>
+</html>

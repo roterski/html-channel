@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frame: one ai directory</title>
+<link rel="stylesheet" href="/_kit/decide.css">
+<style>
+  :root { color-scheme: light dark; --bg:#ffffff; --fg:#14161a; --muted:#3f4652; --line:#d5d8de; --card:#f3f4f6; --warn:#92400e; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111317; --fg:#eceef2; --muted:#b4bac5; --line:#3a3f48; --card:#1c1f25; --warn:#fbbf24; } }
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 50rem; margin: 2rem auto; padding: 0 1rem; color: var(--fg); background: var(--bg); }
+  h1 { margin-bottom: .2rem; } .sub { color: var(--muted); margin-top: 0; }
+  section { border-top: 1px solid var(--line); padding: 1.1rem 0; }
+  .scq { display: grid; grid-template-columns: 8.5rem 1fr; gap: .5rem 1rem; }
+  .scq dt { font-weight: 700; } .scq dd { margin: 0; } .scq ul { margin: 0; padding-left: 1.1rem; }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .8rem; margin: .6rem 0; }
+  summary { cursor: pointer; font-size: .93rem; font-weight: 600; }
+  .q { font-weight: 700; margin: 0 0 .4rem; }
+  .choices { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
+  textarea { width: 100%; min-height: 3rem; font: inherit; box-sizing: border-box; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: .4rem; }
+  pre { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: .6rem .8rem; overflow-x: auto; font-size: .9rem; }
+  .tension { border-left: 3px solid var(--warn); padding-left: .7rem; }
+</style>
+</head>
+<body>
+<div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
+  <strong>html-channel server is not running</strong>: your answers won't be saved.
+  Start it with <code>html-channel serve</code> in the project; this notice then disappears on its own.
+</div>
+
+<h1>One AI directory — frame</h1>
+<p class="sub">5 questions. Afterwards this goes to <code>#=code</code>.</p>
+
+<section>
+  <h2>Frame</h2>
+  <dl class="scq">
+    <dt>Situation</dt>
+    <dd>html-channel writes sessions to <code>&lt;project&gt;/.ai/&lt;session&gt;/</code>. Agent docs (plan, frame, spikes) live in <code>ai/</code>. ai-behaviors writes to <code>ai/spike/</code> and <code>ai/stepback/</code>.</dd>
+    <dt>Complication</dt>
+    <dd>Two sibling directories hold one kind of thing. And html-channel claims its whole root, so session ids mix with docs if both share it.</dd>
+    <dt>Question</dt>
+    <dd>Which single directory, and how does html-channel namespace its sessions inside it?</dd>
+    <dt>Constraints</dt>
+    <dd><ul>
+      <li>Registry derives the project's mount name from the root (<code>registry.clj:27-30</code>: parent of a root named <code>.ai</code>).</li>
+      <li>Existing pages and answers must keep resolving after the move.</li>
+    </ul></dd>
+    <dt>Non-goals</dt>
+    <dd>Changing ai-behaviors' layout beyond its <code>#html</code> README path. Changing page URLs' shape beyond the mount name.</dd>
+  </dl>
+</section>
+
+<section>
+  <p class="q">Q1. Directory name?</p>
+  <div class="choices">
+    <button data-decision="dir" data-choice="ai">ai/ — matches ai-behaviors (rec.)</button>
+    <button data-decision="dir" data-choice="dot-ai">.ai/ — hidden; html-channel's current choice</button>
+  </div>
+  <details>
+    <summary>Why ai/</summary>
+    <p><code>#scratch</code>, <code>#=spike</code> and <code>#=stepback</code> already write to <code>ai/</code>. Choosing <code>.ai/</code> means changing those too or keeping two dirs across tools. (#coherence)</p>
+  </details>
+</section>
+
+<section>
+  <p class="q">Q2. Subdirectory for sessions?</p>
+  <div class="choices">
+    <button data-decision="subdir" data-choice="html-channel">html-channel/ — names its owner, like ai/spike/ (rec.)</button>
+    <button data-decision="subdir" data-choice="sessions">sessions/</button>
+    <button data-decision="subdir" data-choice="pages">pages/</button>
+  </div>
+  <pre>ai/
+├── frame.md
+├── plan.md
+├── spike/
+└── html-channel/
+    ├── b658090c/
+    └── c60daa3f/   page.html, page@1.html, decisions.jsonl</pre>
+  <textarea data-decision="subdir-notes" placeholder="Other name…"></textarea>
+</section>
+
+<section>
+  <p class="q">Q3. What does <code>--root</code> point at?</p>
+  <div class="choices">
+    <button data-decision="root" data-choice="project-ai">ai/ — tool appends its subdir itself (rec.)</button>
+    <button data-decision="root" data-choice="sessions-dir">ai/html-channel/ directly</button>
+  </div>
+  <details>
+    <summary>Trade-off</summary>
+    <p><strong>Tool appends:</strong> the tool owns its namespace; callers can't mix sessions into docs by passing the wrong root; mount-name derivation keeps the "parent of <code>ai</code>" shape. (#scope)</p>
+    <p><strong>Root is the sessions dir:</strong> no hidden path segment, but every <code>--root</code> example and the registry's project-name rule must change, and a mistyped root drops sessions next to docs.</p>
+  </details>
+</section>
+
+<section>
+  <p class="q">Q4. Sessions in git?</p>
+  <div class="choices">
+    <button data-decision="git" data-choice="tracked">Tracked — decisions are a record (rec.)</button>
+    <button data-decision="git" data-choice="ignored">Ignored, like ai/spike/*/</button>
+    <button data-decision="git" data-choice="decisions-only">Track decisions.jsonl, ignore @n snapshots</button>
+  </div>
+  <details>
+    <summary>Existing contradiction</summary>
+    <p class="tension">README says <code>decisions.jsonl</code> "you can commit", but this repo's <code>.gitignore</code> ignores <code>decisions.jsonl</code> everywhere. That rule exists for the examples; it would also hide session answers.</p>
+  </details>
+</section>
+
+<section>
+  <p class="q">Q5. Existing sessions in <code>.ai/</code>?</p>
+  <div class="choices">
+    <button data-decision="migrate" data-choice="move">Move them into the new location</button>
+    <button data-decision="migrate" data-choice="delete">Delete; frame.md already records what matters</button>
+  </div>
+</section>
+
+<section>
+  <details>
+    <summary>Touch points the code step must cover</summary>
+    <ul>
+      <li><code>src/html_channel/mcp.clj:5,34</code> — MCP default root</li>
+      <li><code>src/html_channel/cli.clj:17-20,32,40,52</code> — CLI default root and help</li>
+      <li><code>src/html_channel/registry.clj:27-30</code> — project-name derivation</li>
+      <li><code>CONVENTION.md:11,78</code>, <code>README.md</code>, <code>skill/html-channel/SKILL.md:26-31</code> (+ <code>bb build</code> copies)</li>
+      <li>Tests: <code>test/support.py:44</code>, <code>test/mcp_e2e.py:39,71</code>, registry/server tests</li>
+      <li>ai-behaviors <code>behaviors/html/README.md:8</code></li>
+      <li><code>ai/frame.md</code> — its pointer to <code>.ai/c60daa3f/decisions.jsonl</code></li>
+    </ul>
+  </details>
+  <textarea data-decision="notes" placeholder="Anything else…"></textarea>
+  <div class="choices">
+    <button data-decision="status" data-choice="done">Done</button>
+  </div>
+</section>
+
+<script type="module" src="/_kit/decide.mjs"></script>
+</body>
+</html>
