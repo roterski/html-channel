@@ -17,7 +17,7 @@ The agent reads your answers back, either blocking on an MCP tool or through the
 bbin install io.github.roterski/html-channel
 ```
 
-This gives you the `html-channel` command. It needs [babashka](https://babashka.org) and [bbin](https://github.com/babashka/bbin), and no Node.
+This gives you the `html-channel` command. It needs [babashka](https://babashka.org) 1.13.220 or newer and [bbin](https://github.com/babashka/bbin), and no Node.
 
 ## Use with an agent
 

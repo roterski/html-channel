@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: turtlequeue/setup-babashka@v1.7.0
         with:
-          babashka-version: 1.12.217
+          babashka-version: 1.13.226
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -23,3 +23,16 @@ jobs:
         run: bb build && git diff --exit-code
       - run: python -m venv .venv && .venv/bin/pip install playwright && .venv/bin/playwright install --with-deps chromium
       - run: bb test
+  # http-kit in older bb leaks on failed binds; the bind probe must keep standby flat there too
+  unit-old-bb:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: turtlequeue/setup-babashka@v1.7.0
+        with:
+          babashka-version: 1.12.217
+      - run: bb -cp src:resources:test -m html-channel.test-runner

@@ -1,7 +1,9 @@
 (ns html-channel.server-test
   (:require [babashka.fs :as fs]
             [babashka.http-client :as hc]
+            [babashka.process :as p]
             [cheshire.core :as json]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
             [html-channel.registry :as registry]
             [html-channel.server :as server]
@@ -75,6 +77,30 @@
         (is (nil? (server/try-bind port))))
       (finally (http-kit-stop stop)))))
 
+(defn- open-descriptor-count
+  "Descriptors this process holds: /proc on Linux, lsof elsewhere."
+  []
+  (if (fs/exists? "/proc/self/fd")
+    (count (fs/list-dir "/proc/self/fd"))
+    (->> (p/shell {:out :string} "lsof" "-p" (str (.pid (java.lang.ProcessHandle/current))))
+         :out str/split-lines count)))
+
+(deftest failed-binds-hold-no-descriptors
+  (let [port 18733
+        owner (server/try-bind port)]
+    (try
+      (server/try-bind port)
+      (let [before (open-descriptor-count)]
+        (dotimes [_ 200] (server/try-bind port))
+        (is (<= (- (open-descriptor-count) before) 5)
+            "standby retries the bind every second, so any per-attempt leak exhausts descriptors"))
+      (finally (http-kit-stop owner)))))
+
+(deftest bb-version-gate
+  (is (= [false false true true true]
+         (map server/bb-version-ok? ["1.12.217" "1.13.219" "1.13.220" "1.13.220-SNAPSHOT" "2.0.0"])))
+  (testing "missing or unparseable counts as old"
+    (is (= [false false false] (map server/bb-version-ok? [nil "" "1.13"])))))
 
 (deftest health-is-fast-with-1000-roots
   (let [d (temp-dir)]

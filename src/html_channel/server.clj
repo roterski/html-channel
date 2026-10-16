@@ -130,16 +130,46 @@
     (catch Exception e
       (respond 400 "text/plain" (str (.getSimpleName (class e)) ": " (ex-message e))))))
 
-(defn try-bind
-  "Starts serving on 127.0.0.1:`port`; nil when another process owns it."
+(def ^:private bind-host "127.0.0.1")
+
+(defn- port-free?
+  "True when `bind-host`:`port` can be bound now. Probes with a channel of the
+  same class http-kit binds, closed here: http-kit before 2.9.0-beta4 leaks a
+  socket and a selector on every failed bind."
   [port]
-  (try (http/run-server #'handler {:ip "127.0.0.1" :port port :legacy-return-value? false})
-       (catch Exception _ nil)))
+  (try (with-open [ch (java.nio.channels.ServerSocketChannel/open)]
+         (.bind ch (java.net.InetSocketAddress. ^String bind-host (int port)))
+         true)
+       (catch java.io.IOException _ false)))
+
+(defn try-bind
+  "Starts serving on 127.0.0.1:`port`; nil when another process owns it.
+  A nil return holds no descriptors, except when another process takes the
+  port between the probe and the bind on a bb older than `min-bb-version`."
+  [port]
+  (when (port-free? port)
+    (try (http/run-server #'handler {:ip bind-host :port port :legacy-return-value? false})
+         (catch Exception _ nil))))
+
+(def min-bb-version
+  "First babashka whose http-kit (2.9.0-beta4) closes what a failed bind opened."
+  [1 13 220])
+
+(defn bb-version-ok?
+  "True when babashka version string `s` is at least `min-bb-version`;
+  false when `s` is missing or has fewer than three numbers."
+  [s]
+  (let [v (mapv parse-long (take 3 (re-seq #"\d+" (str s))))]
+    (and (= 3 (count v)) (not (neg? (compare v min-bb-version))))))
 
 (defn run-standby!
   "Binds the port, or retries every second until the owner goes away.
   Returns a future that runs as long as this process does."
   [port]
+  (let [bb (System/getProperty "babashka.version")]
+    (when-not (bb-version-ok? bb)
+      (log "babashka" (or bb "(unknown version)") "is older than" (str/join "." min-bb-version)
+           "- its http-kit leaks descriptors on failed binds; please upgrade")))
   (future
     (loop [announced? false]
       (if (try-bind port)
