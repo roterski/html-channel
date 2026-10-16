@@ -1,0 +1,25 @@
+/* Minimal styling for decision controls. Pages can override freely. */
+button[data-decision] {
+  font: inherit; padding: .4rem .9rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid #b9bcc4; background: #fff; color: #1d2026;
+}
+button[data-decision]:hover { border-color: #5a6170; }
+button[data-decision].chosen { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+
+[data-decision][data-state="pending"] { outline: 2px dashed #d97706; outline-offset: 2px; }
+textarea[data-decision][data-state="saved"],
+input[data-decision][data-state="saved"] { outline: 2px solid #16a34a33; outline-offset: 1px; }
+[data-decision][data-state="carried"] { outline: 2px dotted #7c3aed; outline-offset: 2px; }
+
+#decide-clear-carried {
+  font: 14px system-ui, sans-serif; margin: 0 0 1rem; padding: .35rem .8rem; border-radius: 6px;
+  cursor: pointer; border: 1px solid #7c3aed; background: #f5f3ff; color: #5b21b6;
+}
+
+html.decide-is-offline [data-decision] { opacity: .75; }
+
+@media (prefers-color-scheme: dark) {
+  button[data-decision] { background: #23262d; color: #e6e8ec; border-color: #4a4f5a; }
+  button[data-decision].chosen { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+  #decide-clear-carried { background: #2e1065; color: #ddd6fe; border-color: #8b5cf6; }
+}

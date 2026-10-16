@@ -1,65 +1,31 @@
-"""Browser end-to-end checks against a running decision server.
+"""Browser end-to-end checks for one served root.
 
   .venv/bin/python test/e2e.py
 
-Scenarios (plan §3):
-  B  page served over http: decisions are saved, then restored on reload
-  D  server dies mid-session: banner shows, a click queues as pending,
+  B  decisions are saved, then restored on reload
+  D  the server dies mid-session: the banner shows, a click queues as pending,
      and after a restart the banner hides and the queued click is saved
-
-Exits non-zero on the first failed assertion. E2E_SERVER_CMD overrides the
-server command (it gets `--root <dir>` appended); setting it to `true` must
-make this script fail.
 """
-import json, os, pathlib, shlex, shutil, socket, subprocess, sys, tempfile, time
+import shutil
 from playwright.sync_api import sync_playwright, expect
+from support import DEMO, WAIT_MS, Sandbox, entries, run, stop
 
-REPO = pathlib.Path(__file__).resolve().parent.parent
-PORT = 8787
-SERVER_CMD = shlex.split(os.environ.get("E2E_SERVER_CMD", "bb serve.clj"))
-WAIT_MS = 4500  # banner/health poll runs every 3 s
+PORT = 18781
 
-def port_open():
-    with socket.socket() as s:
-        return s.connect_ex(("127.0.0.1", PORT)) == 0
-
-def wait_port(up, timeout=10):
-    end = time.time() + timeout
-    while time.time() < end:
-        if port_open() == up:
-            return True
-        time.sleep(0.1)
-    return False
-
-class Server:
-    def __init__(self, root):
-        self.root, self.proc = root, None
-    def start(self):
-        self.proc = subprocess.Popen(SERVER_CMD + ["--root", str(self.root)], cwd=REPO,
-                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        assert wait_port(True), "server did not start listening on %d" % PORT
-    def stop(self):
-        if self.proc:
-            self.proc.terminate(); self.proc.wait(); self.proc = None
-        assert wait_port(False), "server still listening after stop"
-
-def entries(root):
-    f = root / "decisions.jsonl"
-    return [json.loads(l) for l in f.read_text().splitlines()] if f.exists() else []
 
 def main():
-    assert not port_open(), "port %d is already in use; stop that server first" % PORT
-    root = pathlib.Path(tempfile.mkdtemp(prefix="html-channel-e2e-"))
-    shutil.copy(REPO / "examples/demo.html", root / "demo.html")
-    server = Server(root)
-    url = "http://127.0.0.1:%d/demo.html" % PORT
+    sb = Sandbox(PORT)
     try:
-        server.start()
+        root = sb.project("proj")
+        (root / "e2e").mkdir()
+        shutil.copy(DEMO, root / "e2e/cache-layer-review.html")
+        server = sb.serve(root)
+        url = sb.url(root, "e2e", "cache-layer-review")
         with sync_playwright() as pw:
             browser = pw.chromium.launch()
             page = browser.new_page()
 
-            # --- B: save and restore over http
+            # --- B: save and restore
             page.goto(url)
             expect(page.locator("#decide-offline")).to_be_hidden(timeout=WAIT_MS)
             page.click("button[data-choice=ttl]")
@@ -72,29 +38,27 @@ def main():
             expect(page.locator("button[data-choice=lru]")).not_to_have_class("chosen")
             expect(page.locator("[data-decision=keep-metrics]")).to_be_checked()
             expect(page.locator("[data-decision=notes]")).to_have_value("rename evict! to evict")
-            got = {e["id"]: e["value"] for e in entries(root)}
+            got = {e["id"]: e["value"] for e in entries(root, "e2e")}
             assert got == {"eviction": "ttl", "keep-metrics": True, "notes": "rename evict! to evict"}, got
+            assert {e["session"] for e in entries(root, "e2e")} == {"e2e"}
             print("B ok: saved and restored", got)
 
             # --- D: server dies mid-session
-            server.stop()
+            stop(server)
             expect(page.locator("#decide-offline")).to_be_visible(timeout=WAIT_MS)
             page.click("button[data-choice=done]")
             expect(page.locator("button[data-choice=done]")).to_have_attribute("data-state", "pending")
-            assert not any(e["id"] == "status" for e in entries(root)), "saved while server was down"
-            server.start()
+            assert not any(e["id"] == "status" for e in entries(root, "e2e")), "saved while server was down"
+            sb.serve(root)
             expect(page.locator("#decide-offline")).to_be_hidden(timeout=WAIT_MS)
             expect(page.locator("button[data-choice=done]")).to_have_attribute("data-state", "saved", timeout=WAIT_MS)
-            assert entries(root)[-1]["id"] == "status" and entries(root)[-1]["value"] == "done", entries(root)[-1]
+            last = entries(root, "e2e")[-1]
+            assert (last["id"], last["value"]) == ("status", "done"), last
             print("D ok: banner shown while down, queued click flushed after restart")
             browser.close()
     finally:
-        server.stop()
-        shutil.rmtree(root, ignore_errors=True)
+        sb.close()
+
 
 if __name__ == "__main__":
-    try:
-        main()
-    except AssertionError as e:
-        print("FAIL:", e, file=sys.stderr); sys.exit(1)
-    print("e2e: all scenarios passed")
+    run(main)

@@ -1,17 +1,34 @@
-{:tasks
- {serve {:doc "Start the decision server (args pass through, e.g. --root docs)"
-         :task (apply shell "bb serve.clj" *command-line-args*)}
+{:paths ["src" "resources"]
+ :bbin/bin {html-channel {:main-opts ["-m" "html-channel.cli"]}}
 
-  build {:doc "Compile src/decide.cljs -> kit/decide.mjs (needs `npm i` once)"
+ :tasks
+ {serve {:doc "Run the server from this checkout (args pass through, e.g. --root examples)"
+         :task (apply shell "bb -m html-channel.cli serve" *command-line-args*)}
+
+  build {:doc "Compile runtime/ -> resources/html_channel/kit/, copy CONVENTION.md (needs `npm i` once)"
          :requires ([babashka.fs :as fs]
                     [clojure.string :as str])
-         :task (do
-                 (shell "npx squint compile src/decide.cljs --output-dir build")
-                 (fs/create-dirs "kit")
-                 ;; make the module self-contained: point at a local copy of squint core
-                 (spit "kit/decide.mjs"
-                       (str/replace (slurp "build/src/decide.mjs")
-                                    "'squint-cljs/core.js'" "'./squint-core.js'"))
-                 (fs/copy "node_modules/squint-cljs/src/squint/core.js" "kit/squint-core.js"
-                          {:replace-existing true})
-                 (println "built kit/decide.mjs"))}}}
+         :task (let [kit "resources/html_channel/kit"]
+                 (fs/delete-tree "build")
+                 (apply shell "npx squint compile --paths runtime --output-dir build"
+                        (map str (fs/glob "runtime" "**.cljs")))
+                 (fs/delete-tree kit)
+                 ;; make modules self-contained: point each at the local copy of squint core
+                 (doseq [f (fs/glob "build" "**.mjs")
+                         :let [rel (str (fs/relativize "build" f))
+                               depth (count (filter #{\/} rel))
+                               core (str (if (zero? depth) "./" (apply str (repeat depth "../"))) "squint-core.js")
+                               out (fs/path kit rel)]]
+                   (fs/create-dirs (fs/parent out))
+                   (spit (fs/file out) (str/replace (slurp (fs/file f)) "'squint-cljs/core.js'" (str "'" core "'"))))
+                 (fs/copy "node_modules/squint-cljs/src/squint/core.js" (fs/path kit "squint-core.js"))
+                 (fs/copy "runtime/decide.css" (fs/path kit "decide.css"))
+                 (doseq [dest ["resources/html_channel/CONVENTION.md" "skill/html-channel/CONVENTION.md"]]
+                   (fs/create-dirs (fs/parent dest))
+                   (fs/copy "CONVENTION.md" dest {:replace-existing true}))
+                 (println "built" kit))}
+
+  test {:doc "Unit tests, then browser and MCP end-to-end tests (needs .venv with playwright)"
+        :task (do (shell "bb -cp src:resources:test -m html-channel.test-runner")
+                  (doseq [t ["test/e2e.py" "test/takeover.py" "test/mcp_e2e.py" "test/revisions.py"]]
+                    (shell ".venv/bin/python" t)))}}}

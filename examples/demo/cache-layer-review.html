@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Review: cache layer</title>
-<link rel="stylesheet" href="http://127.0.0.1:8787/_kit/decide.css">
+<link rel="stylesheet" href="/_kit/decide.css">
 <style>
   body { font: 16px/1.55 system-ui, sans-serif; max-width: 46rem; margin: 2.5rem auto; padding: 0 1rem; }
   section { border-top: 1px solid #ddd; padding: 1rem 0; }
@@ -13,13 +13,12 @@
   pre { background: #f4f5f7; padding: .75rem; overflow-x: auto; }
 </style>
 </head>
-<body data-page="cache-layer-review">
+<body>
 
-<!-- Visible by default; the runtime hides it once the server answers.
-     If the server is down, the runtime never loads, so this stays up. -->
+<!-- Visible by default; the runtime hides it once the server answers. -->
 <div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
-  <strong>Decision server is not running</strong> — your choices won't be saved.
-  Start it with <code>bb serve.clj --root examples</code> (from the html-channel folder), then this banner disappears on its own.
+  <strong>html-channel server is not running</strong>: your answers won't be saved.
+  Start it with <code>html-channel serve --root examples</code>; this notice then disappears on its own.
 </div>
 
 <h1>Cache layer review</h1>
@@ -51,6 +50,6 @@
   </div>
 </section>
 
-<script type="module" src="http://127.0.0.1:8787/_kit/decide.mjs"></script>
+<script type="module" src="/_kit/decide.mjs"></script>
 </body>
 </html>
