@@ -20,9 +20,22 @@ jobs:
           python-version: "3.11"
       - run: npm ci
       - name: Build outputs are committed and current
-        run: bb build && git diff --exit-code
+        run: bb build && git diff --exit-code && test -z "$(git status --porcelain resources plugin skill)"
       - run: python -m venv .venv && .venv/bin/pip install playwright && .venv/bin/playwright install --with-deps chromium
       - run: bb test
+      - name: Example pages render without errors (when Chrome is available)
+        shell: bash
+        run: |
+          if [ -z "$(command -v google-chrome || command -v chromium || ls '/Applications/Google Chrome.app' 2>/dev/null)" ]; then
+            echo "no Chrome; skipping"; exit 0
+          fi
+          for f in examples/*/*.html; do
+            case "$f" in *@*) continue;; esac
+            s=$(basename "$(dirname "$f")"); p=$(basename "$f" .html)
+            out=$(bb -m html-channel.cli check "$s/$p" --root examples)
+            echo "$out"
+            echo "$out" | python -c 'import json,sys; r=json.load(sys.stdin); sys.exit(1 if r["errors"] else 0)'
+          done
   # http-kit in older bb leaks on failed binds; the bind probe must keep standby flat there too
   unit-old-bb:
     strategy:

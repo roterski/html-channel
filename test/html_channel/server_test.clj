@@ -7,6 +7,7 @@
             [clojure.test :refer [deftest is testing use-fixtures]]
             [html-channel.registry :as registry]
             [html-channel.server :as server]
+            [html-channel.store :as store]
             [html-channel.test-support :refer [temp-dir with-state-dir write-page!]]))
 
 (use-fixtures :each with-state-dir)
@@ -34,7 +35,15 @@
       (is (= 200 (:status r)))
       (is (= "text/javascript" (get-in r [:headers "Content-Type"]))))
     (is (= 200 (:status (req :get "/_kit/decide/core.mjs"))))
+    (is (= 200 (:status (req :get "/_kit/errors.js"))))
+    (is (= 200 (:status (req :get "/_kit/viz/mermaid.mjs"))))
     (is (re-find #"/s1/p\.html" (:body (req :get "/"))))
+    (testing "POST _errors stores a page error at the current rev"
+      (is (= 200 (:status (req :post (str base "_errors") nil
+                               "{\"page\":\"p\",\"kind\":\"js\",\"message\":\"boom\"}"))))
+      (is (= 400 (:status (req :post (str base "_errors") nil
+                               "{\"page\":\"p\",\"kind\":\"nope\",\"message\":\"boom\"}"))))
+      (is (= [["js" "boom"]] (map (juxt :kind :message) (store/errors root "s1" "p" 1)))))
     (testing "the page GET checks the rev, so it snapshots"
       (let [r (req :get (str base "p.html"))]
         (is (= 200 (:status r)))
@@ -42,7 +51,7 @@
         (is (fs/exists? (fs/path root "s1" "p@1.html")))))
     (is (= {:rev 1} (body-json (req :get (str base "_rev") "page=p" nil))))
     (is (= 200 (:status (req :post (str base "_decisions") nil "{\"page\":\"p\",\"id\":\"a\",\"value\":\"x\"}"))))
-    (is (= {:rev 1 :done false :decisions {:a {:value "x" :rev 1}}}
+    (is (= {:rev 1 :done false :deeper [] :decisions {:a {:value "x" :rev 1}}}
            (update-in (body-json (req :get (str base "_decisions") "page=p" nil)) [:decisions :a] dissoc :at)))
     (is (= 404 (:status (req :get "/nope-000000/s1/p.html"))))
     (is (= 404 (:status (req :get (str base "missing.html")))))

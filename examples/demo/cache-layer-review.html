@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Review: cache layer</title>
 <link rel="stylesheet" href="/_kit/decide.css">
+<script src="/_kit/errors.js"></script>
+<script type="module" src="/_kit/decide.mjs"></script>
 <style>
   body { font: 16px/1.55 system-ui, sans-serif; max-width: 46rem; margin: 2.5rem auto; padding: 0 1rem; }
-  section { border-top: 1px solid #ddd; padding: 1rem 0; }
+  section { border-top: 1px solid var(--hc-line); padding: 1rem 0; }
   .choices { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
   textarea { width: 100%; min-height: 4rem; font: inherit; }
-  pre { background: #f4f5f7; padding: .75rem; overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -50,6 +51,5 @@
   </div>
 </section>
 
-<script type="module" src="/_kit/decide.mjs"></script>
 </body>
 </html>

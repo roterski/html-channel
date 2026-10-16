@@ -9,6 +9,7 @@
     GET  /<mount>/<session>/_rev?page=   {rev}; the runtime's health poll
     GET  /<mount>/<session>/_decisions?page=   effective answers
     POST /<mount>/<session>/_decisions   append one entry
+    POST /<mount>/<session>/_errors      append one page error (runtime/errors.js)
 
   Ownership: whichever process binds 127.0.0.1:<port> serves; every other
   html-channel process retries the bind every second (`run-standby!`)."
@@ -95,6 +96,11 @@
       (and (= rest "_decisions") (= request-method :post))
       (let [e (store/append-entry! root session (json/parse-string (slurp body) true))]
         (log "decision" (:page e) (str "rev " (:rev e)) (:id e) "=>" (pr-str (:value e)))
+        (json-resp {:ok true :rev (:rev e)}))
+
+      (and (= rest "_errors") (= request-method :post))
+      (let [e (store/append-error! root session (json/parse-string (slurp body) true))]
+        (log "error" (:page e) (str "rev " (:rev e)) (:kind e) (:message e))
         (json-resp {:ok true :rev (:rev e)}))
 
       (= request-method :get)

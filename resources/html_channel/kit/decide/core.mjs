@@ -54,10 +54,10 @@ return squint_core.empty_QMARK_(squint_core.get(squint_core.deref(state), "queue
 
 };
 var remove_clear_button_BANG_ = function () {
-const G__2_1 = document.getElementById("decide-clear-carried");
-if ((G__2_1 == null)) {
+const G__6_1 = document.getElementById("decide-clear-carried");
+if ((G__6_1 == null)) {
 return null} else {
-return G__2_1.remove()};
+return G__6_1.remove()};
 
 };
 var uncarry_BANG_ = function (id) {
@@ -126,6 +126,14 @@ return document.body.prepend(b_1);
 };
 
 };
+var show_deeper_BANG_ = function (targets) {
+for (let G__1 of squint_core.iterable(document.querySelectorAll("button[data-deeper]"))) {
+const b_2 = G__1;
+b_2.classList.toggle("chosen", ((squint_core.truth_(targets)) ? (targets) : ([])).includes(b_2.dataset.deeper))
+}
+return null;
+
+};
 var restore_BANG_ = function (decisions, rev) {
 const carried_1 = squint_core.atom([]);
 for (let G__2 of squint_core.iterable(Object.entries(decisions))) {
@@ -150,9 +158,9 @@ return remove_clear_button_BANG_()};
 
 };
 var on_click = function (e) {
-const temp__23314__auto___1 = e.target.closest("button[data-decision][data-choice]");
-if (squint_core.truth_(temp__23314__auto___1)) {
-const btn_2 = temp__23314__auto___1;
+const temp__23255__auto___1 = e.target.closest("button[data-decision][data-choice]");
+if (squint_core.truth_(temp__23255__auto___1)) {
+const btn_2 = temp__23255__auto___1;
 const id_3 = btn_2.dataset.decision;
 for (let G__4 of squint_core.iterable(els_for(id_3))) {
 const b_5 = G__4;
@@ -160,6 +168,13 @@ b_5.classList.remove("chosen")
 };
 btn_2.classList.add("chosen");
 return record_BANG_(id_3, btn_2.dataset.choice);
+} else {
+const temp__23314__auto___6 = e.target.closest("button[data-deeper]");
+if (squint_core.truth_(temp__23314__auto___6)) {
+const btn_7 = temp__23314__auto___6;
+btn_7.classList.add("chosen");
+return record_BANG_("deeper", btn_7.dataset.deeper);
+};
 };
 
 };
@@ -181,7 +196,8 @@ const temp__23314__auto___1 = (await squint_core.get(squint_core.deref(transport
 if (squint_core.truth_(temp__23314__auto___1)) {
 const eff_2 = temp__23314__auto___1;
 squint_core.swap_BANG_(state, squint_core.assoc, "rev", squint_core.get(eff_2, "rev"));
-return restore_BANG_(squint_core.get(eff_2, "decisions"), squint_core.get(eff_2, "rev"));
+restore_BANG_(squint_core.get(eff_2, "decisions"), squint_core.get(eff_2, "rev"));
+return show_deeper_BANG_(squint_core.get(eff_2, "deeper"));
 };
 
 };
@@ -199,8 +215,40 @@ return null}};
 };
 
 };
+var report_error_BANG_ = function (kind, message, source) {
+const temp__23255__auto___1 = (() => {
+const G__7_2 = window;
+const G__7_3 = (((G__7_2 == null)) ? (null) : (G__7_2.htmlChannel));
+if ((G__7_3 == null)) {
+return null} else {
+return G__7_3.reportError};
+
+})();
+if (squint_core.truth_(temp__23255__auto___1)) {
+const f_4 = temp__23255__auto___1;
+return f_4(kind, message, source);
+} else {
+return console.error("html-channel:", kind, message, source)};
+
+};
+var record_from_page_BANG_ = function (id, value) {
+for (let G__1 of squint_core.iterable(els_for(id))) {
+const el_2 = G__1;
+show_value_BANG_(el_2, value)
+};
+return record_BANG_(id, value);
+
+};
 var start_BANG_ = function (t) {
 squint_core.reset_BANG_(transport, t);
+window.htmlChannel = (() => {
+const or_1_2 = window.htmlChannel;
+if (squint_core.truth_(or_1_2)) {
+return or_1_2} else {
+return ({})};
+
+})();
+window.htmlChannel.record = record_from_page_BANG_;
 document.addEventListener("click", on_click);
 document.addEventListener("change", on_change);
 check_BANG_();
@@ -208,4 +256,4 @@ return setInterval(check_BANG_, 3000);
 
 };
 
-export { restore_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, on_click, el_value, insert_clear_button_BANG_, start_BANG_, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, load_BANG_ }
+export { restore_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_ }

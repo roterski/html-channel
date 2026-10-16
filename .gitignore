@@ -3,6 +3,7 @@
 node_modules/
 build/
 examples/**/decisions.jsonl
+examples/**/errors.jsonl
 .venv/
 # revision snapshots written by the server
 examples/**/*@*.html

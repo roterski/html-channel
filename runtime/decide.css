@@ -1,10 +1,83 @@
-/* Minimal styling for decision controls. Pages can override freely. */
-button[data-decision] {
-  font: inherit; padding: .4rem .9rem; border-radius: 6px; cursor: pointer;
-  border: 1px solid #b9bcc4; background: #fff; color: #1d2026;
+/* Base theme and decision-control styles for html-channel pages.
+
+   Tokens (--hc-*) carry every color, light and dark. Element styles sit inside
+   :where(), so they have zero specificity and any page style wins over them.
+   Text pairs keep a contrast of at least 4.5:1 (test/html_channel/theme_test.clj). */
+
+:root {
+  color-scheme: light dark;
+  --hc-bg: #ffffff;
+  --hc-fg: #14161a;
+  --hc-muted: #4a5160;
+  --hc-line: #cfd3da;
+  --hc-card: #f3f4f6;
+  --hc-accent: #1d4ed8;
+  --hc-on-accent: #ffffff;
+  --hc-good: #166534;
+  --hc-warn: #92400e;
+  --hc-bad: #b91c1c;
 }
-button[data-decision]:hover { border-color: #5a6170; }
-button[data-decision].chosen { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hc-bg: #111317;
+    --hc-fg: #eceef2;
+    --hc-muted: #b4bac5;
+    --hc-line: #3a3f48;
+    --hc-card: #1c1f25;
+    --hc-accent: #93c5fd;
+    --hc-on-accent: #0b1220;
+    --hc-good: #4ade80;
+    --hc-warn: #fbbf24;
+    --hc-bad: #f87171;
+  }
+}
+
+/* ---- elements ------------------------------------------------------------ */
+
+:where(body) {
+  max-width: 54rem; margin: 2rem auto; padding: 0 1rem;
+  font: 16px/1.55 system-ui, sans-serif; color: var(--hc-fg); background: var(--hc-bg);
+}
+:where(a) { color: var(--hc-accent); }
+:where(hr) { border: 0; border-top: 1px solid var(--hc-line); margin: 1.5rem 0; }
+:where(blockquote) { margin: 1rem 0; padding-left: 1rem; border-left: 3px solid var(--hc-line); color: var(--hc-muted); }
+:where(pre) {
+  background: var(--hc-card); border: 1px solid var(--hc-line); border-radius: 6px;
+  padding: .75rem; overflow-x: auto;
+}
+:where(table) { border-collapse: collapse; width: 100%; }
+:where(th, td) { text-align: left; vertical-align: top; padding: .4rem .5rem; border-bottom: 1px solid var(--hc-line); }
+:where(th) { font-weight: 700; }
+:where(details) {
+  background: var(--hc-card); border: 1px solid var(--hc-line); border-radius: 8px;
+  padding: .5rem .8rem; margin: .6rem 0;
+}
+:where(summary) { cursor: pointer; font-weight: 600; }
+:where(input:not([type=checkbox], [type=radio]), textarea, select) {
+  font: inherit; color: var(--hc-fg); background: var(--hc-bg);
+  border: 1px solid var(--hc-line); border-radius: 6px; padding: .35rem .5rem; box-sizing: border-box;
+}
+:where(textarea) { width: 100%; min-height: 3rem; }
+/* SVG text defaults to black; follow the text color unless the drawing sets its own fill. */
+:where(svg text:not([fill])) { fill: currentColor; }
+:where(img, svg) { max-width: 100%; height: auto; }
+
+/* Narrow screens: a wide table scrolls inside itself instead of widening the page. */
+@media (max-width: 40rem) {
+  :where(table) { display: block; overflow-x: auto; }
+}
+
+/* ---- decision controls --------------------------------------------------- */
+
+button[data-decision], button[data-deeper] {
+  font: inherit; padding: .4rem .9rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--hc-line); background: var(--hc-bg); color: var(--hc-fg);
+}
+button[data-decision]:hover, button[data-deeper]:hover { border-color: var(--hc-muted); }
+button[data-decision].chosen, button[data-deeper].chosen {
+  background: var(--hc-accent); border-color: var(--hc-accent); color: var(--hc-on-accent);
+}
 
 [data-decision][data-state="pending"] { outline: 2px dashed #d97706; outline-offset: 2px; }
 textarea[data-decision][data-state="saved"],
@@ -18,8 +91,28 @@ input[data-decision][data-state="saved"] { outline: 2px solid #16a34a33; outline
 
 html.decide-is-offline [data-decision] { opacity: .75; }
 
+/* ---- visualizations (/_kit/viz) ------------------------------------------ */
+
+.hc-viz { margin: .8rem 0; overflow-x: auto; }
+.hc-viz-error {
+  margin: .4rem 0; padding: .4rem .7rem; border-radius: 6px; font-size: .9rem;
+  border: 1px solid var(--hc-bad); color: var(--hc-bad); white-space: pre-wrap;
+}
+
+/* ---- depth switch (data-tier) -------------------------------------------- */
+
+#decide-tiers {
+  position: fixed; right: 1rem; bottom: 1rem; z-index: 10; display: flex; gap: .25rem; align-items: center;
+  padding: .35rem .5rem; border-radius: 8px; font: 14px system-ui, sans-serif;
+  background: var(--hc-card); color: var(--hc-fg); border: 1px solid var(--hc-line);
+  box-shadow: 0 2px 8px #0003;
+}
+#decide-tiers button {
+  font: inherit; padding: .2rem .6rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--hc-line); background: var(--hc-bg); color: var(--hc-fg);
+}
+#decide-tiers button[aria-pressed="true"] { background: var(--hc-accent); border-color: var(--hc-accent); color: var(--hc-on-accent); }
+
 @media (prefers-color-scheme: dark) {
-  button[data-decision] { background: #23262d; color: #e6e8ec; border-color: #4a4f5a; }
-  button[data-decision].chosen { background: #3b82f6; border-color: #3b82f6; color: #fff; }
   #decide-clear-carried { background: #2e1065; color: #ddd6fe; border-color: #8b5cf6; }
 }

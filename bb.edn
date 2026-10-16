@@ -24,6 +24,7 @@
                    (spit (fs/file out) (str/replace (slurp (fs/file f)) "'squint-cljs/core.js'" (str "'" core "'"))))
                  (fs/copy "node_modules/squint-cljs/src/squint/core.js" (fs/path kit "squint-core.js"))
                  (fs/copy "runtime/decide.css" (fs/path kit "decide.css"))
+                 (fs/copy "runtime/errors.js" (fs/path kit "errors.js"))
                  (doseq [dest ["resources/html_channel/CONVENTION.md" "skill/html-channel/CONVENTION.md"]]
                    (fs/create-dirs (fs/parent dest))
                    (fs/copy "CONVENTION.md" dest {:replace-existing true}))
@@ -34,5 +35,5 @@
 
   test {:doc "Unit tests, then browser and MCP end-to-end tests (needs .venv with playwright)"
         :task (do (shell "bb -cp src:resources:test -m html-channel.test-runner")
-                  (doseq [t ["test/e2e.py" "test/takeover.py" "test/mcp_e2e.py" "test/revisions.py"]]
+                  (doseq [t ["test/e2e.py" "test/takeover.py" "test/mcp_e2e.py" "test/revisions.py" "test/rich.py"]]
                     (shell ".venv/bin/python" t)))}}}

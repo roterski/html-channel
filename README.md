@@ -6,7 +6,8 @@ The agent writes a static page into `<project>/ai/html-channel/<session>/`.
 You open it in a browser and answer with buttons and fields.
 The agent reads your answers back, either blocking on an MCP tool or through the CLI.
 
-- Pages contain no JavaScript of their own. The markup rules are in [CONVENTION.md](CONVENTION.md).
+- Pages may use JavaScript to render, and the kit renders Mermaid and Vega-Lite blocks itself. Answers go only through the runtime's controls. The markup rules are in [CONVENTION.md](CONVENTION.md).
+- Before showing a page, the agent can render it in headless Chrome (`check_page`) to catch errors and see light and dark screenshots.
 - It runs on localhost only (`127.0.0.1:8787`), for a single user, with no auth.
 - Answers are appended to `ai/html-channel/<session>/decisions.jsonl`, which you can commit.
 - Rewriting a page creates a new revision. Open tabs reload, and earlier answers carry over.
@@ -29,9 +30,21 @@ Add to `.mcp.json`, or run `claude mcp add html-channel -- html-channel mcp`:
 { "mcpServers": { "html-channel": { "command": "html-channel", "args": ["mcp"] } } }
 ```
 
-The agent calls `channel_setup`, writes the page, then calls `ask_human`.
-`ask_human` blocks until you click Done, and it sends progress every 30 s to keep the call alive.
+The agent calls `channel_setup`, writes the page, checks it with `check_page`, then calls `ask_human`.
+`ask_human` blocks until you click Done or a Deeper button, and it sends progress every 30 s to keep the call alive.
 After 25 minutes it returns `waiting`, and the agent calls it again.
+
+#### Waking an idle session (channels, research preview)
+
+With `--channel`, html-channel is also a [Claude Code channel](https://code.claude.com/docs/en/channels-reference):
+a Done or Deeper click on a page no `ask_human` call is waiting on wakes the session.
+
+```sh
+claude mcp add html-channel -- html-channel mcp --channel
+claude --dangerously-load-development-channels server:html-channel
+```
+
+Without `--channel`, html-channel never declares or sends channel events, so other clients are unaffected.
 
 To also get the skill, install the plugin in [plugin/](plugin/). It bundles the skill and this MCP config.
 
@@ -61,7 +74,9 @@ While one chat is waiting in `ask_human`, other chats' calls to html-channel que
 ```sh
 html-channel serve &                     # serve; stands by if another process owns the port
 html-channel session new                 # {session, dir, url_base}
-# write <dir>/<page>.html, open <url_base><page>.html, click Done
+# write <dir>/<page>.html
+html-channel check <session>/<page>      # {errors, screenshots} from headless Chrome
+# open <url_base><page>.html, click Done
 html-channel decisions <session>/<page>
 ```
 
@@ -90,12 +105,16 @@ A relative root resolves against `<project>`, and sessions go directly under it:
 
 ```
 html-channel serve [--root ai/html-channel] [--port 8787]
-html-channel mcp [--root] [--max-wait 1500] [--port]
+html-channel mcp [--root] [--max-wait 1500] [--port] [--channel]
 html-channel session new [--root]
 html-channel decisions <session>/<page> [--root]
+html-channel check <session>/<page> [--root]
 html-channel health [--port]
 html-channel version
 ```
+
+`check` finds Chrome through `HTML_CHANNEL_CHROME`, then the standard macOS app, then `google-chrome` or `chromium` on PATH.
+Screenshots go to `<session>/.check/`, which it keeps out of git.
 
 ## Development
 

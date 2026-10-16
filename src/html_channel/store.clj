@@ -4,9 +4,10 @@
     <root>/<session>/<page>.html        written by the agent
     <root>/<session>/<page>@<n>.html    snapshot of revision n
     <root>/<session>/decisions.jsonl    append-only {page session rev id value at}
+    <root>/<session>/errors.jsonl       append-only {page session rev kind message source? check? at}
 
   Invariants:
-  - decisions.jsonl is only ever appended to;
+  - decisions.jsonl and errors.jsonl are only ever appended to;
   - snapshot n+1 differs in content from snapshot n;
   - `value: null` means the answer was cleared.
 
@@ -50,6 +51,9 @@
 (defn decisions-file [root session]
   (fs/path (session-dir root session) "decisions.jsonl"))
 
+(defn errors-file [root session]
+  (fs/path (session-dir root session) "errors.jsonl"))
+
 (defn- sha256 [f]
   (.digest (MessageDigest/getInstance "SHA-256") (Files/readAllBytes f)))
 
@@ -89,29 +93,42 @@
           (link-snapshot! f (snapshot-file root session page (inc n))) (inc n)
           :else (recur))))))
 
+(defn- read-jsonl
+  "Every parseable line of `f`, oldest first; [] when `f` doesn't exist."
+  [f]
+  (if (fs/exists? f)
+    (keep #(try (json/parse-string % true) (catch Exception _ nil)) (fs/read-all-lines f))
+    []))
+
 (defn entries
   "Every entry in the session's decisions file, oldest first. Unparseable lines are skipped."
   [root session]
-  (let [f (decisions-file root session)]
-    (if (fs/exists? f)
-      (keep #(try (json/parse-string % true) (catch Exception _ nil)) (fs/read-all-lines f))
-      [])))
+  (read-jsonl (decisions-file root session)))
+
+(def per-revision-ids
+  "Decision ids that count only at the revision they were given in, so they
+  never carry over: the Done button and requests to go deeper."
+  #{"status" "deeper"})
 
 (defn effective
-  "{:rev :done :decisions {id {:value :rev :at}}} for one page.
+  "{:rev :done :deeper :decisions {id {:value :rev :at}}} for one page.
   Each id takes its latest entry across all revisions (answers carry over),
-  except `status`, which counts only when given at the current revision."
+  except `per-revision-ids`, which count only when given at the current revision.
+  :deeper lists every target requested at the current revision, in order."
   [root session page]
   (let [rev (current-rev! root session page)
+        es (filter #(and (= page (:page %)) (string? (:id %))) (entries root session))
         latest (reduce (fn [m {:keys [id] :as e}]
-                         (if (and (= page (:page e)) (string? id)
-                                  (or (not= "status" id) (= rev (:rev e))))
+                         (if (or (not (per-revision-ids id)) (= rev (:rev e)))
                            (assoc m id (select-keys e [:value :rev :at]))
                            m))
-                       {} (entries root session))]
+                       {} es)]
     {:rev rev
      :done (= "done" (get-in latest ["status" :value]))
-     :decisions latest}))
+     :deeper (->> es
+                  (filter #(and (= "deeper" (:id %)) (= rev (:rev %)) (string? (:value %))))
+                  (map :value) distinct vec)
+     :decisions (dissoc latest "deeper")}))
 
 (def ^:private write-lock (Object.))
 
@@ -135,6 +152,45 @@
         (fs/create-dirs (session-dir root session))
         (spit (fs/file (decisions-file root session)) (str (json/generate-string stored) "\n") :append true))
       stored)))
+
+(def error-kinds #{"load" "js" "viz" "undeclared"})
+
+(defn append-error!
+  "Appends one page error, stamped with the page's current revision, and returns it as stored.
+  `session` comes from the caller (the URL), never from the error."
+  [root session error]
+  (let [{:keys [page kind message]} error]
+    (check-name! "page" page)
+    (when-not (error-kinds kind)
+      (throw (ex-info (str "error kind must be one of " (sort error-kinds) ", got " (pr-str kind)) {:status 400})))
+    (when-not (string? message)
+      (throw (ex-info "error needs a string message" {:status 400})))
+    (let [stored (-> (select-keys error [:page :kind :message :source :check :at])
+                     (assoc :session session :rev (current-rev! root session page))
+                     (update :at #(or % (str (java.time.Instant/now)))))]
+      (locking write-lock
+        (fs/create-dirs (session-dir root session))
+        (spit (fs/file (errors-file root session)) (str (json/generate-string stored) "\n") :append true))
+      stored)))
+
+(defn errors
+  "The page's errors at revision `rev`, one per distinct {kind message source},
+  with how often it was reported and when first. With `check`, only that check's."
+  ([root session page rev] (errors root session page rev nil))
+  ([root session page rev check]
+   (->> (read-jsonl (errors-file root session))
+        (filter #(and (= page (:page %)) (= rev (:rev %)) (or (nil? check) (= check (:check %)))))
+        (group-by (juxt :kind :message :source))
+        vals
+        (map (fn [[e :as es]] (-> (select-keys e [:kind :message :source :at]) (assoc :count (count es)))))
+        (sort-by :at)
+        vec)))
+
+(defn page-state
+  "What the agent reads about a page: `effective` plus :errors at the current revision."
+  [root session page]
+  (let [eff (effective root session page)]
+    (assoc eff :errors (errors root session page (:rev eff)))))
 
 (defn pages
   "{session [page …]} for every page file under root, snapshots excluded."

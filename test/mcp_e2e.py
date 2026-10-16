@@ -27,7 +27,7 @@ def main():
         if init["result"]["serverInfo"]["name"] != "html-channel":
             fail(init)
         names = sorted(t["name"] for t in mcp.request("tools/list")["result"]["tools"])
-        if names != ["ask_human", "channel_setup", "get_decisions"]:
+        if names != ["ask_human", "channel_setup", "check_page", "get_decisions"]:
             fail(names)
 
         setup = mcp.call("channel_setup")

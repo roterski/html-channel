@@ -5,11 +5,15 @@
     <button data-decision=\"x\" data-choice=\"a\">     one choice per decision id
     <input|textarea|select data-decision=\"y\">       free-form value, saved on change
     <input type=checkbox data-decision=\"z\">         saved as true/false
+    <button data-deeper=\"target\">                  a request to go deeper, saved as id \"deeper\"
     <div id=\"decide-offline\">…</div>                visible until the server answers
+
+  Page JS records an answer with window.htmlChannel.record(id, value), or by
+  setting a control's value and dispatching a bubbling `change` event.
 
   A transport is {:page id
                   :send! (fn [entry]) -> Promise<bool>
-                  :load  (fn [])      -> Promise<{rev done decisions} | nil>
+                  :load  (fn [])      -> Promise<{rev done deeper decisions} | nil>
                   :rev   (fn [])      -> Promise<int | nil>}  ; nil = unreachable
 
   Element states: data-state=\"pending\" until the transport confirms, then
@@ -98,6 +102,12 @@
       (.addEventListener b "click" (fn [_] (clear-carried!)))
       (.prepend js/document.body b))))
 
+(defn show-deeper!
+  "Marks the Deeper buttons whose target is in `targets` as chosen."
+  [targets]
+  (doseq [b (js/document.querySelectorAll "button[data-deeper]")]
+    (.toggle (.-classList b) "chosen" (.includes (or targets []) (.. b -dataset -deeper)))))
+
 (defn restore!
   "Shows the effective answers. Pre: `rev` is the page's current revision."
   [decisions rev]
@@ -116,11 +126,14 @@
 ;; ---- events ------------------------------------------------------------------
 
 (defn on-click [e]
-  (when-let [btn (.closest (.-target e) "button[data-decision][data-choice]")]
+  (if-let [btn (.closest (.-target e) "button[data-decision][data-choice]")]
     (let [id (.. btn -dataset -decision)]
       (doseq [b (els-for id)] (.remove (.-classList b) "chosen"))
       (.add (.-classList btn) "chosen")
-      (record! id (.. btn -dataset -choice)))))
+      (record! id (.. btn -dataset -choice)))
+    (when-let [btn (.closest (.-target e) "button[data-deeper]")]
+      (.add (.-classList btn) "chosen")
+      (record! "deeper" (.. btn -dataset -deeper)))))
 
 (defn on-change [e]
   (let [el (.-target e)]
@@ -132,7 +145,8 @@
 (defn ^:async load! []
   (when-let [eff (js-await ((:load @transport)))]
     (swap! state assoc :rev (:rev eff))
-    (restore! (:decisions eff) (:rev eff))))
+    (restore! (:decisions eff) (:rev eff))
+    (show-deeper! (:deeper eff))))
 
 (defn ^:async check!
   "Health and revision poll: toggles the banner, flushes the queue, loads the
@@ -147,8 +161,25 @@
           (nil? loaded) (js-await (load!))
           (and drained (> rev loaded)) (js/location.reload))))))
 
+;; ---- page API ------------------------------------------------------------------
+
+(defn report-error!
+  "Reports a page error through /_kit/errors.js; the console when the page lacks it."
+  [kind message source]
+  (if-let [f (some-> js/window .-htmlChannel .-reportError)]
+    (f kind message source)
+    (js/console.error "html-channel:" kind message source)))
+
+(defn record-from-page!
+  "window.htmlChannel.record: shows `value` on the id's controls and saves it."
+  [id value]
+  (doseq [el (els-for id)] (show-value! el value))
+  (record! id value))
+
 (defn start! [t]
   (reset! transport t)
+  (set! js/window.htmlChannel (or js/window.htmlChannel {}))
+  (set! (.-record js/window.htmlChannel) record-from-page!)
   (.addEventListener js/document "click" on-click)
   (.addEventListener js/document "change" on-change)
   (check!)

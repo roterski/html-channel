@@ -1,0 +1,53 @@
+import * as squint_core from '../squint-core.js';
+var declared_libs = function () {
+const G__2_1 = document.querySelector("meta[name=hc-libs]");
+const G__2_2 = (((G__2_1 == null)) ? (null) : (G__2_1.getAttribute("content")));
+const G__2_3 = (((G__2_2 == null)) ? (null) : (G__2_2.split(/[\s,]+/)));
+if ((G__2_3 == null)) {
+return null} else {
+return G__2_3.filter((function (_PERCENT_1) {
+return (_PERCENT_1.length > 0);
+
+}))};
+
+};
+var adapter_url = function (lib) {
+return (new URL(`${"../viz/"}${lib.replaceAll("-", "_")??''}${".mjs"}`, import.meta.url)).href;
+
+};
+var start_BANG_ = async function (report_BANG_) {
+const declared_1 = (await (async () => {
+const or_2_3 = declared_libs();
+if (squint_core.truth_(or_2_3)) {
+return or_2_3} else {
+return []};
+
+})());
+const blocks_4 = Array.from(document.querySelectorAll("pre[data-viz]"));
+const by_lib_5 = squint_core.group_by((function (_PERCENT_1) {
+return _PERCENT_1.dataset.viz;
+
+}), blocks_4);
+for (let G__6 of squint_core.iterable(by_lib_5)) {
+const vec___7_10 = G__6;
+const lib_11 = squint_core.nth(vec___7_10, 0, null);
+const bs_12 = squint_core.nth(vec___7_10, 1, null);
+if (squint_core.not(declared_1.includes(lib_11))) {
+report_BANG_("undeclared", `${squint_core.count(bs_12)??''}${" <pre data-viz=\""}${lib_11??''}${"\"> block(s), but \""}${lib_11??''}${"\" isn't listed in <meta name=\"hc-libs\">"}`, lib_11)}
+};
+for (let G__13 of squint_core.iterable(declared_1)) {
+const lib_14 = G__13;
+const bs_15 = by_lib_5[lib_14];
+if (squint_core.truth_(squint_core.seq(bs_15))) {
+try{
+const adapter_16 = (await import(adapter_url(lib_14)));
+(await adapter_16.render_BANG_(bs_15, report_BANG_))}
+catch(e_17){
+report_BANG_("load", `${"adapter for \""}${lib_14??''}${"\" failed: "}${e_17.message??''}`, adapter_url(lib_14))}
+}
+}
+return null;
+
+};
+
+export { declared_libs, adapter_url, start_BANG_ }

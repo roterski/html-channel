@@ -100,3 +100,41 @@
     (write-page! root "s1" "b" "x")
     (store/current-rev! root "s1" "a")
     (is (= {"s1" ["a" "b"]} (store/pages root)))))
+
+(deftest deeper-counts-only-at-its-revision
+  (let [root (temp-dir)]
+    (write-page! root "s1" "p" "v1")
+    (store/append-entry! root "s1" {:page "p" :id "deeper" :value "cost"})
+    (store/append-entry! root "s1" {:page "p" :id "deeper" :value "risk"})
+    (store/append-entry! root "s1" {:page "p" :id "deeper" :value "cost"})
+    (store/append-entry! root "s1" {:page "p" :id "a" :value 1})
+    (testing "every target requested at the current revision, once, in order; not among decisions"
+      (let [eff (store/effective root "s1" "p")]
+        (is (= ["cost" "risk"] (:deeper eff)))
+        (is (= #{"a"} (set (keys (:decisions eff)))))))
+    (testing "a new revision starts with no requests, while answers carry over"
+      (write-page! root "s1" "p" "v2")
+      (let [eff (store/effective root "s1" "p")]
+        (is (= [] (:deeper eff)))
+        (is (= 1 (get-in eff [:decisions "a" :value])))))))
+
+(deftest errors-are-stamped-and-grouped
+  (let [root (temp-dir)
+        e {:page "p" :kind "load" :message "failed to load <script> x" :source "x"}]
+    (write-page! root "s1" "p" "v1")
+    (testing "the server stamps the current revision and the caller's session"
+      (is (= {:rev 1 :session "s1"} (select-keys (store/append-error! root "s1" (assoc e :rev 9 :session "evil"))
+                                                 [:rev :session]))))
+    (store/append-error! root "s1" e)
+    (store/append-error! root "s1" (assoc e :check "c1"))
+    (store/append-error! root "s1" {:page "p" :kind "js" :message "boom" :check "c1"})
+    (testing "one entry per distinct error, with a count"
+      (is (= [["load" 3] ["js" 1]] (map (juxt :kind :count) (store/errors root "s1" "p" 1)))))
+    (testing "a check id narrows to that check's reports"
+      (is (= [["load" 1] ["js" 1]] (map (juxt :kind :count) (store/errors root "s1" "p" 1 "c1")))))
+    (testing "page-state carries the current revision's errors only"
+      (write-page! root "s1" "p" "v2")
+      (is (= [] (:errors (store/page-state root "s1" "p")))))
+    (testing "unknown kinds and missing messages are rejected"
+      (is (thrown? clojure.lang.ExceptionInfo (store/append-error! root "s1" (assoc e :kind "other"))))
+      (is (thrown? clojure.lang.ExceptionInfo (store/append-error! root "s1" (dissoc e :message)))))))
