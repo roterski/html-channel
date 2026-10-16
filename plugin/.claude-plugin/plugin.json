@@ -1,0 +1,8 @@
+{
+  "name": "html-channel",
+  "description": "Interactive HTML pages as an output channel: the agent writes a page, you answer on it, the agent reads your answers.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Piotr Roterski"
+  }
+}

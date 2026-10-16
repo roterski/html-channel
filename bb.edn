@@ -5,7 +5,7 @@
  {serve {:doc "Run the server from this checkout (args pass through, e.g. --root examples)"
          :task (apply shell "bb -m html-channel.cli serve" *command-line-args*)}
 
-  build {:doc "Compile runtime/ -> resources/html_channel/kit/, copy CONVENTION.md (needs `npm i` once)"
+  build {:doc "Compile runtime/ -> resources/html_channel/kit/; copy CONVENTION.md and the skill (needs `npm i` once)"
          :requires ([babashka.fs :as fs]
                     [clojure.string :as str])
          :task (let [kit "resources/html_channel/kit"]
@@ -26,6 +26,9 @@
                  (doseq [dest ["resources/html_channel/CONVENTION.md" "skill/html-channel/CONVENTION.md"]]
                    (fs/create-dirs (fs/parent dest))
                    (fs/copy "CONVENTION.md" dest {:replace-existing true}))
+                 ;; the plugin bundles a copy of the skill
+                 (fs/delete-tree "plugin/skills")
+                 (fs/copy-tree "skill" "plugin/skills")
                  (println "built" kit))}
 
   test {:doc "Unit tests, then browser and MCP end-to-end tests (needs .venv with playwright)"

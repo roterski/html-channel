@@ -1,0 +1,25 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: turtlequeue/setup-babashka@v1.7.0
+        with:
+          babashka-version: 1.12.217
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: npm ci
+      - name: Build outputs are committed and current
+        run: bb build && git diff --exit-code
+      - run: python -m venv .venv && .venv/bin/pip install playwright && .venv/bin/playwright install --with-deps chromium
+      - run: bb test
