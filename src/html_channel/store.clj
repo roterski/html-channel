@@ -4,8 +4,10 @@
     <root>/<session>/<page>.html        written by the agent
     <root>/<session>/<page>@<n>.html    snapshot of revision n
     <root>/<session>/decisions.jsonl    append-only {page session rev id value at}
-    <root>/<session>/errors.jsonl       append-only {page session rev kind message source? check? at}
-    <root>/<session>/.check/            screenshots and runs.jsonl {page check at}, git-ignored
+    <root>/<session>/errors.jsonl       append-only {page session rev kind message source? at},
+                                        one line per distinct error and revision
+    <root>/<session>/.check/            git-ignored: screenshots <page>@<rev>-<scheme>.png, and
+                                        <check>.ran / <check>.errors.jsonl while a check runs
 
   Invariants:
   - decisions.jsonl and errors.jsonl are only ever appended to;
@@ -57,9 +59,6 @@
 
 (defn check-dir [root session]
   (fs/path (session-dir root session) ".check"))
-
-(defn check-runs-file [root session]
-  (fs/path (check-dir root session) "runs.jsonl"))
 
 (defn- sha256 [f]
   (.digest (MessageDigest/getInstance "SHA-256") (Files/readAllBytes f)))
@@ -176,39 +175,63 @@
 
 (def error-kinds #{"load" "js" "viz" "undeclared" "dialog"})
 
+(defn- check-error-file
+  "The errors one headless check's page load reported."
+  [root session check]
+  (fs/path (check-dir root session) (str check ".errors.jsonl")))
+
+(defn- check-ran-file
+  "Present once /_kit/boot.js reported in during a check; holds the page name."
+  [root session check]
+  (fs/path (check-dir root session) (str check ".ran")))
+
+(defn- valid-error
+  "The page error a client sent, as stored: stamped with the page's current
+  revision and the server's clock; a non-string `source` is dropped.
+  `session` comes from the caller (the URL), never from the error."
+  [root session {:keys [page kind message check] :as error}]
+  (check-name! "page" page)
+  (when check (check-name! "check" check))
+  (when-not (error-kinds kind)
+    (throw (ex-info (str "error kind must be one of " (sort error-kinds) ", got " (pr-str kind)) {:status 400})))
+  (when-not (string? message)
+    (throw (ex-info "error needs a string message" {:status 400})))
+  (-> (select-keys error [:page :kind :message])
+      (merge (into {} (filter (comp string? val)) (select-keys error [:source])))
+      (assoc :session session :rev (current-rev! root session page) :at (str (java.time.Instant/now)))))
+
+(defn- same-error? [a b]
+  (= (select-keys a [:page :rev :kind :message :source]) (select-keys b [:page :rev :kind :message :source])))
+
 (defn append-error!
-  "Appends one page error, stamped with the page's current revision and the
-  server's clock, and returns it as stored. `session` comes from the caller
-  (the URL), never from the error; a non-string `source` or `check` is dropped."
+  "Stores one page error and returns it as stored.
+  A reader's page load goes to errors.jsonl, once per distinct error and
+  revision: reloads add nothing, so the file grows only with new errors.
+  A headless check's load (`check` set) goes to that check's own file under
+  .check/, which `discard-check!` deletes."
   [root session error]
-  (let [{:keys [page kind message]} error]
-    (check-name! "page" page)
-    (when-not (error-kinds kind)
-      (throw (ex-info (str "error kind must be one of " (sort error-kinds) ", got " (pr-str kind)) {:status 400})))
-    (when-not (string? message)
-      (throw (ex-info "error needs a string message" {:status 400})))
-    (let [stored (-> (select-keys error [:page :kind :message])
-                     (merge (into {} (filter (comp string? val)) (select-keys error [:source :check])))
-                     (assoc :session session :rev (current-rev! root session page)
-                            :at (str (java.time.Instant/now))))]
-      (locking write-lock
-        (fs/create-dirs (session-dir root session))
-        (spit (fs/file (errors-file root session)) (str (json/generate-string stored) "\n") :append true))
-      stored)))
+  (let [stored (valid-error root session error)
+        check (:check error)
+        f (if check (check-error-file root session check) (errors-file root session))]
+    (locking write-lock
+      (fs/create-dirs (fs/parent f))
+      (when-not (and (nil? check) (some #(same-error? stored %) (read-jsonl f)))
+        (spit (fs/file f) (str (json/generate-string stored) "\n") :append true)))
+    stored))
 
 (defn errors
   "The page's errors at revision `rev`, one per distinct {kind message source},
-  with how often it was reported and when first. With `check`, only that check's.
+  oldest first: readers' page loads, or with `check` only that check's load.
   Lines without string kind, message and at are skipped, so no single line can
   make this throw."
   ([root session page rev] (errors root session page rev nil))
   ([root session page rev check]
-   (->> (read-jsonl (errors-file root session))
-        (filter #(and (map? %) (= page (:page %)) (= rev (:rev %)) (or (nil? check) (= check (:check %)))
+   (->> (read-jsonl (if check (check-error-file root session check) (errors-file root session)))
+        (filter #(and (map? %) (= page (:page %)) (= rev (:rev %)) (nil? (:check %))
                       (string? (:kind %)) (string? (:message %)) (string? (:at %))))
         (group-by (juxt :kind :message :source))
         vals
-        (map (fn [[e :as es]] (-> (select-keys e [:kind :message :source :at]) (assoc :count (count es)))))
+        (map #(select-keys (first %) [:kind :message :source :at]))
         (sort-by :at)
         vec)))
 
@@ -216,19 +239,23 @@
   "Records that /_kit/boot.js ran on `page` during check `check`."
   [root session {:keys [page check]}]
   (check-name! "page" page)
-  (when-not (and (string? check) (seq check))
-    (throw (ex-info "check run needs a check id" {:status 400})))
-  (let [stored {:page page :check check :at (str (java.time.Instant/now))}]
-    (locking write-lock
-      (fs/create-dirs (check-dir root session))
-      (spit (fs/file (check-runs-file root session)) (str (json/generate-string stored) "\n") :append true))
-    stored))
+  (check-name! "check" check)
+  (let [f (check-ran-file root session check)]
+    (fs/create-dirs (fs/parent f))
+    (spit (fs/file f) page)
+    {:page page :check check}))
 
 (defn check-ran?
   "True when /_kit/boot.js reported in on `page` during check `check`."
   [root session page check]
-  (boolean (some #(and (= page (:page %)) (= check (:check %)))
-                 (read-jsonl (check-runs-file root session)))))
+  (let [f (check-ran-file root session check)]
+    (and (fs/exists? f) (= page (slurp (fs/file f))))))
+
+(defn discard-check!
+  "Deletes what check `check` recorded; its screenshots stay."
+  [root session check]
+  (fs/delete-if-exists (check-error-file root session check))
+  (fs/delete-if-exists (check-ran-file root session check)))
 
 (defn page-state
   "What the agent reads about a page: `effective` plus :errors at the current revision."

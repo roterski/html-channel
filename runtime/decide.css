@@ -85,6 +85,7 @@ button[data-decision].chosen, button[data-deeper].chosen {
 textarea[data-decision][data-state="saved"],
 input[data-decision][data-state="saved"] { outline: 2px solid #16a34a33; outline-offset: 1px; }
 [data-decision][data-state="carried"] { outline: 2px dotted #7c3aed; outline-offset: 2px; }
+[data-decision][data-state="rejected"] { outline: 2px solid var(--hc-bad); outline-offset: 2px; }
 
 #decide-clear-carried {
   font: 14px system-ui, sans-serif; margin: 0 0 1rem; padding: .35rem .8rem; border-radius: 6px;

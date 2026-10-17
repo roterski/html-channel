@@ -20,10 +20,18 @@ return null;
 };
 var post_entry = async function (url, entry) {
 try{
-return (await fetch(url, ({"method": "POST", "body": JSON.stringify(entry)}))).ok;
+const r_1 = (await fetch(url, ({"method": "POST", "body": JSON.stringify(entry)})));
+const status_2 = r_1.status;
+if (squint_core.truth_(r_1.ok)) {
+return ({"outcome": "saved"})} else {
+if ((((status_2 >= 400)) && ((status_2 < 500)))) {
+return ({"outcome": "rejected", "reason": (await r_1.text())})} else {
+if ("else") {
+return ({"outcome": "unreachable"})} else {
+return null}}};
 }
-catch(__1){
-return false;
+catch(__3){
+return ({"outcome": "unreachable"});
 }
 ;
 

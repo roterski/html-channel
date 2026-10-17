@@ -14,10 +14,10 @@ d_8.style.display = "block";
 try{
 const spec_9 = JSON.parse(pre_7.textContent);
 (await window.vegaEmbed(d_8, spec_9, (await (async () => {
-const G__8_10 = ({"actions": false, "renderer": "svg", "config": ({"background": "transparent"})});
+const G__9_10 = ({"actions": false, "renderer": "svg", "config": ({"background": "transparent"})});
 if (squint_core.truth_(load.dark_QMARK_())) {
-return ({...G__8_10,["theme"]:"dark"})} else {
-return G__8_10};
+return ({...G__9_10,["theme"]:"dark"})} else {
+return G__9_10};
 
 })())));
 load.rendered_BANG_(pre_7)}

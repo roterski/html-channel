@@ -56,7 +56,7 @@ Sections 4, 5 and 7 all rely on this.
   - They must be installed before any page script runs.
     CONVENTION moves the runtime into `<head>`, ahead of library tags.
   - Uncertain: a module script in `<head>` is deferred, and may install too late.
-    If so, it needs a synchronous `/_kit/errors.js` first.
+    If so, it needs a synchronous `/_kit/boot.js` first.
     3.4 settles this.
 - 3.2 **MUST**: errors go to `POST _errors`, which appends `{page, rev, kind, message, source, at, check?}` to `<session>/errors.jsonl`.
 - 3.3 **MUST**: `ask_human`, `get_decisions` and `html-channel decisions` return `errors` for the current revision.

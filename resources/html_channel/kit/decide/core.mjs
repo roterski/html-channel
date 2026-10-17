@@ -1,6 +1,6 @@
 import * as squint_core from '../squint-core.js';
 var transport = squint_core.atom(null);
-var state = squint_core.atom(({"online": null, "queue": [], "flushing": false, "rev": null, "carried": []}));
+var state = squint_core.atom(({"online": null, "queue": [], "flushing": null, "rev": null, "carried": []}));
 var els_for = function (id) {
 return document.querySelectorAll(`${"[data-decision=\""}${CSS.escape(id)??''}${"\"]"}`);
 
@@ -24,40 +24,83 @@ return document.documentElement.classList.toggle("decide-is-offline", squint_cor
 };
 
 };
-var flush_BANG_ = async function () {
-if (squint_core.truth_(squint_core.get(squint_core.deref(state), "flushing"))) {
-return false} else {
-squint_core.swap_BANG_(state, squint_core.assoc, "flushing", true);
+var report_error_BANG_ = function (kind, message, source) {
+const temp__23255__auto___1 = (() => {
+const G__6_2 = window;
+const G__6_3 = (((G__6_2 == null)) ? (null) : (G__6_2.htmlChannel));
+if ((G__6_3 == null)) {
+return null} else {
+return G__6_3.reportError};
+
+})();
+if (squint_core.truth_(temp__23255__auto___1)) {
+const f_4 = temp__23255__auto___1;
+return f_4(kind, message, source);
+} else {
+return console.error("html-channel:", kind, message, source)};
+
+};
+var send_queue_BANG_ = async function () {
 while(true){
 const temp__23314__auto___1 = squint_core.first(squint_core.get(squint_core.deref(state), "queue"));
 if (squint_core.truth_(temp__23314__auto___1)) {
 const entry_2 = temp__23314__auto___1;
-if (squint_core.truth_((await squint_core.get(squint_core.deref(transport), "send!")(entry_2)))) {
+const map___3_5 = (await squint_core.get(squint_core.deref(transport), "send!")(entry_2));
+const map___3_6 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___3_5))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___3_5))) ? (map___3_5) : (squint_core.seq_to_map_for_destructuring(map___3_5)))) : (map___3_5));
+const outcome_7 = squint_core.get(map___3_6, "outcome");
+const reason_8 = squint_core.get(map___3_6, "reason");
+const id_9 = squint_core.get(entry_2, "id");
+const settled_BANG__10 = (function (s) {
 squint_core.swap_BANG_(state, squint_core.update, "queue", (function (_PERCENT_1) {
 return squint_core.vec(squint_core.rest(_PERCENT_1));
 
 }));
 if (squint_core.truth_(squint_core.some((function (_PERCENT_1) {
-return squint_core._EQ_(squint_core.get(_PERCENT_1, "id"), squint_core.get(entry_2, "id"));
+return squint_core._EQ_(squint_core.get(_PERCENT_1, "id"), id_9);
 
 }), squint_core.get(squint_core.deref(state), "queue")))) {
-} else {
-mark_BANG_(squint_core.get(entry_2, "id"), "saved")};
+return null} else {
+return mark_BANG_(id_9, s);
+};
+
+});
+const G__7_11 = outcome_7;
+switch (G__7_11) {case "saved":
+settled_BANG__10("saved");
 continue;
-} else {
+
+break;
+case "rejected":
+settled_BANG__10("rejected");
+report_error_BANG_("js", `${"answer "}${JSON.stringify(id_9)??''}${" rejected by the server: "}${reason_8??''}`, null);
+continue;
+
+break;
+default:
 set_online_BANG_(false)}};break;
 }
 ;
-squint_core.swap_BANG_(state, squint_core.assoc, "flushing", false);
 return squint_core.empty_QMARK_(squint_core.get(squint_core.deref(state), "queue"));
+
+};
+var flush_BANG_ = function () {
+const or_1_2 = squint_core.get(squint_core.deref(state), "flushing");
+if (squint_core.truth_(or_1_2)) {
+return or_1_2} else {
+const p_3 = send_queue_BANG_().finally((function () {
+return squint_core.swap_BANG_(state, squint_core.assoc, "flushing", null);
+
+}));
+squint_core.swap_BANG_(state, squint_core.assoc, "flushing", p_3);
+return p_3;
 };
 
 };
 var remove_clear_button_BANG_ = function () {
-const G__6_1 = document.getElementById("decide-clear-carried");
-if ((G__6_1 == null)) {
+const G__8_1 = document.getElementById("decide-clear-carried");
+if ((G__8_1 == null)) {
 return null} else {
-return G__6_1.remove()};
+return G__8_1.remove()};
 
 };
 var uncarry_BANG_ = function (id) {
@@ -215,22 +258,6 @@ return null}};
 };
 
 };
-var report_error_BANG_ = function (kind, message, source) {
-const temp__23255__auto___1 = (() => {
-const G__7_2 = window;
-const G__7_3 = (((G__7_2 == null)) ? (null) : (G__7_2.htmlChannel));
-if ((G__7_3 == null)) {
-return null} else {
-return G__7_3.reportError};
-
-})();
-if (squint_core.truth_(temp__23255__auto___1)) {
-const f_4 = temp__23255__auto___1;
-return f_4(kind, message, source);
-} else {
-return console.error("html-channel:", kind, message, source)};
-
-};
 var record_from_page_BANG_ = function (id, value) {
 for (let G__1 of squint_core.iterable(els_for(id))) {
 const el_2 = G__1;
@@ -274,4 +301,4 @@ return setInterval(check_BANG_, 3000);
 
 };
 
-export { restore_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, save_early_answers_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_ }
+export { restore_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, save_early_answers_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_, send_queue_BANG_ }

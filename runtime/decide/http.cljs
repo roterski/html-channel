@@ -14,11 +14,19 @@
       (when (.-ok r) (js-await (.json r))))
     (catch :default _ nil)))
 
-(defn ^:async post-entry [url entry]
-  ;; no Content-Type header => a "simple" CORS request, no preflight
+(defn ^:async post-entry
+  "Sends one entry. {:outcome \"saved\"}; {:outcome \"rejected\" :reason text} when
+  the server refuses the entry itself (a 4xx), so resending can't help; else
+  {:outcome \"unreachable\"}."
+  [url entry]
   (try
-    (.-ok (js-await (js/fetch url {:method "POST" :body (js/JSON.stringify entry)})))
-    (catch :default _ false)))
+    (let [r (js-await (js/fetch url {:method "POST" :body (js/JSON.stringify entry)}))
+          status (.-status r)]
+      (cond
+        (.-ok r) {:outcome "saved"}
+        (and (>= status 400) (< status 500)) {:outcome "rejected" :reason (js-await (.text r))}
+        :else {:outcome "unreachable"}))
+    (catch :default _ {:outcome "unreachable"})))
 
 (defn transport []
   (let [{:keys [base page]} (page-context)

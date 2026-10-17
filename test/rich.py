@@ -5,7 +5,7 @@ page-JS answers, check_page and channel events.
 
 Mermaid loads from jsDelivr, so this test needs network access.
 """
-import json, os, pathlib, shutil, threading, time, urllib.request
+import http.server, json, os, pathlib, re, shutil, threading, time, urllib.request
 from playwright.sync_api import sync_playwright, expect
 from support import Mcp, Sandbox, entries, fail, run, wait_for, write_page
 
@@ -76,6 +76,14 @@ DOUBLEBOOT = """<!doctype html><html><head><meta charset="utf-8">
 <script type="module" src="/_kit/decide.mjs"></script>
 </head><body><input data-decision="between"><script>window.boom()</script></body></html>"""
 
+# an early answer on a control that has an answer from the previous revision
+CARRIED = HEAD % ("", """<h1 id="v%d">v%d</h1><input data-decision="pick" id="pick">%s""")
+
+# page JS records an answer the server refuses (a non-string id)
+BADID = HEAD % ("", """<input data-decision="note" id="note">
+<button data-decision="status" data-choice="done" id="done">Done</button>
+<script>window.htmlChannel.record(123, "x")</script>""")
+
 # a dialog during load would block headless Chrome
 DIALOG = HEAD % ("<script>alert('hello'); window.ok = confirm('sure?');</script>", "<p>dialog</p>")
 
@@ -119,6 +127,8 @@ def main():
         write_page(root, s, "race", "<p>race</p>")
         write_page(root, s, "dialog", DIALOG)
         write_page(root, s, "doubleboot", DOUBLEBOOT)
+        write_page(root, s, "carried", CARRIED % (1, 1, ""))
+        write_page(root, s, "badid", BADID)
         wait_for(lambda: sb.url(root, s, "viz") is not None, 15, "server not up")
 
         with sync_playwright() as pw:
@@ -227,9 +237,62 @@ def main():
             wait_for(lambda: any(e["page"] == "doubleboot" and e["id"] == "between" and e["value"] == "kept"
                                  for e in entries(root, s)), 10, "answer before the second boot.js lost")
             boom = [e for e in mcp.call("get_decisions", page="doubleboot")["errors"] if "boom" in e["message"]]
-            if [e["count"] for e in boom] != [1]:
-                fail("double boot.js reported the error %s" % boom)
+            if len(boom) != 1:
+                fail("double boot.js errors: %s" % boom)
             print("boot ok: a second boot.js kept the early answer, the error was reported once")
+
+            # an early answer wins over the previous revision's answer on the same control
+            page.goto(base + "carried.html")
+            expect(page.locator("#decide-offline")).to_be_hidden(timeout=4500)
+            page.fill("#pick", "old"); page.click("h1")
+            expect(page.locator("#pick")).to_have_attribute("data-state", "saved")
+            # hold back the early answer's POST, so the first load would win the race;
+            # only the query-less POST matches, the load's GET _decisions?page= passes
+            def slow_post(route):
+                time.sleep(1.5)
+                route.continue_()
+            page.route(re.compile(r".*/_decisions$"), slow_post)
+            write_page(root, s, "carried", CARRIED % (2, 2, '<script>window.htmlChannel.record("pick", "new")</script>'))
+            expect(page.locator("#v2")).to_be_visible(timeout=4500)
+            page.wait_for_timeout(2500)
+            page.unroute(re.compile(r".*/_decisions$"))
+            if page.input_value("#pick") != "new" or page.get_attribute("#pick", "data-state") == "carried":
+                fail("early answer lost to the carried one: shows %r (%s)"
+                     % (page.input_value("#pick"), page.get_attribute("#pick", "data-state")))
+            if page.locator("#decide-clear-carried").count():
+                fail("clear-carried button shown for an answer given at this revision")
+            print("early ok: an early answer shows over the previous revision's, not as carried")
+
+            # an answer the server refuses is dropped and reported; later answers still save
+            page.goto(base + "badid.html")
+            expect(page.locator("#decide-offline")).to_be_hidden(timeout=4500)
+            page.fill("#note", "after"); page.click("body"); page.click("#done")
+            expect(page.locator("#done")).to_have_attribute("data-state", "saved", timeout=5000)
+            saved = {(e["id"], e["value"]) for e in entries(root, s) if e["page"] == "badid"}
+            if saved != {("note", "after"), ("status", "done")}:
+                fail("answers after a rejected one: %s" % saved)
+            if page.is_visible("#decide-offline"):
+                fail("a rejected answer showed the offline banner")
+            if not any("rejected by the server" in e["message"] for e in mcp.call("get_decisions", page="badid")["errors"]):
+                fail("rejected answer not reported: %s" % mcp.call("get_decisions", page="badid")["errors"])
+            print("rejected ok: record(123) reported, the note and Done after it saved, no offline banner")
+
+            # a page shows inside another origin's iframe, as in VS Code's Simple Browser.
+            # The parent comes from a real local server: Chromium blocks a local frame
+            # inside a page Playwright fulfills, which it treats as public.
+            framer_html = ('<iframe id="f" src="%sbadid.html"></iframe>' % base).encode()
+            class Framer(http.server.BaseHTTPRequestHandler):
+                def do_GET(self):
+                    self.send_response(200); self.send_header("Content-Type", "text/html"); self.end_headers()
+                    self.wfile.write(framer_html)
+                def log_message(self, *a): pass
+            other = http.server.HTTPServer(("127.0.0.1", PORT + 100), Framer)
+            threading.Thread(target=other.serve_forever, daemon=True).start()
+            framer = browser.new_page()
+            framer.goto("http://localhost:%d/" % (PORT + 100))
+            expect(framer.frame_locator("#f").locator("#note")).to_be_visible(timeout=5000)
+            framer.close(); other.shutdown()
+            print("frame ok: a page renders inside another origin's iframe")
 
             # a container-width chart fills its column, also inside a fold; a broken spec is reported
             page.goto(base + "vegafold.html")
@@ -348,6 +411,11 @@ def main():
                 fail("check_page errors: %s" % r["errors"])
             if (root / s / ".check/.gitignore").read_text() != "*\n":
                 fail(".check isn't git-ignored")
+            leftovers = [f.name for f in (root / s / ".check").iterdir() if f.suffix in (".ran", ".jsonl")]
+            if leftovers:
+                fail("check left its files behind: %s" % leftovers)
+            if any("_check" in l or '"check"' in l for l in (root / s / "errors.jsonl").read_text().splitlines()):
+                fail("check errors leaked into errors.jsonl")
             print("check ok: light and dark screenshots, errors %s" % kinds)
             bare = mcp.call("check_page", timeout=120, page="bare")
             if [e["kind"] for e in bare["errors"]] != ["no-reporter"]:

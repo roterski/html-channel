@@ -164,7 +164,7 @@ Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 ```json
 {"page":"cache-layer-review","rev":2,"done":true,"deeper":[],
  "decisions":{"eviction":{"value":"lru","rev":2,"at":"…"},"notes":{"value":"rename evict!","rev":1,"at":"…"}},
- "errors":[{"kind":"load","message":"failed to load <script> https://…","source":"https://…","count":1,"at":"…"}]}
+ "errors":[{"kind":"load","message":"failed to load <script> https://…","source":"https://…","at":"…"}]}
 ```
 
 In this example, `notes` has `rev` 1, which is lower than the page's `rev` 2. That means the answer was carried over and not re-confirmed.

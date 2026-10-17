@@ -44,7 +44,7 @@ Rows marked *(user)* were your call; the rest follow from the research (§2a) or
 | Convention vs transport | The squint runtime has one core and **pluggable transports**. v1 ships `http` only. | claude.ai can't reach localhost. |
 | claude.ai support | **Deferred past v1.** *(user)* The core/http split is the hook a later artifact transport plugs into. | Local stdio MCP is impossible there, and remote MCP breaks "localhost, no auth". |
 | `file://` pages | **Not supported.** *(user)* Pages are served by the server, and kit references are root-relative (`/_kit/…`). | Dropping `file://` lets the runtime learn its mount from the URL. |
-| Threat model | Hostile pages in the same browser are out of scope. *(user)* CORS stays `ACAO: *`. | Localhost, single user. |
+| Threat model | Hostile pages in the same browser are out of scope. *(user)* CORS stays `ACAO: *`. | Localhost, single user. **Reversed 2026-10-17 (`aa1da06`):** other websites are refused (no CORS headers, Host and Origin checks). Pages stay frameable, for editor browsers such as VS Code's Simple Browser; `file://` pages, the reason for `*`, were already dropped. |
 | Server lifetime | Every `html-channel mcp` and `serve` process is a **standby**. It registers its root in a user-level `roots.jsonl`, then binds `127.0.0.1:8787`, retrying every 1 s. The port owner serves every registered root. The server dies with its last client. *(user: "let it die", seamless)* | The spike (`ai/spike/takeover-registry.finding.md`) measured takeover at 515–606 ms in 4/4 runs. The port bind is the lock. |
 | Multi-project | One port with mounts `/<project-dir-name>-<sha1(abs root)[0..6]>/`. | Keeps one well-known port. |
 | Page identity | URL `/<mount>/<session>/<page>.html` maps to `<root>/<session>/<page>.html`, where `<root>` defaults to `<project>/ai/html-channel`. The page id is the file name, and **`data-page` is dropped**. *(user)* | Several agent sessions, each with several pages. |
@@ -632,7 +632,7 @@ Files live under `<root>/<session>/`, where `<root>` defaults to `<project>/ai/h
   Done: three cases in 7.2.
 - **4.3 [MUST]** Traversal (`..`, `%2e%2e`) returns 404 under `/_kit/` and under mounts.
   Done: four cases in 7.2.
-- **4.4 [MUST]** CORS headers stay as in the prototype.
+- **4.4 [MUST]** CORS headers stay as in the prototype. *Reversed 2026-10-17 (`aa1da06`): no CORS headers; see the threat model row.*
 
 ### 5. Runtime (squint)
 - **5.1 [MUST]** Split the runtime:

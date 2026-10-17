@@ -121,11 +121,10 @@
 (deftest errors-survive-hostile-input
   (let [root (temp-dir)]
     (write-page! root "s1" "p" "v1")
-    (testing "the server's clock stamps errors; a client's at, source or check of the wrong type is dropped"
-      (let [e (store/append-error! root "s1" {:page "p" :kind "js" :message "a" :at 5 :source {:x 1} :check [1]})]
+    (testing "the server's clock stamps errors; a client's at or a non-string source is dropped"
+      (let [e (store/append-error! root "s1" {:page "p" :kind "js" :message "a" :at 5 :source {:x 1}})]
         (is (string? (:at e)))
-        (is (not (contains? e :source)))
-        (is (not (contains? e :check)))))
+        (is (not (contains? e :source)))))
     (testing "lines already on disk that lack string kind, message or at are skipped"
       (spit (fs/file (store/errors-file root "s1"))
             (str "{\"page\":\"p\",\"rev\":1,\"kind\":\"js\",\"message\":\"b\",\"at\":5}\n"
@@ -157,26 +156,47 @@
     (is (true? (store/check-ran? root "s1" "p" "c1")))
     (is (false? (store/check-ran? root "s1" "p" "c2")))
     (is (false? (store/check-ran? root "s1" "q" "c1")))
-    (is (thrown? clojure.lang.ExceptionInfo (store/append-check-run! root "s1" {:page "p"})))
+    (testing "a check id that could escape .check/ is rejected"
+      (doseq [bad [nil "" "../x" "a/b" "C1"]]
+        (is (thrown? clojure.lang.ExceptionInfo (store/append-check-run! root "s1" {:page "p" :check bad}))
+            (pr-str bad)))
+      ;; for an error, no check id means a reader's page load
+      (doseq [bad ["" "../x" "a/b" "C1"]]
+        (is (thrown? clojure.lang.ExceptionInfo
+                     (store/append-error! root "s1" {:page "p" :kind "js" :message "m" :check bad}))
+            (pr-str bad))))
     (is (thrown? clojure.lang.ExceptionInfo (store/append-check-run! root "s1" {:page "../x" :check "c"})))))
 
-(deftest errors-are-stamped-and-grouped
+(deftest errors-are-stamped-and-stored-once
   (let [root (temp-dir)
-        e {:page "p" :kind "load" :message "failed to load <script> x" :source "x"}]
+        e {:page "p" :kind "load" :message "failed to load <script> x" :source "x"}
+        lines #(count (fs/read-all-lines (store/errors-file root "s1")))]
     (write-page! root "s1" "p" "v1")
     (testing "the server stamps the current revision and the caller's session"
       (is (= {:rev 1 :session "s1"} (select-keys (store/append-error! root "s1" (assoc e :rev 9 :session "evil"))
                                                  [:rev :session]))))
-    (store/append-error! root "s1" e)
-    (store/append-error! root "s1" (assoc e :check "c1"))
-    (store/append-error! root "s1" {:page "p" :kind "js" :message "boom" :check "c1"})
-    (testing "one entry per distinct error, with a count"
-      (is (= [["load" 3] ["js" 1]] (map (juxt :kind :count) (store/errors root "s1" "p" 1)))))
-    (testing "a check id narrows to that check's reports"
-      (is (= [["load" 1] ["js" 1]] (map (juxt :kind :count) (store/errors root "s1" "p" 1 "c1")))))
-    (testing "page-state carries the current revision's errors only"
+    (testing "a reader's reload adds nothing: one line per distinct error and revision"
+      (dotimes [_ 5] (store/append-error! root "s1" e))
+      (store/append-error! root "s1" {:page "p" :kind "js" :message "boom"})
+      (is (= 2 (lines)))
+      (is (= ["load" "js"] (map :kind (store/errors root "s1" "p" 1)))))
+    (testing "a check's errors stay out of errors.jsonl, readable by its id until discarded"
+      (store/append-error! root "s1" (assoc e :check "c1"))
+      (store/append-error! root "s1" {:page "p" :kind "js" :message "only in the check" :check "c1"})
+      (store/append-check-run! root "s1" {:page "p" :check "c1"})
+      (is (= 2 (lines)))
+      (is (= ["load" "js"] (map :kind (store/errors root "s1" "p" 1 "c1"))))
+      (is (= ["failed to load <script> x" "boom"] (map :message (store/errors root "s1" "p" 1))))
+      (store/discard-check! root "s1" "c1")
+      (is (= [] (store/errors root "s1" "p" 1 "c1")))
+      (is (false? (store/check-ran? root "s1" "p" "c1")))
+      (is (empty? (filter #(re-find #"c1" (str (fs/file-name %))) (fs/list-dir (store/check-dir root "s1"))))))
+    (testing "a new revision stores the same error again, and page-state shows only the current one's"
       (write-page! root "s1" "p" "v2")
-      (is (= [] (:errors (store/page-state root "s1" "p")))))
+      (is (= [] (:errors (store/page-state root "s1" "p"))))
+      (store/append-error! root "s1" e)
+      (is (= 3 (lines)))
+      (is (= ["load"] (map :kind (:errors (store/page-state root "s1" "p"))))))
     (testing "unknown kinds and missing messages are rejected"
       (is (thrown? clojure.lang.ExceptionInfo (store/append-error! root "s1" (assoc e :kind "other"))))
       (is (thrown? clojure.lang.ExceptionInfo (store/append-error! root "s1" (dissoc e :message)))))))

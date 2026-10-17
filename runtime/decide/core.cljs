@@ -13,18 +13,20 @@
   work before this module starts: /_kit/boot.js keeps them until `start!`.
 
   A transport is {:page id
-                  :send! (fn [entry]) -> Promise<bool>
+                  :send! (fn [entry]) -> Promise<{outcome \"saved\"|\"rejected\"|\"unreachable\", reason}>
                   :load  (fn [])      -> Promise<{rev done deeper decisions} | nil>
                   :rev   (fn [])      -> Promise<int | nil>}  ; nil = unreachable
 
   Element states: data-state=\"pending\" until the transport confirms, then
-  \"saved\"; \"carried\" for an answer restored from an earlier revision.")
+  \"saved\"; \"rejected\" when the server refused the answer itself (reported
+  as a page error); \"carried\" for an answer restored from an earlier revision.")
 
 (def transport (atom nil))
 
 ;; :rev      revision the page was loaded at (nil until first load)
 ;; :carried  ids whose shown value comes from an earlier revision
-(def state (atom {:online nil :queue [] :flushing false :rev nil :carried []}))
+;; :flushing the promise of the send in progress, else nil
+(def state (atom {:online nil :queue [] :flushing nil :rev nil :carried []}))
 
 (defn els-for [id]
   (js/document.querySelectorAll (str "[data-decision=\"" (js/CSS.escape id) "\"]")))
@@ -41,23 +43,45 @@
 
 ;; ---- queue -----------------------------------------------------------------
 
-(defn ^:async flush!
-  "Sends queued entries in order. Resolves true when the queue is empty."
+(defn report-error!
+  "Reports a page error through /_kit/boot.js; the console when the page lacks it."
+  [kind message source]
+  (if-let [f (some-> js/window .-htmlChannel .-reportError)]
+    (f kind message source)
+    (js/console.error "html-channel:" kind message source)))
+
+(defn ^:async send-queue!
+  "Sends queued entries in order, entries queued meanwhile included, until the
+  queue is empty or the server is unreachable. Resolves true when the queue is empty.
+  An entry the server rejects is dropped and reported: it would fail again on
+  every retry, and keep every answer behind it from being saved."
   []
-  (if (:flushing @state)
-    false
-    (do
-      (swap! state assoc :flushing true)
-      (loop []
-        (when-let [entry (first (:queue @state))]
-          (if (js-await ((:send! @transport) entry))
-            (do (swap! state update :queue #(vec (rest %)))
-                (when-not (some #(= (:id %) (:id entry)) (:queue @state))
-                  (mark! (:id entry) "saved"))
-                (recur))
-            (set-online! false))))
-      (swap! state assoc :flushing false)
-      (empty? (:queue @state)))))
+  (loop []
+    (when-let [entry (first (:queue @state))]
+      (let [{:keys [outcome reason]} (js-await ((:send! @transport) entry))
+            id (:id entry)
+            settled! (fn [s]
+                       (swap! state update :queue #(vec (rest %)))
+                       (when-not (some #(= (:id %) id) (:queue @state))
+                         (mark! id s)))]
+        (case outcome
+          "saved" (do (settled! "saved") (recur))
+          "rejected" (do (settled! "rejected")
+                         (report-error! "js" (str "answer " (js/JSON.stringify id) " rejected by the server: " reason)
+                                        nil)
+                         (recur))
+          (set-online! false)))))
+  (empty? (:queue @state)))
+
+(defn flush!
+  "Sends the queue. Resolves true when it is empty.
+  A call while a send is in progress joins it rather than returning early, so
+  whoever awaits flush! knows the server has every entry queued so far."
+  []
+  (or (:flushing @state)
+      (let [p (.finally (send-queue!) #(swap! state assoc :flushing nil))]
+        (swap! state assoc :flushing p)
+        p)))
 
 (defn remove-clear-button! []
   (some-> (js/document.getElementById "decide-clear-carried") .remove))
@@ -163,13 +187,6 @@
           (and drained (> rev loaded)) (js/location.reload))))))
 
 ;; ---- page API ------------------------------------------------------------------
-
-(defn report-error!
-  "Reports a page error through /_kit/boot.js; the console when the page lacks it."
-  [kind message source]
-  (if-let [f (some-> js/window .-htmlChannel .-reportError)]
-    (f kind message source)
-    (js/console.error "html-channel:" kind message source)))
 
 (defn record-from-page!
   "window.htmlChannel.record: shows `value` on the id's controls and saves it."

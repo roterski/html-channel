@@ -74,8 +74,8 @@
           (throw (ex-info (str "Chrome wrote no screenshot of " url
                                (if (= ::timeout r)
                                  (str " within " (/ timeout-ms 1000) " s. The page never finished loading: "
-                                      "it may loop forever, or open alert(), confirm() or prompt(), "
-                                      "which block a page that lacks /_kit/boot.js")
+                                      "it may loop forever, or open alert(), confirm() or prompt() where "
+                                      "/_kit/boot.js doesn't answer them: in an iframe, or on a page without it")
                                  (str ": " (str/join "\n" (take-last 5 (str/split-lines (str (:err r))))))))
                           {}))))
       (finally (delete-profile! profile)))))
@@ -93,8 +93,7 @@
    :message (str "/_kit/boot.js didn't report in while " url " loaded, so errors there went unseen. "
                  "Put <script src=\"/_kit/boot.js\"></script> in <head> before any other script "
                  "(see the convention's required markup).")
-   :source url
-   :count 1})
+   :source url})
 
 (defn check-page
   "{:page :rev :chrome :errors :screenshots {scheme path}} for the page's current revision.
@@ -111,13 +110,15 @@
           :hint (str "No Chrome found (set HTML_CHANNEL_CHROME). These errors come only from "
                      "readers' own page loads, and there are no screenshots.")}
          (let [id (subs (str (random-uuid)) 0 8)
-               dir (check-dir! root session)
-               shots (into (array-map)
-                           (for [[scheme flags] schemes
-                                 :let [png (str (fs/absolutize (fs/path dir (str page "@" rev "-" scheme ".png"))))]]
-                             (do (screenshot! chrome (str url "?_check=" id) png flags)
-                                 [scheme png])))]
-           {:page page :rev rev :chrome true
-            :errors (cond->> (store/errors root session page rev id)
-                      (not (store/check-ran? root session page id)) (into [(no-reporter-error url)]))
-            :screenshots shots}))))))
+               dir (check-dir! root session)]
+           (try
+             (let [shots (into (array-map)
+                               (for [[scheme flags] schemes
+                                     :let [png (str (fs/absolutize (fs/path dir (str page "@" rev "-" scheme ".png"))))]]
+                                 (do (screenshot! chrome (str url "?_check=" id) png flags)
+                                     [scheme png])))]
+               {:page page :rev rev :chrome true
+                :errors (cond->> (store/errors root session page rev id)
+                          (not (store/check-ran? root session page id)) (into [(no-reporter-error url)]))
+                :screenshots shots})
+             (finally (store/discard-check! root session id)))))))))

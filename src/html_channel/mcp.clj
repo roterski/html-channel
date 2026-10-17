@@ -147,8 +147,10 @@
   made since this page's last ask_human return, or max-wait passes.
   Post: :deeper holds only the targets requested since that last return, whatever
   the status, so calling again without revising waits for the next click.
-  Invariant: every Deeper request is returned by exactly one ask_human call;
-  the next call starts from the last decisions entry this one read."
+  Invariant, per MCP process: every Deeper request is returned by exactly one
+  ask_human call; the next call starts from the last decisions entry this one
+  read. That position lives in memory, so after a restart the requests at the
+  current revision are returned once more."
   [{:keys [max-wait-s] :as ctx} {:keys [page session]} progress!]
   (let [ch (channel ctx session)
         k [(:session ch) page]

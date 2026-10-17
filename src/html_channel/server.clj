@@ -40,6 +40,8 @@
    "svg" "image/svg+xml" "png" "image/png" "jpg" "image/jpeg"
    "md" "text/markdown; charset=utf-8" "txt" "text/plain; charset=utf-8"})
 
+;; No frame headers: editor browsers such as VS Code's Simple Browser show pages
+;; in an iframe of their own origin, and would show nothing.
 (def base-headers {"Cache-Control" "no-store"})
 
 (def ^:private local-hostnames #{"127.0.0.1" "localhost"})

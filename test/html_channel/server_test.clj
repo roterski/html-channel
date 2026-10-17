@@ -35,6 +35,10 @@
         answer "{\"page\":\"p\",\"id\":\"a\",\"value\":\"x\"}"]
     (testing "no response tells a browser that other sites may read it"
       (is (not-any? #(str/starts-with? % "Access-Control") (keys (:headers (req :get "/_health"))))))
+    (testing "pages stay frameable: editor browsers show them in an iframe"
+      (let [headers (:headers (req :get (str base "p.html")))]
+        (is (nil? (headers "X-Frame-Options")))
+        (is (nil? (headers "Content-Security-Policy")))))
     (testing "a DNS-rebinding Host is refused, for reads too"
       (is (= 403 (:status (call :get "/" {"host" "evil.example:8787"} nil))))
       (is (= 403 (:status (call :get (str base "_decisions") {"host" "evil.example"} nil)))))
