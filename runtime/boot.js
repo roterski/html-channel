@@ -14,11 +14,15 @@
 //    and then sets to null.
 //
 // Pre: the page URL is /<mount>/<session>/<page>.html.
+// Runs once per page: a second copy of this script does nothing, so it can't
+// drop early answers or report every error twice.
 (function () {
+  if (window.htmlChannel && window.htmlChannel.booted) return;
   var dir = location.pathname.slice(0, location.pathname.lastIndexOf("/") + 1);
   var page = location.pathname.slice(dir.length).replace(/\.html?$/, "");
   var check = new URLSearchParams(location.search).get("_check");
   var hc = window.htmlChannel = window.htmlChannel || {};
+  hc.booted = true;
 
   function post(route, body) {
     // no Content-Type header => a "simple" request, no preflight

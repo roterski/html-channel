@@ -27,9 +27,30 @@
     (write-page! root "s1" "p" "<p>v1</p>")
     {:root root :base (str "/" mount "/s1/")}))
 
+(deftest other-websites-are-refused
+  (let [{:keys [root base]} (setup)
+        call (fn [method uri headers body]
+               (server/handler {:request-method method :uri uri :headers headers
+                                :body (some-> body java.io.StringReader.)}))
+        answer "{\"page\":\"p\",\"id\":\"a\",\"value\":\"x\"}"]
+    (testing "no response tells a browser that other sites may read it"
+      (is (not-any? #(str/starts-with? % "Access-Control") (keys (:headers (req :get "/_health"))))))
+    (testing "a DNS-rebinding Host is refused, for reads too"
+      (is (= 403 (:status (call :get "/" {"host" "evil.example:8787"} nil))))
+      (is (= 403 (:status (call :get (str base "_decisions") {"host" "evil.example"} nil)))))
+    (testing "a POST from another site is refused and writes nothing"
+      (doseq [origin ["https://evil.example" "null" "http://127.0.0.1.evil.example:8787"]]
+        (is (= 403 (:status (call :post (str base "_decisions") {"host" "127.0.0.1:8787" "origin" origin} answer)))
+            origin))
+      (is (empty? (store/entries root "s1"))))
+    (testing "this machine's pages and local programs are served"
+      (doseq [origin ["http://127.0.0.1:8787" "http://localhost:8787"]]
+        (is (= 200 (:status (call :post (str base "_decisions") {"host" "127.0.0.1:8787" "origin" origin} answer)))))
+      (is (= 200 (:status (call :post (str base "_decisions") {"host" "localhost:8787"} answer))))
+      (is (= 200 (:status (call :get "/_health" {} nil)))))))
+
 (deftest routes
   (let [{:keys [root base]} (setup)]
-    (is (= 204 (:status (req :options "/_health"))))
     (is (= true (:ok (body-json (req :get "/_health")))))
     (let [r (req :get "/_kit/decide.mjs")]
       (is (= 200 (:status r)))

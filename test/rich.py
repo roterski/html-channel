@@ -68,6 +68,14 @@ VEGAFOLD = HEAD % ('<meta name="hc-libs" content="vega-lite">', """
 <details><summary>broken</summary><pre data-viz="vega-lite">{"mark": "nope"}</pre></details>
 """)
 
+# boot.js included twice, with an early answer between the copies
+DOUBLEBOOT = """<!doctype html><html><head><meta charset="utf-8">
+<script src="/_kit/boot.js"></script>
+<script>window.htmlChannel.record("between", "kept")</script>
+<script src="/_kit/boot.js"></script>
+<script type="module" src="/_kit/decide.mjs"></script>
+</head><body><input data-decision="between"><script>window.boom()</script></body></html>"""
+
 # a dialog during load would block headless Chrome
 DIALOG = HEAD % ("<script>alert('hello'); window.ok = confirm('sure?');</script>", "<p>dialog</p>")
 
@@ -110,6 +118,7 @@ def main():
         write_page(root, s, "vegafold", VEGAFOLD)
         write_page(root, s, "race", "<p>race</p>")
         write_page(root, s, "dialog", DIALOG)
+        write_page(root, s, "doubleboot", DOUBLEBOOT)
         wait_for(lambda: sb.url(root, s, "viz") is not None, 15, "server not up")
 
         with sync_playwright() as pw:
@@ -213,6 +222,15 @@ def main():
                 fail("early answers raised errors: %s" % mcp.call("get_decisions", page="early")["errors"])
             print("early ok: record() and a change event from an inline script were both saved")
 
+            # a second copy of boot.js keeps the early answer and reports each error once
+            page.goto(base + "doubleboot.html")
+            wait_for(lambda: any(e["page"] == "doubleboot" and e["id"] == "between" and e["value"] == "kept"
+                                 for e in entries(root, s)), 10, "answer before the second boot.js lost")
+            boom = [e for e in mcp.call("get_decisions", page="doubleboot")["errors"] if "boom" in e["message"]]
+            if [e["count"] for e in boom] != [1]:
+                fail("double boot.js reported the error %s" % boom)
+            print("boot ok: a second boot.js kept the early answer, the error was reported once")
+
             # a container-width chart fills its column, also inside a fold; a broken spec is reported
             page.goto(base + "vegafold.html")
             wait_for(lambda: any(e["kind"] == "viz" for e in mcp.call("get_decisions", page="vegafold")["errors"]),
@@ -223,6 +241,28 @@ def main():
             if width < 100:
                 fail("container-width chart drew %s px wide" % width)
             print("chart ok: a container-width chart drew %d px wide; the broken spec was reported" % width)
+
+            # another website can neither read the server nor write to it. Sent as raw
+            # HTTP: Chromium itself already blocks a public page's requests to localhost,
+            # so a browser test would pass without the server's checks.
+            def status(url, headers, body=None):
+                req = urllib.request.Request(url, headers=headers, method="POST" if body else "GET",
+                                             data=body and json.dumps(body).encode())
+                try:
+                    with urllib.request.urlopen(req, timeout=5) as r:
+                        return r.status, r.headers.get("Access-Control-Allow-Origin")
+                except urllib.error.HTTPError as e:
+                    return e.code, None
+            index = base.split("/", 3)[0] + "//" + base.split("/", 3)[2] + "/"
+            got = [status(index, {"Host": "evil.example"}),
+                   status(base + "_decisions", {"Origin": "https://evil.example"},
+                          {"page": "deeper", "id": "evil", "value": "x"}),
+                   status(index, {})]
+            if got != [(403, None), (403, None), (200, None)]:
+                fail("foreign requests: %s" % got)
+            if any(e["id"] == "evil" for e in entries(root, s)):
+                fail("another site wrote an answer")
+            print("origin ok: a rebinding Host and a foreign Origin get 403; no CORS header on local reads")
 
             page.goto(base + "deeper.html")
             expect(page.locator("#decide-offline")).to_be_hidden(timeout=4500)

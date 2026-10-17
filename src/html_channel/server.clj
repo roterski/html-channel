@@ -13,7 +13,11 @@
     POST /<mount>/<session>/_check       boot.js ran during a headless check
 
   Ownership: whichever process binds 127.0.0.1:<port> serves; every other
-  html-channel process retries the bind every second (`run-standby!`)."
+  html-channel process retries the bind every second (`run-standby!`).
+
+  Other websites get nothing: responses carry no CORS headers, so a browser
+  won't let another site read them, and `foreign-request?` refuses the requests
+  a browser can still send on another site's behalf (see there)."
   (:require [babashka.fs :as fs]
             [cheshire.core :as json]
             [clojure.java.io :as io]
@@ -36,12 +40,29 @@
    "svg" "image/svg+xml" "png" "image/png" "jpg" "image/jpeg"
    "md" "text/markdown; charset=utf-8" "txt" "text/plain; charset=utf-8"})
 
-(def base-headers
-  {"Access-Control-Allow-Origin" "*"
-   "Access-Control-Allow-Methods" "GET, POST, OPTIONS"
-   "Access-Control-Allow-Headers" "Content-Type"
-   "Access-Control-Allow-Private-Network" "true"
-   "Cache-Control" "no-store"})
+(def base-headers {"Cache-Control" "no-store"})
+
+(def ^:private local-hostnames #{"127.0.0.1" "localhost"})
+
+(defn- local-authority?
+  "True for \"127.0.0.1:8787\" or \"localhost:8787\" (any port, or none)."
+  [authority]
+  (contains? local-hostnames (str/replace (str authority) #":\d+$" "")))
+
+(defn foreign-request?
+  "True for a request a browser sent on behalf of another website:
+  - a Host that isn't this machine: a DNS-rebinding site, whose own name
+    resolves to 127.0.0.1 so the browser treats it as the same origin;
+  - a POST whose Origin isn't a page on this machine: a \"simple\" cross-site
+    POST reaches us without a preflight, even though its response is unreadable.
+  Local programs (curl, the CLI, tests) send no Origin and the real Host."
+  [{:keys [headers request-method]}]
+  (let [host (get headers "host")
+        origin (get headers "origin")]
+    (boolean
+     (or (and host (not (local-authority? host)))
+         (and (= :post request-method) origin
+              (not (some->> origin (re-matches #"http://([^/]+)") second local-authority?)))))))
 
 (defn- respond
   ([status] (respond status nil nil))
@@ -121,7 +142,7 @@
   (try
     (let [uri (java.net.URLDecoder/decode uri "UTF-8")]
       (cond
-        (= request-method :options) (respond 204)
+        (foreign-request? req) (respond 403 "text/plain" "html-channel answers only pages on this machine")
         (= uri "/_health") (json-resp {:ok true
                                        :owner_pid (.pid (java.lang.ProcessHandle/current))
                                        :mounts (sort (keys (registry/roots)))})

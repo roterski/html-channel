@@ -9,6 +9,7 @@ The agent reads your answers back, either blocking on an MCP tool or through the
 - Pages may use JavaScript to render, and the kit renders Mermaid and Vega-Lite blocks itself. Answers go only through the runtime's controls. The markup rules are in [CONVENTION.md](CONVENTION.md).
 - Before showing a page, the agent can render it in headless Chrome (`check_page`) to catch errors and see light and dark screenshots.
 - It runs on localhost only (`127.0.0.1:8787`), for a single user, with no auth.
+  Other websites open in your browser can't read it or write to it.
 - Answers are appended to `ai/html-channel/<session>/decisions.jsonl`, which you can commit.
 - Rewriting a page creates a new revision. Open tabs reload, and earlier answers carry over.
 
