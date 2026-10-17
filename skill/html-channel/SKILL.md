@@ -16,7 +16,10 @@ Pick the first branch that applies.
 1. Call `channel_setup`. It returns `dir`, `url_base`, `session` and the convention text.
 2. Write `<dir>/<page>.html`, where `<page>` matches `[a-z0-9-]+`.
 3. Call `check_page {page}`. Fix every error in `errors` and read the dark screenshot; check again after each fix.
-4. Give the user `<url_base><page>.html`.
+4. Show the user the full URL, `<url_base><page>.html`, in a text message before you call `ask_human`.
+   `ask_human` blocks, and the user can't answer a page they can't find.
+   Keep that message short and put the URL on its own line, so a condensed view of the message still shows it.
+   For a revision of a page the user already has open, it's enough to say the page was updated.
 5. Decision page: call `ask_human {page}`.
    - If it returns `status: "waiting"`, call it again.
    - If it returns `status: "deeper"`, rewrite the page with the targets in `deeper` expanded, then call it again.

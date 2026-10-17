@@ -124,6 +124,8 @@ Pick the form that matches the content's shape. These are what the kit offers; a
 ```
 
 The agent then waits for that click with `ask_human` (MCP).
+Before calling `ask_human`, show the user the page's full URL in a short text message, with the URL on its own line.
+`ask_human` blocks, and the user can't answer a page they can't find.
 Without MCP, the user says "done" in chat and the agent reads the answers with `get_decisions` or `html-channel decisions <session>/<page>`.
 
 A decision page may offer **Deeper** buttons, `<button data-deeper="TARGET">`, where the reader may want more than the page shows.
