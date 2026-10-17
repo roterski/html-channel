@@ -11,8 +11,10 @@
                     [clojure.string :as str])
          :task (let [kit "resources/html_channel/kit"]
                  (fs/delete-tree "build")
+                 ;; sorted: squint's gensym counter runs across files, so compile order shows in the output,
+                 ;; and glob order differs by filesystem (CI diffs the committed build on macOS and Linux)
                  (apply shell "npx squint compile --paths runtime --output-dir build"
-                        (map str (fs/glob "runtime" "**.cljs")))
+                        (sort (map str (fs/glob "runtime" "**.cljs"))))
                  (fs/delete-tree kit)
                  ;; make modules self-contained: point each at the local copy of squint core
                  (doseq [f (fs/glob "build" "**.mjs")
