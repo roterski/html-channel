@@ -3,7 +3,7 @@
   (:require [viz.load :as load]
             [viz.versions :as versions]))
 
-(defn ^:async render! [blocks report!]
+(defn ^:async render! [blocks fail!]
   (js-await (load/scripts! versions/mermaid))
   (let [m js/window.mermaid]
     ;; suppressErrorRendering: a failed diagram throws instead of drawing a "Syntax error" graphic
@@ -16,4 +16,4 @@
           (set! (.-innerHTML d) svg)
           (load/rendered! pre))
         (catch :default e
-          (load/failed! pre report! "mermaid" i (.trim (str (or (.-message e) e)))))))))
+          (fail! pre i (.trim (str (or (.-message e) e)))))))))

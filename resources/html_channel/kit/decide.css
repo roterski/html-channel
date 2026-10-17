@@ -70,11 +70,13 @@
 
 /* ---- decision controls --------------------------------------------------- */
 
-button[data-decision], button[data-deeper] {
+/* The base look has zero specificity, like the element styles; the state
+   markers below (chosen, pending, saved, carried) outrank page styles. */
+:where(button[data-decision], button[data-deeper]) {
   font: inherit; padding: .4rem .9rem; border-radius: 6px; cursor: pointer;
   border: 1px solid var(--hc-line); background: var(--hc-bg); color: var(--hc-fg);
 }
-button[data-decision]:hover, button[data-deeper]:hover { border-color: var(--hc-muted); }
+:where(button[data-decision]:hover, button[data-deeper]:hover) { border-color: var(--hc-muted); }
 button[data-decision].chosen, button[data-deeper].chosen {
   background: var(--hc-accent); border-color: var(--hc-accent); color: var(--hc-on-accent);
 }

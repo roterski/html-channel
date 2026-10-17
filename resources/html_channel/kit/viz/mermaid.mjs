@@ -3,7 +3,7 @@ import * as load from './load.mjs';
 import * as viz_DOT_load from './load.mjs';
 import * as versions from './versions.mjs';
 import * as viz_DOT_versions from './versions.mjs';
-var render_BANG_ = async function (blocks, report_BANG_) {
+var render_BANG_ = async function (blocks, fail_BANG_) {
 (await load.scripts_BANG_(versions.mermaid));
 const m_1 = window.mermaid;
 m_1.initialize(({"startOnLoad": false, "securityLevel": "strict", "suppressErrorRendering": true, "theme": ((squint_core.truth_(load.dark_QMARK_())) ? ("dark") : ("default"))}));
@@ -19,7 +19,7 @@ const d_14 = load.container_BANG_(pre_8);
 d_14.innerHTML = svg_13;
 load.rendered_BANG_(pre_8)}
 catch(e_15){
-load.failed_BANG_(pre_8, report_BANG_, "mermaid", i_7, `${(await (async () => {
+fail_BANG_(pre_8, i_7, `${(await (async () => {
 const or_16_17 = e_15.message;
 if (squint_core.truth_(or_16_17)) {
 return or_16_17} else {

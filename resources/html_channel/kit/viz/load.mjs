@@ -46,14 +46,5 @@ var rendered_BANG_ = function (pre) {
 return pre.hidden = true;
 
 };
-var failed_BANG_ = function (pre, report_BANG_, lib, i, message) {
-const n_1 = document.createElement("div");
-const text_2 = `${lib??''}${" block "}${i??''}${": "}${message??''}`;
-n_1.className = "hc-viz-error";
-n_1.textContent = text_2;
-pre.after(n_1);
-return report_BANG_("viz", text_2, `${lib??''}${"#"}${i??''}`);
 
-};
-
-export { loaded, script_BANG_, scripts_BANG_, dark_QMARK_, container_BANG_, rendered_BANG_, failed_BANG_ }
+export { loaded, script_BANG_, scripts_BANG_, dark_QMARK_, container_BANG_, rendered_BANG_ }

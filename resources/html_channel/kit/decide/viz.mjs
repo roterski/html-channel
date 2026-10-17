@@ -15,6 +15,19 @@ var adapter_url = function (lib) {
 return (new URL(`${"../viz/"}${lib.replaceAll("-", "_")??''}${".mjs"}`, import.meta.url)).href;
 
 };
+var notice_BANG_ = function (pre, text) {
+const n_1 = document.createElement("div");
+n_1.className = "hc-viz-error";
+n_1.textContent = text;
+return pre.after(n_1);
+
+};
+var block_failed_BANG_ = function (report_BANG_, lib, pre, i, message) {
+const text_1 = `${lib??''}${" block "}${i??''}${": "}${message??''}`;
+notice_BANG_(pre, text_1);
+return report_BANG_("viz", text_1, `${lib??''}${"#"}${i??''}`);
+
+};
 var start_BANG_ = async function (report_BANG_) {
 const declared_1 = (await (async () => {
 const or_2_3 = declared_libs();
@@ -41,13 +54,21 @@ const bs_15 = by_lib_5[lib_14];
 if (squint_core.truth_(squint_core.seq(bs_15))) {
 try{
 const adapter_16 = (await import(adapter_url(lib_14)));
-(await adapter_16.render_BANG_(bs_15, report_BANG_))}
+(await adapter_16.render_BANG_(bs_15, (function (pre, i, message) {
+return block_failed_BANG_(report_BANG_, lib_14, pre, i, message);
+
+})))}
 catch(e_17){
-report_BANG_("load", `${"adapter for \""}${lib_14??''}${"\" failed: "}${e_17.message??''}`, adapter_url(lib_14))}
+const why_18 = `${lib_14??''}${" didn't load, so its blocks show as source: "}${e_17.message??''}`;
+for (let G__19 of squint_core.iterable(bs_15)) {
+const pre_20 = G__19;
+notice_BANG_(pre_20, why_18)
+};
+report_BANG_("viz", `${squint_core.count(bs_15)??''}${" "}${why_18}`, lib_14)}
 }
 }
 return null;
 
 };
 
-export { declared_libs, adapter_url, start_BANG_ }
+export { declared_libs, adapter_url, notice_BANG_, block_failed_BANG_, start_BANG_ }

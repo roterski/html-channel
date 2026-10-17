@@ -239,6 +239,23 @@ show_value_BANG_(el_2, value)
 return record_BANG_(id, value);
 
 };
+var save_early_answers_BANG_ = function () {
+const temp__23314__auto___1 = window.htmlChannel.early;
+if (squint_core.truth_(temp__23314__auto___1)) {
+const early_2 = temp__23314__auto___1;
+window.htmlChannel.early = null;
+for (let G__3 of squint_core.iterable(early_2)) {
+const a_4 = G__3;
+const temp__23255__auto___5 = a_4.el;
+if (squint_core.truth_(temp__23255__auto___5)) {
+const el_6 = temp__23255__auto___5;
+record_BANG_(el_6.dataset.decision, el_value(el_6))} else {
+record_from_page_BANG_(a_4.id, a_4.value)}
+}
+return null;
+};
+
+};
 var start_BANG_ = function (t) {
 squint_core.reset_BANG_(transport, t);
 window.htmlChannel = (() => {
@@ -249,6 +266,7 @@ return ({})};
 
 })();
 window.htmlChannel.record = record_from_page_BANG_;
+save_early_answers_BANG_();
 document.addEventListener("click", on_click);
 document.addEventListener("change", on_change);
 check_BANG_();
@@ -256,4 +274,4 @@ return setInterval(check_BANG_, 3000);
 
 };
 
-export { restore_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_ }
+export { restore_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, save_early_answers_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_ }

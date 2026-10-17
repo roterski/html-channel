@@ -1,11 +1,12 @@
 (ns viz.load
-  "Shared by the adapters: loading pinned builds and placing a block's result.")
+  "Shared by the adapters: loading pinned builds and placing a rendered block.
+  Failures go through the fail! function the runtime passes to render!.")
 
 (def loaded (atom {}))
 
 (defn script!
   "Appends a classic <script src=url> once per url. Resolves when it has run;
-  rejects when it fails to load (which /_kit/errors.js also reports)."
+  rejects when it fails to load (which /_kit/boot.js also reports)."
   [url]
   (or (get @loaded url)
       (let [p (js/Promise.
@@ -37,14 +38,3 @@
   "The block rendered into `container`: its source stays in the DOM, hidden."
   [pre]
   (set! (.-hidden pre) true))
-
-(defn failed!
-  "Keeps the block's source visible, adds an inline notice after it, and reports
-  kind \"viz\" with the block's index among the page's blocks of `lib`."
-  [pre report! lib i message]
-  (let [n (js/document.createElement "div")
-        text (str lib " block " i ": " message)]
-    (set! (.-className n) "hc-viz-error")
-    (set! (.-textContent n) text)
-    (.after pre n)
-    (report! "viz" text (str lib "#" i))))

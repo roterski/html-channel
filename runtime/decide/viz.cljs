@@ -3,8 +3,11 @@
   <meta name=\"hc-libs\" content=\"<lib> …\">.
 
   An adapter is /_kit/viz/<lib>.mjs (dashes become underscores) exporting
-  render_BANG_ [blocks report!] -> Promise. It renders each block in place and
-  reports a block's failure itself, as kind \"viz\".
+  render_BANG_ [blocks fail!] -> Promise. It renders each block it can in
+  place, and calls (fail! pre index message) for each one it can't.
+  This namespace owns what a reader and the agent see on failure: the block
+  keeps its source, a notice follows it, and the error is reported as kind \"viz\".
+  That holds for one bad block and for an adapter or library that didn't load.
   Blocks of an undeclared library are reported as kind \"undeclared\" and left alone.")
 
 (defn declared-libs []
@@ -13,6 +16,21 @@
 
 (defn adapter-url [lib]
   (.-href (js/URL. (str "../viz/" (.replaceAll lib "-" "_") ".mjs") js/import.meta.url)))
+
+(defn notice!
+  "Shows `text` right after the block, which stays visible as source."
+  [pre text]
+  (let [n (js/document.createElement "div")]
+    (set! (.-className n) "hc-viz-error")
+    (set! (.-textContent n) text)
+    (.after pre n)))
+
+(defn block-failed!
+  "One block of `lib` didn't render: a notice, and a viz error with its index."
+  [report! lib pre i message]
+  (let [text (str lib " block " i ": " message)]
+    (notice! pre text)
+    (report! "viz" text (str lib "#" i))))
 
 (defn ^:async start!
   "Pre: the DOM is parsed. `report!` is (fn [kind message source])."
@@ -31,6 +49,8 @@
             :when (seq bs)]
       (try
         (let [adapter (js-await (js/import (adapter-url lib)))]
-          (js-await (.render_BANG_ adapter bs report!)))
+          (js-await (.render_BANG_ adapter bs (fn [pre i message] (block-failed! report! lib pre i message)))))
         (catch :default e
-          (report! "load" (str "adapter for \"" lib "\" failed: " (.-message e)) (adapter-url lib)))))))
+          (let [why (str lib " didn't load, so its blocks show as source: " (.-message e))]
+            (doseq [pre bs] (notice! pre why))
+            (report! "viz" (str (count bs) " " why) lib)))))))

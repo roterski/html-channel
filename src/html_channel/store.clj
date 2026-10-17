@@ -5,6 +5,7 @@
     <root>/<session>/<page>@<n>.html    snapshot of revision n
     <root>/<session>/decisions.jsonl    append-only {page session rev id value at}
     <root>/<session>/errors.jsonl       append-only {page session rev kind message source? check? at}
+    <root>/<session>/.check/            screenshots and runs.jsonl {page check at}, git-ignored
 
   Invariants:
   - decisions.jsonl and errors.jsonl are only ever appended to;
@@ -53,6 +54,12 @@
 
 (defn errors-file [root session]
   (fs/path (session-dir root session) "errors.jsonl"))
+
+(defn check-dir [root session]
+  (fs/path (session-dir root session) ".check"))
+
+(defn check-runs-file [root session]
+  (fs/path (check-dir root session) "runs.jsonl"))
 
 (defn- sha256 [f]
   (.digest (MessageDigest/getInstance "SHA-256") (Files/readAllBytes f)))
@@ -110,6 +117,22 @@
   never carry over: the Done button and requests to go deeper."
   #{"status" "deeper"})
 
+(defn- deeper-in
+  "Targets requested on `page` at revision `rev` among entries `es`, once each, in order."
+  [es page rev]
+  (->> es
+       (filter #(and (= page (:page %)) (= "deeper" (:id %)) (= rev (:rev %)) (string? (:value %))))
+       (map :value) distinct vec))
+
+(defn deeper-requests
+  "{:targets :upto}: the targets requested on `page` at revision `rev` by
+  entries [from, upto) of the session's decisions file, where upto is how many
+  entries this read saw. Passing upto back as the next `from` misses nothing."
+  [root session page rev from]
+  (let [es (vec (entries root session))]
+    {:targets (deeper-in (subvec es (min from (count es))) page rev)
+     :upto (count es)}))
+
 (defn effective
   "{:rev :done :deeper :decisions {id {:value :rev :at}}} for one page.
   Each id takes its latest entry across all revisions (answers carry over),
@@ -125,9 +148,7 @@
                        {} es)]
     {:rev rev
      :done (= "done" (get-in latest ["status" :value]))
-     :deeper (->> es
-                  (filter #(and (= "deeper" (:id %)) (= rev (:rev %)) (string? (:value %))))
-                  (map :value) distinct vec)
+     :deeper (deeper-in es page rev)
      :decisions (dissoc latest "deeper")}))
 
 (def ^:private write-lock (Object.))
@@ -153,11 +174,12 @@
         (spit (fs/file (decisions-file root session)) (str (json/generate-string stored) "\n") :append true))
       stored)))
 
-(def error-kinds #{"load" "js" "viz" "undeclared"})
+(def error-kinds #{"load" "js" "viz" "undeclared" "dialog"})
 
 (defn append-error!
-  "Appends one page error, stamped with the page's current revision, and returns it as stored.
-  `session` comes from the caller (the URL), never from the error."
+  "Appends one page error, stamped with the page's current revision and the
+  server's clock, and returns it as stored. `session` comes from the caller
+  (the URL), never from the error; a non-string `source` or `check` is dropped."
   [root session error]
   (let [{:keys [page kind message]} error]
     (check-name! "page" page)
@@ -165,9 +187,10 @@
       (throw (ex-info (str "error kind must be one of " (sort error-kinds) ", got " (pr-str kind)) {:status 400})))
     (when-not (string? message)
       (throw (ex-info "error needs a string message" {:status 400})))
-    (let [stored (-> (select-keys error [:page :kind :message :source :check :at])
-                     (assoc :session session :rev (current-rev! root session page))
-                     (update :at #(or % (str (java.time.Instant/now)))))]
+    (let [stored (-> (select-keys error [:page :kind :message])
+                     (merge (into {} (filter (comp string? val)) (select-keys error [:source :check])))
+                     (assoc :session session :rev (current-rev! root session page)
+                            :at (str (java.time.Instant/now))))]
       (locking write-lock
         (fs/create-dirs (session-dir root session))
         (spit (fs/file (errors-file root session)) (str (json/generate-string stored) "\n") :append true))
@@ -175,16 +198,37 @@
 
 (defn errors
   "The page's errors at revision `rev`, one per distinct {kind message source},
-  with how often it was reported and when first. With `check`, only that check's."
+  with how often it was reported and when first. With `check`, only that check's.
+  Lines without string kind, message and at are skipped, so no single line can
+  make this throw."
   ([root session page rev] (errors root session page rev nil))
   ([root session page rev check]
    (->> (read-jsonl (errors-file root session))
-        (filter #(and (= page (:page %)) (= rev (:rev %)) (or (nil? check) (= check (:check %)))))
+        (filter #(and (map? %) (= page (:page %)) (= rev (:rev %)) (or (nil? check) (= check (:check %)))
+                      (string? (:kind %)) (string? (:message %)) (string? (:at %))))
         (group-by (juxt :kind :message :source))
         vals
         (map (fn [[e :as es]] (-> (select-keys e [:kind :message :source :at]) (assoc :count (count es)))))
         (sort-by :at)
         vec)))
+
+(defn append-check-run!
+  "Records that /_kit/boot.js ran on `page` during check `check`."
+  [root session {:keys [page check]}]
+  (check-name! "page" page)
+  (when-not (and (string? check) (seq check))
+    (throw (ex-info "check run needs a check id" {:status 400})))
+  (let [stored {:page page :check check :at (str (java.time.Instant/now))}]
+    (locking write-lock
+      (fs/create-dirs (check-dir root session))
+      (spit (fs/file (check-runs-file root session)) (str (json/generate-string stored) "\n") :append true))
+    stored))
+
+(defn check-ran?
+  "True when /_kit/boot.js reported in on `page` during check `check`."
+  [root session page check]
+  (boolean (some #(and (= page (:page %)) (= check (:check %)))
+                 (read-jsonl (check-runs-file root session)))))
 
 (defn page-state
   "What the agent reads about a page: `effective` plus :errors at the current revision."

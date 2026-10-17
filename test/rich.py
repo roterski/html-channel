@@ -5,7 +5,7 @@ page-JS answers, check_page and channel events.
 
 Mermaid loads from jsDelivr, so this test needs network access.
 """
-import json, os, pathlib, shutil, threading, time
+import json, os, pathlib, shutil, threading, time, urllib.request
 from playwright.sync_api import sync_playwright, expect
 from support import Mcp, Sandbox, entries, fail, run, wait_for, write_page
 
@@ -13,7 +13,7 @@ PORT = 18785
 
 HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <link rel="stylesheet" href="/_kit/decide.css">
-<script src="/_kit/errors.js"></script>
+<script src="/_kit/boot.js"></script>
 <script type="module" src="/_kit/decide.mjs"></script>
 %s
 </head><body>
@@ -38,6 +38,42 @@ TIERS = HEAD % ('<meta name="hc-tiers" content="Overview,Shape,Detail">', """
 <section data-tier="1" id="t1">shape</section>
 <section data-tier="2" id="t2"><p id="deep">detail</p></section>
 """)
+
+STYLED = HEAD % ("<style>button { background-color: rgb(1, 2, 3); }</style>", """
+<button data-decision="pick" data-choice="a">A</button>
+<button data-decision="pick" data-choice="b">B</button>
+""")
+
+NOADAPTER = HEAD % ('<meta name="hc-libs" content="nope">', """
+<pre data-viz="nope">one</pre>
+<pre data-viz="nope">two</pre>
+""")
+
+# page JS answers before the deferred runtime starts
+EARLY = HEAD % ("", """
+<input data-decision="viarecord" id="viarecord"><input data-decision="viaevent" id="viaevent">
+<script>
+  window.htmlChannel.record("viarecord", "early");
+  var e = document.getElementById("viaevent");
+  e.value = "early"; e.dispatchEvent(new Event("change", {bubbles: true}));
+</script>
+""")
+
+# a container-width chart (inside a fold), and a broken spec in another fold
+VEGAFOLD = HEAD % ('<meta name="hc-libs" content="vega-lite">', """
+<details id="fold"><summary>chart</summary>
+<pre data-viz="vega-lite">{"width":"container","data":{"values":[{"a":"x","b":3},{"a":"y","b":5}]},
+ "mark":"bar","encoding":{"x":{"field":"a","type":"nominal"},"y":{"field":"b","type":"quantitative"}}}</pre>
+</details>
+<details><summary>broken</summary><pre data-viz="vega-lite">{"mark": "nope"}</pre></details>
+""")
+
+# a dialog during load would block headless Chrome
+DIALOG = HEAD % ("<script>alert('hello'); window.ok = confirm('sure?');</script>", "<p>dialog</p>")
+
+# required markup missing: no boot.js, so nothing reports the failed load
+BARE = """<!doctype html><html><head><meta charset="utf-8">
+<script src="%s"></script></head><body>bare</body></html>""" % BROKEN
 
 DEEPER = HEAD % ("", """
 <h1 id="v%d">v%d</h1>
@@ -67,7 +103,14 @@ def main():
         write_page(root, s, "viz", VIZ)
         write_page(root, s, "tiers", TIERS)
         write_page(root, s, "deeper", DEEPER % (1, 1))
-        wait_for(lambda: sb.url(root, s, "viz") is not None and True, 15, "server not up")
+        write_page(root, s, "bare", BARE)
+        write_page(root, s, "styled", STYLED)
+        write_page(root, s, "noadapter", NOADAPTER)
+        write_page(root, s, "early", EARLY)
+        write_page(root, s, "vegafold", VEGAFOLD)
+        write_page(root, s, "race", "<p>race</p>")
+        write_page(root, s, "dialog", DIALOG)
+        wait_for(lambda: sb.url(root, s, "viz") is not None, 15, "server not up")
 
         with sync_playwright() as pw:
             browser = pw.chromium.launch()
@@ -110,25 +153,79 @@ def main():
             expect(page.locator("#decide-tiers button:has-text('Detail')")).to_have_attribute("aria-pressed", "true")
             print("tiers ok: level 0 first, switch shows and hides, a fragment match raises the level to 2")
 
-            # 7.2: Deeper ends ask_human; a rewrite needs a new answer
+            # 7.2: Deeper ends ask_human with only the targets new since its last return
             page.goto(base + "deeper.html")
             expect(page.locator("#decide-offline")).to_be_hidden(timeout=4500)
+
+            def ask_while(click):
+                result = {}
+                t = threading.Thread(target=lambda: result.update(mcp.call("ask_human", timeout=20, page="deeper")))
+                t.start()
+                time.sleep(0.5)
+                click and page.click(click)
+                t.join()
+                return result
+
+            first = ask_while("button[data-deeper=cost]")
+            if first.get("status") != "deeper" or first.get("deeper") != ["cost"]:
+                fail("ask_human after Deeper on cost: %s" % first)
+            idle = ask_while(None)
+            if idle.get("status") != "waiting" or idle.get("deeper") != []:
+                fail("ask_human again without a rewrite should wait with no new targets: %s" % idle)
+            second = ask_while("button[data-deeper=risk]")
+            if second.get("status") != "deeper" or second.get("deeper") != ["risk"]:
+                fail("second Deeper should report only risk: %s" % second)
             result = {}
-            t = threading.Thread(target=lambda: result.update(mcp.call("ask_human", timeout=20, page="deeper")))
-            t.start()
-            time.sleep(0.5)
-            page.click("button[data-deeper=cost]")
-            page.click("button[data-deeper=risk]")
-            t.join()
-            if result.get("status") != "deeper" or result.get("deeper") not in (["cost"], ["cost", "risk"]):
-                fail("ask_human after Deeper: %s" % result)
             write_page(root, s, "deeper", DEEPER % (2, 2))
             expect(page.locator("#v2")).to_be_visible(timeout=4500)
             expect(page.locator("button[data-deeper=cost]")).not_to_have_class("chosen")
             again = mcp.call("ask_human", timeout=20, page="deeper")
             if again["status"] != "waiting" or again["deeper"]:
                 fail("Deeper carried over to rev 2: %s" % again)
-            print("deeper ok: ask_human returned %s at rev 1; rev 2 waits again" % result["deeper"])
+            print("deeper ok: cost, then a wait, then only risk at rev 1; rev 2 waits again")
+
+            # 6: page styles restyle buttons; the chosen marker still shows
+            page.goto(base + "styled.html")
+            expect(page.locator("#decide-offline")).to_be_hidden(timeout=4500)
+            bg = lambda sel: page.eval_on_selector(sel, "e => getComputedStyle(e).backgroundColor")
+            if bg("button[data-choice=a]") != "rgb(1, 2, 3)":
+                fail("page style lost to the kit: %s" % bg("button[data-choice=a]"))
+            page.click("button[data-choice=a]")
+            expect(page.locator("button[data-choice=a]")).to_have_class("chosen")
+            if bg("button[data-choice=a]") == "rgb(1, 2, 3)":
+                fail("chosen marker hidden by the page style")
+            print("styles ok: page button style wins, chosen marker still shows")
+
+            # 9: an adapter that doesn't load marks its blocks and reports once
+            page.goto(base + "noadapter.html")
+            expect(page.locator(".hc-viz-error")).to_have_count(2, timeout=10000)
+            wait_for(lambda: mcp.call("get_decisions", page="noadapter")["errors"], 10, "adapter failure not reported")
+            errs = mcp.call("get_decisions", page="noadapter")["errors"]
+            if [(e["kind"], e["source"]) for e in errs] != [("viz", "nope")]:
+                fail("adapter failure reports: %s" % errs)
+            print("adapter ok: both blocks show a notice, one viz error")
+
+            # page JS answers before the runtime starts are saved, not lost
+            page.goto(base + "early.html")
+            wait_for(lambda: {(e["id"], e["value"]) for e in entries(root, s) if e["page"] == "early"}
+                     >= {("viarecord", "early"), ("viaevent", "early")}, 10, "early answers not saved")
+            if mcp.call("get_decisions", page="early")["errors"]:
+                fail("early answers raised errors: %s" % mcp.call("get_decisions", page="early")["errors"])
+            print("early ok: record() and a change event from an inline script were both saved")
+
+            # a container-width chart fills its column, also inside a fold; a broken spec is reported
+            page.goto(base + "vegafold.html")
+            wait_for(lambda: any(e["kind"] == "viz" for e in mcp.call("get_decisions", page="vegafold")["errors"]),
+                     20, "broken spec not reported")
+            page.click("#fold summary")
+            expect(page.locator("#fold .hc-viz svg")).to_have_count(1, timeout=10000)
+            width = page.eval_on_selector("#fold .hc-viz svg", "e => e.getBoundingClientRect().width")
+            if width < 100:
+                fail("container-width chart drew %s px wide" % width)
+            print("chart ok: a container-width chart drew %d px wide; the broken spec was reported" % width)
+
+            page.goto(base + "deeper.html")
+            expect(page.locator("#decide-offline")).to_be_hidden(timeout=4500)
 
             # 1.3: page JS records through window.htmlChannel.record
             page.evaluate("window.htmlChannel.record('picked', 'from-js')")
@@ -179,6 +276,24 @@ def main():
             print("channel ok: no event for a Deeper that ask_human answered")
             browser.close()
 
+        # Deeper clicks racing ask_human returns: each target returned exactly once
+        def click(i):
+            req = urllib.request.Request(base + "_decisions", method="POST",
+                                         data=json.dumps({"page": "race", "id": "deeper", "value": "t%d" % i}).encode())
+            urllib.request.urlopen(req, timeout=5).close()
+        clicker = threading.Thread(target=lambda: [(click(i), time.sleep(0.003)) for i in range(200)])
+        clicker.start()
+        got = []
+        while True:
+            r = mcp.call("ask_human", timeout=10, page="race")
+            got += r["deeper"]
+            if not clicker.is_alive() and r["status"] == "waiting":
+                break
+        if sorted(got) != sorted("t%d" % i for i in range(200)):
+            fail("race: %d returned, %d distinct, missing %s" % (len(got), len(set(got)),
+                 sorted(set("t%d" % i for i in range(200)) - set(got))[:10]))
+        print("race ok: 200 Deeper clicks during ask_human loops, each returned exactly once")
+
         # 5: check_page renders light and dark and returns this check's errors
         if os.environ.get("HTML_CHANNEL_CHROME") or shutil.which("google-chrome") or shutil.which("chromium") \
                 or pathlib.Path("/Applications/Google Chrome.app").exists():
@@ -194,6 +309,19 @@ def main():
             if (root / s / ".check/.gitignore").read_text() != "*\n":
                 fail(".check isn't git-ignored")
             print("check ok: light and dark screenshots, errors %s" % kinds)
+            bare = mcp.call("check_page", timeout=120, page="bare")
+            if [e["kind"] for e in bare["errors"]] != ["no-reporter"]:
+                fail("check_page on a page without boot.js: %s" % bare["errors"])
+            print("check ok: a page without boot.js gets no-reporter, not a clean result")
+            t0 = time.time()
+            dlg = mcp.call("check_page", timeout=120, page="dialog")
+            msgs = sorted(e["message"] for e in dlg["errors"] if e["kind"] == "dialog")
+            if len(msgs) != 2 or not msgs[0].startswith("alert() would block the page: hello") \
+                    or not msgs[1].startswith("confirm() would block the page: sure?"):
+                fail("check_page on a page with dialogs: %s" % dlg["errors"])
+            if time.time() - t0 > 30:
+                fail("check_page on a page with dialogs took %.0f s" % (time.time() - t0))
+            print("check ok: alert() and confirm() reported as dialog in %.1f s" % (time.time() - t0))
         else:
             print("check skipped: no Chrome")
     finally:

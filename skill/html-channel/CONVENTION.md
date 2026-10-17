@@ -25,7 +25,7 @@ Put these in `<head>`, in this order, before any other script:
 
 ```html
 <link rel="stylesheet" href="/_kit/decide.css">
-<script src="/_kit/errors.js"></script>
+<script src="/_kit/boot.js"></script>
 <script type="module" src="/_kit/decide.mjs"></script>
 ```
 
@@ -38,7 +38,7 @@ Put this in `<body>`:
 </div>
 ```
 
-- `errors.js` reports failed loads and script errors to the agent, so it must come before anything that can fail.
+- `boot.js` reports failed loads and script errors to the agent, and keeps answers your page JS gives early, so it must come before any other script.
 - The `#decide-offline` banner must be visible by default, with an inline style. The runtime hides it once the server answers, and shows it again if the server goes away.
 - The banner may go anywhere in `<body>`. `position:sticky` keeps it on screen.
 - Use root-relative `/_kit/…` paths, never a host or port.
@@ -48,7 +48,8 @@ Put this in `<body>`:
 `decide.css` styles plain HTML: body, headings, tables, `<details>`, code, form fields, in light and dark.
 A page with no `<style>` at all is readable.
 
-- Add only layout: grids, widths, spacing. Inline `<style>` is fine, and it always wins over the kit.
+- Add only layout: grids, widths, spacing. Inline `<style>` is fine, and it wins over the kit's look, buttons included.
+  Only the markers for a chosen, pending, saved or carried answer keep priority, so the reader always sees them.
 - For any color, use the kit's tokens, which switch with the color scheme:
   `--hc-bg`, `--hc-fg`, `--hc-muted`, `--hc-line`, `--hc-card`, `--hc-accent`, `--hc-on-accent`, `--hc-good`, `--hc-warn`, `--hc-bad`.
 - Never set a text color without its dark-scheme counterpart. Inline SVG `<text>` follows the text color unless it sets `fill`.
@@ -72,6 +73,7 @@ A page with no `<style>` at all is readable.
 - Prefer a kit adapter (next section) when one exists: it needs no code, and its errors reach you.
 - To record an answer from your own code, call `window.htmlChannel.record("ID", value)`,
   or set a `data-decision` control's value and dispatch `new Event("change", {bubbles: true})` on it.
+  Both work from the first inline script: answers given before the runtime starts are saved when it does.
   Never send answers to the server any other way.
 
 ## Visualizations
@@ -125,8 +127,9 @@ The agent then waits for that click with `ask_human` (MCP).
 Without MCP, the user says "done" in chat and the agent reads the answers with `get_decisions` or `html-channel decisions <session>/<page>`.
 
 A decision page may offer **Deeper** buttons, `<button data-deeper="TARGET">`, where the reader may want more than the page shows.
-A click ends the wait: `ask_human` returns `status: "deeper"` with the requested targets in `deeper`.
+A click ends the wait: `ask_human` returns `status: "deeper"`, with the targets requested since its last return in `deeper`.
 Rewrite the page with those targets expanded, then call `ask_human` again.
+Calling it again without a rewrite waits for the next click.
 
 **Report-only pages** just present output. They have no Done button, and the agent doesn't wait on them.
 
@@ -155,7 +158,8 @@ Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 
 - The last entry per `page` + `id` wins.
 - `value: null` means the answer was cleared.
-- `ask_human`, `get_decisions` and `html-channel decisions` return the effective answers, any Deeper requests, and the errors the page reported at this revision:
+- `ask_human`, `get_decisions` and `html-channel decisions` return the effective answers, Deeper requests, and the errors the page reported at this revision.
+  `deeper` from `ask_human` lists only the targets requested since its last return, whatever the status; from the other two it lists every target at this revision.
 
 ```json
 {"page":"cache-layer-review","rev":2,"done":true,"deeper":[],
@@ -165,3 +169,5 @@ Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 
 In this example, `notes` has `rev` 1, which is lower than the page's `rev` 2. That means the answer was carried over and not re-confirmed.
 Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render) and `undeclared`.
+During `check_page`, `dialog` means the page called `alert()`, `confirm()` or `prompt()`, which would interrupt the reader.
+`check_page` adds `no-reporter` when the page never loaded `/_kit/boot.js`: then no other error could have been seen.

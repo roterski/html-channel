@@ -24,7 +24,7 @@
                    (spit (fs/file out) (str/replace (slurp (fs/file f)) "'squint-cljs/core.js'" (str "'" core "'"))))
                  (fs/copy "node_modules/squint-cljs/src/squint/core.js" (fs/path kit "squint-core.js"))
                  (fs/copy "runtime/decide.css" (fs/path kit "decide.css"))
-                 (fs/copy "runtime/errors.js" (fs/path kit "errors.js"))
+                 (fs/copy "runtime/boot.js" (fs/path kit "boot.js"))
                  (doseq [dest ["resources/html_channel/CONVENTION.md" "skill/html-channel/CONVENTION.md"]]
                    (fs/create-dirs (fs/parent dest))
                    (fs/copy "CONVENTION.md" dest {:replace-existing true}))

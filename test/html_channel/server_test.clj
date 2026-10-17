@@ -35,7 +35,7 @@
       (is (= 200 (:status r)))
       (is (= "text/javascript" (get-in r [:headers "Content-Type"]))))
     (is (= 200 (:status (req :get "/_kit/decide/core.mjs"))))
-    (is (= 200 (:status (req :get "/_kit/errors.js"))))
+    (is (= 200 (:status (req :get "/_kit/boot.js"))))
     (is (= 200 (:status (req :get "/_kit/viz/mermaid.mjs"))))
     (is (re-find #"/s1/p\.html" (:body (req :get "/"))))
     (testing "POST _errors stores a page error at the current rev"
@@ -44,6 +44,10 @@
       (is (= 400 (:status (req :post (str base "_errors") nil
                                "{\"page\":\"p\",\"kind\":\"nope\",\"message\":\"boom\"}"))))
       (is (= [["js" "boom"]] (map (juxt :kind :message) (store/errors root "s1" "p" 1)))))
+    (testing "POST _check records that boot.js ran during a check"
+      (is (= 200 (:status (req :post (str base "_check") nil "{\"page\":\"p\",\"check\":\"c1\"}"))))
+      (is (= 400 (:status (req :post (str base "_check") nil "{\"page\":\"p\"}"))))
+      (is (store/check-ran? root "s1" "p" "c1")))
     (testing "the page GET checks the rev, so it snapshots"
       (let [r (req :get (str base "p.html"))]
         (is (= 200 (:status r)))

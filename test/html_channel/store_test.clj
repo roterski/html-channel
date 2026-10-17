@@ -118,6 +118,48 @@
         (is (= [] (:deeper eff)))
         (is (= 1 (get-in eff [:decisions "a" :value])))))))
 
+(deftest errors-survive-hostile-input
+  (let [root (temp-dir)]
+    (write-page! root "s1" "p" "v1")
+    (testing "the server's clock stamps errors; a client's at, source or check of the wrong type is dropped"
+      (let [e (store/append-error! root "s1" {:page "p" :kind "js" :message "a" :at 5 :source {:x 1} :check [1]})]
+        (is (string? (:at e)))
+        (is (not (contains? e :source)))
+        (is (not (contains? e :check)))))
+    (testing "lines already on disk that lack string kind, message or at are skipped"
+      (spit (fs/file (store/errors-file root "s1"))
+            (str "{\"page\":\"p\",\"rev\":1,\"kind\":\"js\",\"message\":\"b\",\"at\":5}\n"
+                 "{\"page\":\"p\",\"rev\":1,\"kind\":\"js\",\"message\":\"c\",\"at\":{\"x\":1}}\n"
+                 "7\n")
+            :append true)
+      (is (= ["a"] (map :message (store/errors root "s1" "p" 1))))
+      (is (= ["a"] (map :message (:errors (store/page-state root "s1" "p"))))))))
+
+(deftest deeper-requests-resume-where-the-last-read-ended
+  (let [root (temp-dir)]
+    (write-page! root "s1" "p" "v1")
+    (store/append-entry! root "s1" {:page "p" :id "deeper" :value "a"})
+    (store/append-entry! root "s1" {:page "q" :id "x" :value 1})
+    (let [{:keys [targets upto]} (store/deeper-requests root "s1" "p" 1 0)]
+      (is (= ["a"] targets))
+      (is (= 2 upto))
+      (store/append-entry! root "s1" {:page "p" :id "deeper" :value "b"})
+      (store/append-entry! root "s1" {:page "p" :id "deeper" :value "a"})
+      (is (= {:targets ["b" "a"] :upto 4} (store/deeper-requests root "s1" "p" 1 upto)))
+      (is (= {:targets [] :upto 4} (store/deeper-requests root "s1" "p" 1 4)))
+      (is (= {:targets [] :upto 4} (store/deeper-requests root "s1" "p" 1 99))))))
+
+(deftest check-runs-are-per-page-and-check
+  (let [root (temp-dir)]
+    (write-page! root "s1" "p" "v1")
+    (is (false? (store/check-ran? root "s1" "p" "c1")))
+    (store/append-check-run! root "s1" {:page "p" :check "c1"})
+    (is (true? (store/check-ran? root "s1" "p" "c1")))
+    (is (false? (store/check-ran? root "s1" "p" "c2")))
+    (is (false? (store/check-ran? root "s1" "q" "c1")))
+    (is (thrown? clojure.lang.ExceptionInfo (store/append-check-run! root "s1" {:page "p"})))
+    (is (thrown? clojure.lang.ExceptionInfo (store/append-check-run! root "s1" {:page "../x" :check "c"})))))
+
 (deftest errors-are-stamped-and-grouped
   (let [root (temp-dir)
         e {:page "p" :kind "load" :message "failed to load <script> x" :source "x"}]

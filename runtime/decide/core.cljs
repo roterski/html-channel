@@ -9,7 +9,8 @@
     <div id=\"decide-offline\">…</div>                visible until the server answers
 
   Page JS records an answer with window.htmlChannel.record(id, value), or by
-  setting a control's value and dispatching a bubbling `change` event.
+  setting a control's value and dispatching a bubbling `change` event. Both
+  work before this module starts: /_kit/boot.js keeps them until `start!`.
 
   A transport is {:page id
                   :send! (fn [entry]) -> Promise<bool>
@@ -164,7 +165,7 @@
 ;; ---- page API ------------------------------------------------------------------
 
 (defn report-error!
-  "Reports a page error through /_kit/errors.js; the console when the page lacks it."
+  "Reports a page error through /_kit/boot.js; the console when the page lacks it."
   [kind message source]
   (if-let [f (some-> js/window .-htmlChannel .-reportError)]
     (f kind message source)
@@ -176,10 +177,23 @@
   (doseq [el (els-for id)] (show-value! el value))
   (record! id value))
 
+(defn save-early-answers!
+  "Saves what page JS answered before this runtime started (kept by /_kit/boot.js),
+  then stops boot.js from keeping more. A changed control is read now, so it
+  saves its latest value."
+  []
+  (when-let [early (.-early js/window.htmlChannel)]
+    (set! (.-early js/window.htmlChannel) nil)
+    (doseq [a early]
+      (if-let [el (.-el a)]
+        (record! (.. el -dataset -decision) (el-value el))
+        (record-from-page! (.-id a) (.-value a))))))
+
 (defn start! [t]
   (reset! transport t)
   (set! js/window.htmlChannel (or js/window.htmlChannel {}))
   (set! (.-record js/window.htmlChannel) record-from-page!)
+  (save-early-answers!)
   (.addEventListener js/document "click" on-click)
   (.addEventListener js/document "change" on-change)
   (check!)

@@ -9,7 +9,8 @@
     GET  /<mount>/<session>/_rev?page=   {rev}; the runtime's health poll
     GET  /<mount>/<session>/_decisions?page=   effective answers
     POST /<mount>/<session>/_decisions   append one entry
-    POST /<mount>/<session>/_errors      append one page error (runtime/errors.js)
+    POST /<mount>/<session>/_errors      append one page error (runtime/boot.js)
+    POST /<mount>/<session>/_check       boot.js ran during a headless check
 
   Ownership: whichever process binds 127.0.0.1:<port> serves; every other
   html-channel process retries the bind every second (`run-standby!`)."
@@ -102,6 +103,10 @@
       (let [e (store/append-error! root session (json/parse-string (slurp body) true))]
         (log "error" (:page e) (str "rev " (:rev e)) (:kind e) (:message e))
         (json-resp {:ok true :rev (:rev e)}))
+
+      (and (= rest "_check") (= request-method :post))
+      (do (store/append-check-run! root session (json/parse-string (slurp body) true))
+          (json-resp {:ok true}))
 
       (= request-method :get)
       (do (when-let [[_ page] (re-matches #"([a-z0-9][a-z0-9-]*)\.html" rest)]

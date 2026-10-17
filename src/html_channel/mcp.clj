@@ -49,7 +49,8 @@
 (def ^:private watched (atom {}))
 ;; [session page] -> number of ask_human calls waiting on it
 (def ^:private waiting (atom {}))
-;; [session page] -> entries before this index were answered by an ask_human return
+;; [session page] -> entries before this index were answered by an ask_human return.
+;; ask_human reports only Deeper requests from here on; channel events skip what it answered.
 (def ^:private consumed (atom {}))
 
 (defn- watch!
@@ -142,23 +143,33 @@
        "parts expanded (a new revision), then call ask_human again."))
 
 (defn ask-human
-  "Blocks until the page's current revision has status=done or a Deeper request,
-  or max-wait passes."
+  "Blocks until the page's current revision has status=done, or a Deeper request
+  made since this page's last ask_human return, or max-wait passes.
+  Post: :deeper holds only the targets requested since that last return, whatever
+  the status, so calling again without revising waits for the next click.
+  Invariant: every Deeper request is returned by exactly one ask_human call;
+  the next call starts from the last decisions entry this one read."
   [{:keys [max-wait-s] :as ctx} {:keys [page session]} progress!]
   (let [ch (channel ctx session)
         k [(:session ch) page]
-        f (store/page-file (:root ch) (:session ch) page)]
+        f (store/page-file (:root ch) (:session ch) page)
+        seen (volatile! (get @consumed k 0))]
     (when-not (fs/regular-file? f)
       (throw (ex-info (str "no page at " f "; write it first (see channel_setup's convention)") {})))
     (swap! waiting update k (fnil inc 0))
     (try
       (let [deadline (+ (System/currentTimeMillis) (* 1000 max-wait-s))]
         (loop [next-progress (+ (System/currentTimeMillis) progress-every-ms) ticks 0]
+          ;; read the page state first: the Deeper read below then covers every
+          ;; entry the state saw, including a Done
           (let [r (page-result ch page)
+                {:keys [targets upto]} (store/deeper-requests (:root ch) (:session ch) page (:rev r) @seen)
+                r (assoc r :deeper targets)
                 now (System/currentTimeMillis)]
+            (vreset! seen upto)
             (cond
               (:done r) (assoc r :status "done")
-              (seq (:deeper r)) (assoc r :status "deeper" :hint deeper-hint)
+              (seq targets) (assoc r :status "deeper" :hint deeper-hint)
               (>= now deadline) (assoc r :status "waiting"
                                        :hint "Not done yet. Call ask_human again to keep waiting.")
               :else
@@ -168,7 +179,7 @@
                 (recur (if due? (+ now progress-every-ms) next-progress)
                        (if due? (inc ticks) ticks)))))))
       (finally
-        (swap! consumed assoc k (count (store/entries (:root ch) (:session ch))))
+        (swap! consumed assoc k @seen)
         (swap! waiting update k dec)))))
 
 (def page-arg {:type "string" :description "Page slug: the file name without .html, matching [a-z0-9-]+."})
@@ -182,8 +193,9 @@
     :inputSchema {:type "object" :properties {:session session-arg}}}
    {:name "ask_human"
     :description (str "Wait until the user clicks the Done button on a decision page, then return their "
-                      "answers (status 'done'). Returns status 'deeper' with the requested targets when the "
-                      "user clicks a Deeper button: revise the page, then call again. Returns status 'waiting' "
+                      "answers (status 'done'). Returns status 'deeper' with the targets requested since its "
+                      "last return when the user clicks a Deeper button: revise the page, then call again. "
+                      "Returns status 'waiting' "
                       "if they take too long; call again to keep waiting. "
                       "Rewriting the page starts a new revision and needs a new Done. "
                       "Report-only pages without a Done button don't need this.")

@@ -1,9 +1,12 @@
 (ns html-channel.check
   "Loads a page in headless Chrome, once light and once dark, and returns what
-  the load reported: the errors /_kit/errors.js sent, tagged with this check's
+  the load reported: the errors /_kit/boot.js sent, tagged with this check's
   id, and a screenshot per color scheme.
 
   Pre: an html-channel server is serving `url`.
+  Post: when boot.js never reported in during the check (the page lacks it,
+  or its reports can't reach this root), :errors starts with a `no-reporter`
+  entry. So an empty :errors means the reporter ran and saw nothing.
   Without Chrome, returns the errors readers' own page loads reported instead."
   (:require [babashka.fs :as fs]
             [babashka.process :as p]
@@ -37,6 +40,19 @@
 
 (def timeout-ms 45000)
 
+(defn- delete-profile!
+  "Deletes Chrome's temporary profile. Chrome's helper processes can still be
+  writing to it just after Chrome exits, so this retries for a few seconds,
+  then leaves it in the temp dir and logs that, rather than failing a check
+  whose screenshot already exists."
+  [profile]
+  (loop [tries 20]
+    (when-let [e (try (fs/delete-tree profile) nil (catch java.io.IOException e e))]
+      (if (pos? tries)
+        (do (Thread/sleep 200) (recur (dec tries)))
+        (binding [*out* *err*]
+          (println "html-channel: couldn't delete Chrome profile" profile "-" (ex-message e)))))))
+
 (defn- screenshot!
   "Runs Chrome once; throws when it writes no screenshot.
   The screenshot alone decides success: Chrome has been seen to stall in
@@ -57,18 +73,28 @@
         (when-not (fs/exists? png)
           (throw (ex-info (str "Chrome wrote no screenshot of " url
                                (if (= ::timeout r)
-                                 (str " within " (/ timeout-ms 1000) " s")
+                                 (str " within " (/ timeout-ms 1000) " s. The page never finished loading: "
+                                      "it may loop forever, or open alert(), confirm() or prompt(), "
+                                      "which block a page that lacks /_kit/boot.js")
                                  (str ": " (str/join "\n" (take-last 5 (str/split-lines (str (:err r))))))))
                           {}))))
-      (finally (fs/delete-tree profile)))))
+      (finally (delete-profile! profile)))))
 
 (defn- check-dir!
-  "<session>/.check/, ignored by git."
+  "Creates <session>/.check/, ignored by git."
   [root session]
-  (let [d (fs/path (store/session-dir root session) ".check")]
+  (let [d (store/check-dir root session)]
     (fs/create-dirs d)
     (spit (fs/file d ".gitignore") "*\n")
     d))
+
+(defn no-reporter-error [url]
+  {:kind "no-reporter"
+   :message (str "/_kit/boot.js didn't report in while " url " loaded, so errors there went unseen. "
+                 "Put <script src=\"/_kit/boot.js\"></script> in <head> before any other script "
+                 "(see the convention's required markup).")
+   :source url
+   :count 1})
 
 (defn check-page
   "{:page :rev :chrome :errors :screenshots {scheme path}} for the page's current revision.
@@ -92,5 +118,6 @@
                              (do (screenshot! chrome (str url "?_check=" id) png flags)
                                  [scheme png])))]
            {:page page :rev rev :chrome true
-            :errors (store/errors root session page rev id)
+            :errors (cond->> (store/errors root session page rev id)
+                      (not (store/check-ran? root session page id)) (into [(no-reporter-error url)]))
             :screenshots shots}))))))
