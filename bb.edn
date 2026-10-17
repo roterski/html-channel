@@ -28,6 +28,9 @@
                  (doseq [dest ["resources/html_channel/CONVENTION.md" "skill/html-channel/CONVENTION.md"]]
                    (fs/create-dirs (fs/parent dest))
                    (fs/copy "CONVENTION.md" dest {:replace-existing true}))
+                 ;; the demo doubles as the worked example agents read: served at /_kit/example.html, shipped in the skill
+                 (doseq [dest [(fs/path kit "example.html") "skill/html-channel/example.html"]]
+                   (fs/copy "examples/demo/cache-layer-review.html" dest {:replace-existing true}))
                  ;; the plugin bundles a copy of the skill
                  (fs/delete-tree "plugin/skills")
                  (fs/copy-tree "skill" "plugin/skills")

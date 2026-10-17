@@ -6,6 +6,9 @@ Their answers are saved for the agent.
 The page may run any JavaScript to *render* content.
 Answers are saved only through `data-decision` controls, which one shared runtime script handles.
 
+For a worked example of every form and control below, read the source of `/_kit/example.html` on the server
+(for example, `curl http://127.0.0.1:8787/_kit/example.html`), or `example.html` next to this file in the skill.
+
 ## Where pages live
 
 ```
@@ -76,6 +79,14 @@ A page with no `<style>` at all is readable.
   Both work from the first inline script: answers given before the runtime starts are saved when it does.
   Never send answers to the server any other way.
 
+Bring your own library when the reader needs to *explore*, not just read.
+Examples are a tree or graph the reader opens node by node (D3), a map (Leaflet), or a table they sort and filter.
+For a static picture, the kit's forms are simpler (see Choosing a representation).
+- Check that the library loaded (`if (!window.d3) …`) and put a short message in place of the drawing if it didn't. The failed load is already reported to you.
+- Take colors from the `--hc-*` tokens. In SVG, set them with `style`, because presentation attributes like `fill="var(…)"` don't resolve.
+- When the reader answers through the drawing (picking a node or a bar, ranking items), save it with `htmlChannel.record`.
+  Also give that `ID` a visible `data-decision` field, such as a `readonly` input. The reader then sees their answer, and after a reload the runtime puts the saved value back into it, where your code can read it.
+
 ## Visualizations
 
 The kit renders these blocks itself. List the libraries a page uses in `<head>`:
@@ -101,6 +112,11 @@ For a page-wide depth switch, tag elements with `data-tier="N"` (0, 1, 2, …):
 - `<meta name="hc-tiers" content="Overview,Shape,Detail">` names the levels; otherwise they're numbered.
 - Find-in-page still finds hidden text and raises the level to show it.
 
+Which depth tool to use:
+- `<details>`: detail you've already written, about one point. The reader opens it in place.
+- `data-tier`: the whole page at several levels of zoom, from overview to detail. Use it when the page is long and readers differ in how deep they want to go.
+- A Deeper button (see Page kinds): detail you haven't written yet. It costs a round trip, so offer it where writing everything up front would bury the decision.
+
 ## Choosing a representation
 
 Pick the form that matches the content's shape. These are what the kit offers; anything else, load your own library.
@@ -113,7 +129,24 @@ Pick the form that matches the content's shape. These are what the kit offers; a
 | A main point with supporting detail | visible summary, detail in `<details>` |
 | Layers of abstraction | `data-tier` levels |
 | A spatial or structural picture | inline `<svg>` using the color tokens |
-| Before and after | two columns side by side |
+| Before and after | two columns side by side (`display:grid; grid-template-columns:1fr 1fr`, one column on narrow screens) |
+| A tree, graph or map the reader explores | your own library, such as D3 or Leaflet (see JavaScript) |
+
+## Choosing a control
+
+| The question | Control |
+|---|---|
+| Pick one of 2–5 short options | buttons sharing an `ID` |
+| Pick one, where each option needs a sentence | radios with `<label>`s |
+| Pick one value from a long or known list | `<select>` |
+| Yes or no; keep or drop; approve one item | checkbox |
+| A short value, such as a number, name or size | `<input>` |
+| Open feedback | one `<textarea>`, usually at the end |
+| "I can't decide without more on X" | `<button data-deeper="X">` next to X |
+| An answer given through a picture | your own JS and `htmlChannel.record` (see JavaScript) |
+
+Put each question right after the table, diagram or chart it's about, so the reader answers with the evidence in view.
+Don't gather questions into a form at the bottom. Only open notes and the Done button go last.
 
 ## Page kinds
 

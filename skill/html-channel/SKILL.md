@@ -7,6 +7,8 @@ description: Present output or questions to the user as an interactive local HTM
 
 You write an HTML page. The user answers on it with buttons and fields, and you read the answers back.
 The markup rules are in [CONVENTION.md](CONVENTION.md). Follow them exactly.
+Its "Choosing a representation" and "Choosing a control" tables say which form fits which content and question.
+[example.html](example.html) is a worked page that uses every form and control. Read it before writing your first page.
 Your page may use JavaScript to render things, but answers go only through its `data-decision` controls.
 
 Pick the first branch that applies.

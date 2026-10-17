@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review: cache layer</title>
+<link rel="stylesheet" href="/_kit/decide.css">
+<script src="/_kit/boot.js"></script>
+<script type="module" src="/_kit/decide.mjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<meta name="hc-libs" content="mermaid vega-lite">
+<meta name="hc-tiers" content="Overview,Shape,Detail">
+<style>
+  .lede, .use { color: var(--hc-muted); }
+  .use { margin: 0 0 .8rem; }
+  .toc { display: flex; flex-wrap: wrap; gap: .4rem; padding: 0; list-style: none; }
+  .toc a { display: inline-block; padding: .15rem .6rem; border: 1px solid var(--hc-line); border-radius: 999px; text-decoration: none; font-size: .9rem; }
+  section { margin: 2.2rem 0; }
+  h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; margin-bottom: .2rem; }
+  .tag { font: 600 .75rem ui-monospace, monospace; color: var(--hc-muted); border: 1px solid var(--hc-line); border-radius: 4px; padding: .05rem .4rem; }
+  .demo { border: 1px solid var(--hc-line); border-radius: 8px; padding: .8rem 1rem; }
+  .ask { margin-top: .8rem; padding: .7rem 1rem; border: 1px dashed var(--hc-accent); border-radius: 8px; }
+  .ask > p:first-child { margin: 0 0 .5rem; font-weight: 600; }
+  .ask .tag { margin-left: .3rem; font-weight: 400; }
+  .row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  .stack { display: grid; gap: .35rem; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 40rem) { .cols { grid-template-columns: 1fr; } }
+  .cols > div { border: 1px solid var(--hc-line); border-radius: 8px; padding: .6rem .9rem; min-width: 0; }
+  .cols h4 { margin: 0 0 .3rem; }
+  .before h4 { color: var(--hc-bad); }
+  .after h4 { color: var(--hc-good); }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .5rem; }
+  .sw { display: flex; align-items: center; gap: .5rem; font: .85rem ui-monospace, monospace; }
+  .sw i { width: 1.4rem; height: 1.4rem; border-radius: 4px; border: 1px solid var(--hc-line); flex: none; }
+  .tierbox { border-left: 3px solid var(--hc-accent); padding: .3rem .8rem; margin: .5rem 0; background: var(--hc-card); border-radius: 0 6px 6px 0; }
+  .good { color: var(--hc-good); } .warn { color: var(--hc-warn); } .bad { color: var(--hc-bad); }
+  code { font-size: .9em; }
+  .done { margin: 2rem 0 5rem; }
+
+  /* mind map (section 10): one color per top-level branch, light and dark */
+  .mind-wrap {
+    --mb0: #2563eb; --mb1: #c2410c; --mb2: #15803d; --mb3: #7c3aed; --mb4: #be185d; --mb5: #0f766e;
+  }
+  @media (prefers-color-scheme: dark) {
+    .mind-wrap { --mb0: #60a5fa; --mb1: #fb923c; --mb2: #4ade80; --mb3: #a78bfa; --mb4: #f472b6; --mb5: #2dd4bf; }
+  }
+  .mind-tools button {
+    font: inherit; font-size: .9rem; padding: .25rem .7rem; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--hc-line); background: var(--hc-bg); color: var(--hc-fg);
+  }
+  .mind-tools button:hover { border-color: var(--hc-muted); }
+  #mind-map { border: 1px solid var(--hc-line); border-radius: 8px; margin-top: .5rem; overflow: hidden; touch-action: none; }
+  #mind-map svg { display: block; max-width: none; cursor: grab; }
+  #mind-map svg:active { cursor: grabbing; }
+  .mn { cursor: pointer; outline: none; }
+  .mn circle { fill: var(--hc-bg); stroke: var(--b); stroke-width: 2; transition: r .2s; }
+  .mn.collapsed circle { fill: var(--b); }
+  .mn.sel circle { r: 9; stroke-width: 3; }
+  .mn:focus-visible circle { stroke-width: 4; }
+  .mn text {
+    font: 13px system-ui, sans-serif; fill: var(--hc-fg);
+    paint-order: stroke; stroke: var(--hc-bg); stroke-width: 4px; stroke-linejoin: round;
+  }
+  .mn .more { fill: var(--hc-muted); font-size: 11px; }
+  .mn.sel text.label { font-weight: 700; }
+  .mn.flag text.label { fill: var(--hc-warn); }
+  #mind-detail { margin-top: .6rem; padding: .6rem .9rem; border-radius: 8px; background: var(--hc-card); border: 1px solid var(--hc-line); min-height: 3.2rem; }
+  #mind-detail .crumb { color: var(--hc-muted); font-size: .85rem; }
+  #mind-detail p { margin: .25rem 0 .5rem; }
+</style>
+</head>
+<body>
+
+<!-- Visible by default; the runtime hides it once the server answers. -->
+<div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
+  <strong>html-channel server is not running</strong>: your answers won't be saved.
+  Start it with <code>html-channel serve --root examples</code>; this notice then disappears on its own.
+</div>
+
+<h1>Cache layer review</h1>
+<p class="lede">A demo of everything the html-channel kit offers, written as a review of a cache layer for <code>SessionCache</code>.
+Each section shows a way to present data, and the dashed boxes are questions that save your answers.
+Mermaid and Vega-Lite blocks are drawn by the kit's own adapters. Everything else is plain HTML that <code>decide.css</code> styles in light and dark.</p>
+
+<ul class="toc">
+  <li><a href="#table">Comparison table</a></li>
+  <li><a href="#mermaid">Mermaid diagram</a></li>
+  <li><a href="#vega">Vega-Lite chart</a></li>
+  <li><a href="#details">Summary + details</a></li>
+  <li><a href="#tiers">Depth tiers</a></li>
+  <li><a href="#svg">Inline SVG</a></li>
+  <li><a href="#cols">Before / after</a></li>
+  <li><a href="#tokens">Color tokens</a></li>
+  <li><a href="#mind">Mind map (D3)</a></li>
+  <li><a href="#finish">Notes + Done</a></li>
+</ul>
+
+<!-- 1. table + choice buttons -->
+<section id="table">
+  <h2>1. Eviction strategy <span class="tag">&lt;table&gt;</span></h2>
+  <p class="use">A table compares options on several criteria: one row per option, one column per criterion. On a narrow screen, a wide table scrolls inside itself.</p>
+  <div class="demo">
+    <table>
+      <thead><tr><th>Option</th><th>Latency</th><th>Memory</th><th>Complexity</th></tr></thead>
+      <tbody>
+        <tr><td>LRU</td><td class="good">low</td><td>medium</td><td class="good">simple</td></tr>
+        <tr><td>LFU</td><td class="good">low</td><td class="warn">high</td><td class="warn">moderate</td></tr>
+        <tr><td>TTL (15 min)</td><td class="warn">variable</td><td class="good">low</td><td class="good">simple</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="ask">
+    <p>Which eviction strategy? <span class="tag">button data-decision data-choice</span></p>
+    <div class="row">
+      <button data-decision="eviction" data-choice="lru">LRU</button>
+      <button data-decision="eviction" data-choice="lfu">LFU</button>
+      <button data-decision="eviction" data-choice="ttl">TTL (15 min)</button>
+      <button data-decision="eviction" data-choice="neither">Neither, discuss</button>
+    </div>
+  </div>
+</section>
+
+<!-- 2. mermaid + deeper -->
+<section id="mermaid">
+  <h2>2. Request flow <span class="tag">data-viz="mermaid"</span></h2>
+  <p class="use">Mermaid diagrams show flow, sequence, dependencies and state. The kit loads Mermaid 11.4.1 only when <code>hc-libs</code> lists it.</p>
+  <div class="demo">
+<pre data-viz="mermaid">
+sequenceDiagram
+  participant API
+  participant C as SessionCache
+  participant DB as Postgres
+  API->>C: get(tenant:session:id)
+  alt hit
+    C-->>API: session
+  else miss
+    C->>DB: SELECT … WHERE id = ?
+    DB-->>C: row
+    C-->>API: session (stored)
+  end
+  API->>DB: UPDATE session
+  DB--)C: NOTIFY invalidate
+</pre>
+  </div>
+  <div class="ask">
+    <p>Want more on a part of this? <span class="tag">button data-deeper</span></p>
+    <div class="row">
+      <button data-deeper="invalidation">Show how invalidation works</button>
+      <button data-deeper="failure-modes">What happens when the cache is down</button>
+    </div>
+    <p class="use" style="margin:.5rem 0 0">A Deeper click ends the agent's wait with <code>status: "deeper"</code>. The agent rewrites the page with that part expanded.</p>
+  </div>
+</section>
+
+<!-- 3. vega-lite + select / text input -->
+<section id="vega">
+  <h2>3. Benchmarks <span class="tag">data-viz="vega-lite"</span></h2>
+  <p class="use">Vega-Lite charts show numbers over time or across categories. Each block holds a JSON spec (Vega 5.30, Vega-Lite 5.21), and any Vega-Lite chart type works.</p>
+  <div class="cols">
+    <div>
+<pre data-viz="vega-lite">
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": "p95 latency by option (ms)",
+  "width": "container", "height": 160,
+  "data": {"values": [
+    {"option": "LRU", "ms": 12}, {"option": "LFU", "ms": 14},
+    {"option": "TTL", "ms": 31}, {"option": "No cache", "ms": 88}
+  ]},
+  "mark": {"type": "bar", "cornerRadiusEnd": 3},
+  "encoding": {
+    "y": {"field": "option", "type": "nominal", "sort": "x", "title": null},
+    "x": {"field": "ms", "type": "quantitative", "title": "ms"}
+  }
+}
+</pre>
+    </div>
+    <div>
+<pre data-viz="vega-lite">
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": "Hit rate over a week",
+  "width": "container", "height": 160,
+  "data": {"values": [
+    {"day": "Mon", "rate": 0.71}, {"day": "Tue", "rate": 0.74},
+    {"day": "Wed", "rate": 0.78}, {"day": "Thu", "rate": 0.77},
+    {"day": "Fri", "rate": 0.83}, {"day": "Sat", "rate": 0.86},
+    {"day": "Sun", "rate": 0.85}
+  ]},
+  "mark": {"type": "line", "point": true},
+  "encoding": {
+    "x": {"field": "day", "type": "ordinal", "sort": null, "title": null},
+    "y": {"field": "rate", "type": "quantitative", "axis": {"format": "%"}, "scale": {"zero": false}, "title": null}
+  }
+}
+</pre>
+    </div>
+  </div>
+  <div class="ask">
+    <p>Tuning</p>
+    <div class="stack">
+      <label>TTL for entries
+        <select data-decision="ttl-minutes">
+          <option value="">choose…</option>
+          <option value="5">5 min</option>
+          <option value="10">10 min</option>
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+        </select>
+        <span class="tag">select</span>
+      </label>
+      <label>Memory budget per node
+        <input data-decision="memory-budget" placeholder="e.g. 4 GB" size="10">
+        <span class="tag">input</span>
+      </label>
+    </div>
+  </div>
+</section>
+
+<!-- 4. details + radios -->
+<section id="details">
+  <h2>4. Rollout <span class="tag">&lt;details&gt;</span></h2>
+  <p class="use">Use a fold when there's one main point and some supporting detail. The point stays visible, and the detail folds away.</p>
+  <div class="demo">
+    <p><strong>Recommendation: ship behind a flag, then ramp to 100% over a week.</strong> If the hit rate falls, the flag turns the cache off without a deploy.</p>
+    <details><summary>Why not a canary node?</summary>
+      <p>Sessions are sticky to a node, so the canary would see a skewed set of tenants and give a misleading hit rate.</p>
+    </details>
+    <details><summary>Benchmark setup</summary>
+      <p>10M requests, Zipf α=1.1, 4 GB budget, single node.</p>
+    </details>
+  </div>
+  <div class="ask">
+    <p>How should it roll out? <span class="tag">input type="radio"</span></p>
+    <div class="stack">
+      <label><input type="radio" name="rollout" data-decision="rollout" value="flag"> Behind a flag, ramped over a week</label>
+      <label><input type="radio" name="rollout" data-decision="rollout" value="canary"> One canary node first</label>
+      <label><input type="radio" name="rollout" data-decision="rollout" value="all"> All at once</label>
+    </div>
+  </div>
+</section>
+
+<!-- 5. tiers -->
+<section id="tiers">
+  <h2>5. Design at three depths <span class="tag">data-tier="N"</span></h2>
+  <p class="use">Depth tiers add a switch for the whole page. Try the <strong>Overview / Shape / Detail</strong> bar in the bottom-right corner: it hides everything tagged deeper than the chosen level. Find-in-page still finds hidden text, and the page remembers the reader's level.</p>
+  <div class="demo">
+    <div class="tierbox" data-tier="0"><strong>Overview</strong>: the cache sits between the API and Postgres.</div>
+    <div class="tierbox" data-tier="1"><strong>Shape</strong>: the cache reads through on GET and invalidates on PUT/DELETE. Keys are <code>tenant:session:id</code>.</div>
+    <div class="tierbox" data-tier="2"><strong>Detail</strong>: invalidations go out over Postgres <code>LISTEN/NOTIFY</code>, so every node drops stale keys within about 50 ms.</div>
+  </div>
+</section>
+
+<!-- 6. svg -->
+<section id="svg">
+  <h2>6. Where it sits <span class="tag">&lt;svg&gt;</span></h2>
+  <p class="use">Inline SVG suits a spatial or structural picture. Draw it with the <code>--hc-*</code> tokens and it follows light and dark. A <code>&lt;text&gt;</code> without its own <code>fill</code> takes the text color.</p>
+  <div class="demo">
+    <svg viewBox="0 0 560 120" role="img" aria-label="API to cache to Postgres">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--hc-muted)"/></marker></defs>
+      <g style="stroke:var(--hc-line);fill:var(--hc-card)">
+        <rect x="10" y="30" width="130" height="60" rx="8"/>
+        <rect x="215" y="30" width="130" height="60" rx="8" style="stroke:var(--hc-accent);stroke-width:2"/>
+        <rect x="420" y="30" width="130" height="60" rx="8"/>
+      </g>
+      <g style="stroke:var(--hc-muted);stroke-width:1.5" marker-end="url(#ar)">
+        <line x1="140" y1="60" x2="212" y2="60"/>
+        <line x1="345" y1="60" x2="417" y2="60"/>
+      </g>
+      <g text-anchor="middle" font-size="15">
+        <text x="75" y="65">API</text>
+        <text x="280" y="65" font-weight="700">SessionCache</text>
+        <text x="485" y="65">Postgres</text>
+      </g>
+      <text x="178" y="50" text-anchor="middle" font-size="11" style="fill:var(--hc-muted)">get</text>
+      <text x="381" y="50" text-anchor="middle" font-size="11" style="fill:var(--hc-muted)">miss</text>
+    </svg>
+  </div>
+</section>
+
+<!-- 7. before/after + checkbox -->
+<section id="cols">
+  <h2>7. The change <span class="tag">two columns</span></h2>
+  <p class="use">Two side-by-side columns show before and after, and they stack on narrow screens. This is a layout pattern, not a kit component: a few lines of grid CSS.</p>
+  <div class="cols">
+    <div class="before"><h4>Before</h4>
+<pre><code>(defn fetch [id]
+  (metrics/timed :fetch
+    (db/query id)))</code></pre>
+      <p>Every request reaches Postgres.</p>
+    </div>
+    <div class="after"><h4>After</h4>
+<pre><code>(defn fetch [id]
+  (metrics/timed :fetch
+    (or (cache/get id)
+        (cache/put! id (db/query id)))))</code></pre>
+      <p>Only misses reach Postgres: about 85% fewer queries.</p>
+    </div>
+  </div>
+  <div class="ask">
+    <p>Keep the metrics hook? <span class="tag">input type="checkbox"</span></p>
+    <label><input type="checkbox" data-decision="keep-metrics"> Keep <code>metrics/timed</code> around <code>fetch</code></label>
+  </div>
+</section>
+
+<!-- 8. tokens -->
+<section id="tokens">
+  <h2>8. Color tokens <span class="tag">--hc-*</span></h2>
+  <p class="use">Every color in the kit comes from these tokens. Each one has a light and a dark value, and text pairs keep a contrast of at least 4.5:1.</p>
+  <div class="swatches">
+    <div class="sw"><i style="background:var(--hc-bg)"></i>--hc-bg</div>
+    <div class="sw"><i style="background:var(--hc-fg)"></i>--hc-fg</div>
+    <div class="sw"><i style="background:var(--hc-muted)"></i>--hc-muted</div>
+    <div class="sw"><i style="background:var(--hc-line)"></i>--hc-line</div>
+    <div class="sw"><i style="background:var(--hc-card)"></i>--hc-card</div>
+    <div class="sw"><i style="background:var(--hc-accent)"></i>--hc-accent</div>
+    <div class="sw"><i style="background:var(--hc-on-accent)"></i>--hc-on-accent</div>
+    <div class="sw"><i style="background:var(--hc-good)"></i>--hc-good</div>
+    <div class="sw"><i style="background:var(--hc-warn)"></i>--hc-warn</div>
+    <div class="sw"><i style="background:var(--hc-bad)"></i>--hc-bad</div>
+  </div>
+</section>
+
+<!-- 9. mind map: your own library + htmlChannel.record -->
+<section id="mind" class="mind-wrap">
+  <h2>9. The whole review as a map <span class="tag">d3@7.9.0 + page JS</span></h2>
+  <p class="use">For anything the kit doesn't cover, load a library from a CDN at an exact version and draw it with your own script.
+  Click a node to open or close it and read its note. Drag to pan, scroll to zoom. Tab and Enter work too.</p>
+  <div class="row mind-tools">
+    <button type="button" id="mind-expand">Expand all</button>
+    <button type="button" id="mind-collapse">Collapse all</button>
+    <button type="button" id="mind-fit">Fit to view</button>
+  </div>
+  <div id="mind-map"></div>
+  <div id="mind-detail"><span class="crumb">Click a node to see its note.</span></div>
+  <div class="ask">
+    <p>Flagged for discussion <span class="tag">window.htmlChannel.record()</span></p>
+    <input data-decision="flagged" readonly placeholder="none yet: flag a node above" style="width:100%">
+    <p class="use" style="margin:.5rem 0 0">The flag button calls <code>htmlChannel.record("flagged", …)</code> from page JS. The kit then saves the value like any other answer and shows it in this field.</p>
+  </div>
+</section>
+
+<!-- 10. textarea + done -->
+<section id="finish">
+  <h2>10. Notes for the agent <span class="tag">&lt;textarea&gt;</span></h2>
+  <p class="use">Text is saved when the field loses focus. A saved field gets a green outline, and an answer still waiting for the server gets a dashed amber one. An answer carried over from an earlier revision gets a dotted purple outline.</p>
+  <textarea data-decision="notes" placeholder="Anything else…"></textarea>
+  <div class="row done">
+    <button data-decision="status" data-choice="done">Done reviewing</button>
+    <span class="use">Done ends the agent's <code>ask_human</code> wait. The agent then reads every answer above.</span>
+  </div>
+</section>
+
+<script>
+(function () {
+  const el = document.getElementById("mind-map");
+  if (!window.d3) { el.textContent = "D3 didn't load, so the map can't be drawn."; return; }
+
+  const data = {name: "SessionCache", note: "A read-through cache in front of Postgres for session lookups.", children: [
+    {name: "Eviction", note: "What leaves the cache when memory is full.", children: [
+      {name: "LRU", note: "Recommended. 12 ms p95 and simple to reason about."},
+      {name: "LFU", note: "Same speed, but per-key counters roughly double the metadata."},
+      {name: "TTL only", note: "Lowest memory, but latency swings as whole cohorts expire."}]},
+    {name: "Invalidation", note: "How a write makes cached copies go away.", children: [
+      {name: "Write-invalidate", note: "PUT and DELETE drop the key instead of updating it."},
+      {name: "LISTEN/NOTIFY", note: "Postgres broadcasts invalidations, and every node drops the key within about 50 ms."},
+      {name: "TTL backstop", note: "If a NOTIFY is lost, the TTL still bounds how stale an entry can get."}]},
+    {name: "Keys", note: "What identifies a cached entry.", children: [
+      {name: "tenant:session:id", note: "The tenant prefix makes it impossible to read another tenant's entry."},
+      {name: "Key size", note: "Keys average 48 bytes, about 3% of entry size."}]},
+    {name: "Failure modes", note: "What happens when things go wrong.", children: [
+      {name: "Cache down", note: "Reads fall through to Postgres, and latency returns to its pre-cache level.", children: [
+        {name: "Circuit breaker", note: "Trips after 5 errors in 10 s, so slow cache calls don't stack up."},
+        {name: "DB headroom", note: "Postgres handles the full load at 60% CPU today."}]},
+      {name: "Thundering herd", note: "Concurrent misses for one key are merged into a single query."},
+      {name: "Stale reads", note: "The TTL bounds them at 10 min, and NOTIFY usually keeps them under 50 ms."}]},
+    {name: "Rollout", note: "How the cache gets to production.", children: [
+      {name: "Feature flag", note: "Tenant-scoped, so it can be turned off without a deploy."},
+      {name: "Weekly ramp", note: "1% → 10% → 50% → 100%, watching hit rate and p95 at each step."},
+      {name: "Kill switch", note: "One flag bypasses the cache for every tenant."}]},
+    {name: "Metrics", note: "What tells us it's working.", children: [
+      {name: "Hit rate", note: "Target is over 80%. The benchmark reached 85%."},
+      {name: "p95 latency", note: "Target is under 20 ms. The benchmark measured 12 ms."},
+      {name: "Memory per node", note: "Budget is 4 GB. Alert at 85%."}]}
+  ]};
+
+  const W = Math.max(el.clientWidth, 320), dx = 32, dy = 185, pad = 28;
+  let H = 360;
+  const flaggedInput = document.querySelector('[data-decision="flagged"]');
+  const detail = document.getElementById("mind-detail");
+
+  const root = d3.hierarchy(data);
+  let uid = 0;
+  root.descendants().forEach(d => {
+    d.id = uid++;
+    d._children = d.children;  // the full child list; d.children is what's shown
+    const top = d.depth === 0 ? null : d.ancestors().at(-2);
+    d.color = top ? `var(--mb${root.children.indexOf(top) % 6})` : "var(--hc-fg)";
+    if (d.depth >= 1) d.children = null;
+  });
+  root.x0 = 0; root.y0 = 0;
+  let selected = root;
+
+  const svg = d3.select(el).append("svg")
+    .attr("viewBox", [0, 0, W, H]).attr("width", W).attr("height", H)
+    .attr("role", "group").attr("aria-label", "Mind map of the cache layer review");
+  const g = svg.append("g");
+  const gLink = g.append("g").attr("fill", "none").attr("stroke-width", 1.8).attr("stroke-opacity", .75);
+  const gNode = g.append("g");
+  const zoom = d3.zoom().scaleExtent([.3, 2.5]).on("zoom", e => g.attr("transform", e.transform));
+  svg.call(zoom).on("dblclick.zoom", null);
+
+  const tree = d3.tree().nodeSize([dx, dy]);
+  const diag = d3.linkHorizontal().x(d => d.y).y(d => d.x);
+  const flagged = () => (flaggedInput.value || "").split(",").map(s => s.trim()).filter(Boolean);
+  const hidden = d => !d.children && d._children ? d._children.length : 0;
+
+  function update(source, dur = 350) {
+    tree(root);
+    const fl = new Set(flagged());
+    const t = svg.transition().duration(dur);
+
+    const node = gNode.selectAll("g.mn").data(root.descendants(), d => d.id);
+    const enter = node.enter().append("g").attr("class", "mn")
+      .attr("transform", `translate(${source.y0},${source.x0})`).attr("opacity", 0)
+      .attr("tabindex", 0).attr("role", "button")
+      .style("--b", d => d.color)
+      .on("click", (e, d) => activate(d))
+      .on("keydown", (e, d) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(d); } });
+    enter.append("circle").attr("r", 6);
+    enter.append("text").attr("class", "label").attr("dy", "0.32em");
+    enter.append("text").attr("class", "more").attr("dy", "0.32em");
+
+    const all = node.merge(enter)
+      .classed("collapsed", d => hidden(d) > 0)
+      .classed("sel", d => d === selected)
+      .classed("flag", d => fl.has(d.data.name))
+      .attr("aria-expanded", d => d._children ? String(!!d.children) : null)
+      .attr("aria-label", d => d.data.name + (hidden(d) ? `, ${hidden(d)} hidden` : ""));
+    // a node with shown children puts its label on the left, clear of its outgoing links
+    all.select("text.label")
+      .attr("x", d => d.children ? -11 : 11).attr("text-anchor", d => d.children ? "end" : "start")
+      .text(d => d.data.name + (fl.has(d.data.name) ? " ⚑" : ""));
+    all.select("text.more").text(d => hidden(d) ? `+${hidden(d)}` : "")
+      .attr("x", d => 11 + 7.3 * (d.data.name.length + (fl.has(d.data.name) ? 2 : 0)) + 6);
+    all.transition(t).attr("transform", d => `translate(${d.y},${d.x})`).attr("opacity", 1);
+    node.exit().transition(t).remove().attr("transform", `translate(${source.y},${source.x})`).attr("opacity", 0);
+
+    const link = gLink.selectAll("path").data(root.links(), d => d.target.id);
+    const from = (s) => { const o = {x: s.x0 ?? s.x, y: s.y0 ?? s.y}; return diag({source: o, target: o}); };
+    const le = link.enter().append("path").attr("d", () => from(source)).style("stroke", d => d.target.color);
+    link.merge(le).transition(t).attr("d", diag);
+    link.exit().transition(t).remove().attr("d", () => diag({source, target: source}));
+
+    root.eachBefore(d => { d.x0 = d.x; d.y0 = d.y; });
+    fit(dur);
+  }
+
+  // Bounds of the laid-out tree, labels included (estimated at 7.3 px per character),
+  // so a fit can run alongside the transition instead of measuring the stale DOM.
+  function bounds() {
+    const ns = root.descendants(), w = d => 7.3 * (d.data.name.length + 4) + 14;
+    const x0 = d3.min(ns, d => d.children ? d.y - w(d) : d.y);
+    const x1 = d3.max(ns, d => d.children ? d.y : d.y + w(d));
+    const y0 = d3.min(ns, d => d.x) - 14, y1 = d3.max(ns, d => d.x) + 14;
+    return {x: x0, y: y0, width: x1 - x0, height: y1 - y0};
+  }
+
+  // The map grows with what's open (360–760 px tall), then the view fits it.
+  function fit(dur = 350) {
+    const b = bounds();
+    H = Math.max(360, Math.min(760, b.height + 2 * pad));
+    svg.attr("viewBox", [0, 0, W, H]).attr("height", H);
+    const s = Math.max(.55, Math.min(1.3, (W - 2 * pad) / b.width, (H - 2 * pad) / b.height));
+    const tf = d3.zoomIdentity.translate((W - b.width * s) / 2 - b.x * s, (H - b.height * s) / 2 - b.y * s).scale(s);
+    (dur ? svg.transition().duration(dur) : svg).call(zoom.transform, tf);
+  }
+
+  function showDetail(d) {
+    detail.replaceChildren();
+    const crumb = document.createElement("div");
+    crumb.className = "crumb";
+    crumb.textContent = d.ancestors().reverse().map(a => a.data.name).join(" › ");
+    const note = document.createElement("p");
+    note.textContent = d.data.note || "";
+    const on = flagged().includes(d.data.name);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = on ? "Remove flag" : "⚑ Flag for discussion";
+    btn.className = "mind-tools";
+    btn.style.cssText = "font:inherit;font-size:.9rem;padding:.25rem .7rem;border-radius:6px;cursor:pointer;border:1px solid var(--hc-line);background:var(--hc-bg);color:var(--hc-fg)";
+    btn.onclick = () => toggleFlag(d);
+    detail.append(crumb, note, btn);
+  }
+
+  function toggleFlag(d) {
+    const fl = flagged(), name = d.data.name;
+    const next = fl.includes(name) ? fl.filter(n => n !== name) : [...fl, name];
+    window.htmlChannel.record("flagged", next.length ? next.join(", ") : null);
+    update(d);
+    showDetail(d);
+  }
+
+  function activate(d) {
+    selected = d;
+    if (d._children) d.children = d.children ? null : d._children;
+    update(d);
+    showDetail(d);
+  }
+
+  const each = (d, f) => { f(d); (d._children || []).forEach(c => each(c, f)); };
+  document.getElementById("mind-expand").onclick = () => {
+    each(root, d => { if (d._children) d.children = d._children; });
+    update(root);
+  };
+  document.getElementById("mind-collapse").onclick = () => {
+    each(root, d => { if (d.depth >= 1) d.children = null; });
+    root.children = root._children;
+    update(root);
+  };
+  document.getElementById("mind-fit").onclick = () => fit();
+
+  update(root, 0);
+  showDetail(root);
+  // a saved "flagged" answer is filled in once the runtime loads it; redraw to mark those nodes
+  setTimeout(() => { update(selected, 0); showDetail(selected); }, 1500);
+})();
+</script>
+
+</body>
+</html>
