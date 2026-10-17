@@ -9,3 +9,4 @@ examples/**/errors.jsonl
 examples/**/*@*.html
 .portal/
 __pycache__/
+.DS_Store
