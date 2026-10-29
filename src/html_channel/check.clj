@@ -6,7 +6,8 @@
   Pre: an html-channel server is serving `url`.
   Post: when boot.js never reported in during the check (the page lacks it,
   or its reports can't reach this root), :errors starts with a `no-reporter`
-  entry. So an empty :errors means the reporter ran and saw nothing.
+  entry; when an explorable's interaction probe started but didn't finish, with
+  a `probe-cut-off` entry. So an empty :errors means the reporter ran and saw nothing.
   Without Chrome, returns the errors readers' own page loads reported instead."
   (:require [babashka.fs :as fs]
             [babashka.process :as p]
@@ -38,15 +39,31 @@
   CDN libraries run within it."
   3000)
 
-(def explorable-settle-ms
-  "Virtual time for an explorable page, whose interaction probe drives every
-  instrument before the screenshot."
-  12000)
+(def probe-ms-per-instrument
+  "Extra virtual time per [data-instrument] on an explorable page: the probe
+  drives each one's controls before the screenshot."
+  1500)
 
 (defn explorable-page?
-  "The page file declares <meta name=\"hc-kind\" content=\"explorable\">."
-  [f]
-  (boolean (re-find #"<meta\s+name=\"hc-kind\"\s+content=\"explorable\"" (slurp (fs/file f)))))
+  "`html` has a <meta> with name=\"hc-kind\" and content=\"explorable\", in either order."
+  [html]
+  (boolean (some #(and (re-find #"\bname\s*=\s*[\"']?hc-kind\b" %)
+                       (re-find #"\bcontent\s*=\s*[\"']?explorable\b" %))
+                 (re-seq #"(?i)<meta\b[^>]*>" html))))
+
+(defn settle-for
+  "Virtual time for the page `html`: settle-ms, plus time for the probe on an explorable."
+  [html]
+  (if (explorable-page? html)
+    (+ settle-ms (* probe-ms-per-instrument (count (re-seq #"\bdata-instrument\s*=" html))))
+    settle-ms))
+
+(defn probe-cut-off-error [url]
+  {:kind "probe-cut-off"
+   :message (str "the interaction probe started on " url " but didn't finish within the check's time, "
+                 "so instruments after the last one reported went unchecked. Fewer controls per instrument, "
+                 "or a page that renders faster, lets it finish.")
+   :source url})
 
 (def timeout-ms 45000)
 
@@ -121,7 +138,7 @@
                      "readers' own page loads, and there are no screenshots.")}
          (let [id (subs (str (random-uuid)) 0 8)
                dir (check-dir! root session)
-               settle (if (explorable-page? f) explorable-settle-ms settle-ms)]
+               settle (settle-for (slurp (fs/file f)))]
            (try
              (let [shots (into (array-map)
                                (for [[scheme flags] schemes
@@ -130,6 +147,7 @@
                                      [scheme png])))]
                {:page page :rev rev :chrome true
                 :errors (cond->> (store/errors root session page rev id)
+                          (= "started" (store/probe-stage root session id)) (into [(probe-cut-off-error url)])
                           (not (store/check-ran? root session page id)) (into [(no-reporter-error url)]))
                 :screenshots shots})
              (finally (store/discard-check! root session id)))))))))

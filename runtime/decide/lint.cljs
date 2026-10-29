@@ -8,6 +8,10 @@
     no-sources         no h2/h3 heading that starts with \"Sources\"
     unlabeled-control  a control inside an instrument with no accessible name
 
+  It runs once the page has loaded, plus half a second, so instruments that
+  page code builds while loading are counted. Instruments built later still
+  aren't.
+
   Pre: decide.explore has started, so the controls it renders carry their labels.")
 
 (def min-sections 6)
@@ -55,7 +59,11 @@
                                  "\" has no accessible name (a <label>, aria-label or title)")]))))
 
 (defn start!
-  "Reports each finding. `report!` is (fn [kind message source])."
+  "Reports each finding once the page has loaded. `report!` is (fn [kind message source])."
   [report!]
-  (doseq [[rule message] (findings)]
-    (report! "explorable" message rule)))
+  (let [run #(js/setTimeout (fn [] (doseq [[rule message] (findings)]
+                                     (report! "explorable" message rule)))
+                            500)]
+    (if (= "complete" (.-readyState js/document))
+      (run)
+      (.addEventListener js/window "load" run))))

@@ -185,6 +185,11 @@
   [root session check]
   (fs/path (check-dir root session) (str check ".ran")))
 
+(defn- probe-file
+  "The interaction probe's last stage during a check, \"started\" or \"done\"."
+  [root session check]
+  (fs/path (check-dir root session) (str check ".probe")))
+
 (defn- valid-error
   "The page error a client sent, as stored: stamped with the page's current
   revision and the server's clock; a non-string `source` is dropped.
@@ -235,15 +240,26 @@
         (sort-by :at)
         vec)))
 
+(def probe-stages #{"started" "done"})
+
 (defn append-check-run!
-  "Records that /_kit/boot.js ran on `page` during check `check`."
-  [root session {:keys [page check]}]
+  "Records that /_kit/boot.js ran on `page` during check `check`, or, with
+  `probe`, the stage the interaction probe reached."
+  [root session {:keys [page check probe]}]
   (check-name! "page" page)
   (check-name! "check" check)
-  (let [f (check-ran-file root session check)]
+  (when (and probe (not (probe-stages probe)))
+    (throw (ex-info (str "probe must be one of " (sort probe-stages) ", got " (pr-str probe)) {:status 400})))
+  (let [f (if probe (probe-file root session check) (check-ran-file root session check))]
     (fs/create-dirs (fs/parent f))
-    (spit (fs/file f) page)
+    (spit (fs/file f) (or probe page))
     {:page page :check check}))
+
+(defn probe-stage
+  "The stage the interaction probe last reported during check `check`, or nil."
+  [root session check]
+  (let [f (probe-file root session check)]
+    (when (fs/exists? f) (slurp (fs/file f)))))
 
 (defn check-ran?
   "True when /_kit/boot.js reported in on `page` during check `check`."
@@ -255,7 +271,8 @@
   "Deletes what check `check` recorded; its screenshots stay."
   [root session check]
   (fs/delete-if-exists (check-error-file root session check))
-  (fs/delete-if-exists (check-ran-file root session check)))
+  (fs/delete-if-exists (check-ran-file root session check))
+  (fs/delete-if-exists (probe-file root session check)))
 
 (defn page-state
   "What the agent reads about a page: `effective` plus :errors at the current revision."

@@ -15,17 +15,27 @@
               (a handler that checks event.isTrusted ignores synthetic input)
   A WebGL canvas reads back blank unless created with preserveDrawingBuffer: true.
 
+  The fingerprint leaves out the kit's own controls ([data-scrub], timelines,
+  state links), which change their own text when driven. Form submits are
+  blocked while it runs. It tells the check it \"started\" and is \"done\", so a
+  run cut off by the check's time budget is reported, not mistaken for a pass.
+
   Post: the page is scrolled back to the top and the pause is as it was.")
 
 (defn frames
-  "Resolves after about `n` frames' time, so redraws land. A timer, not
-  requestAnimationFrame: headless Chrome under --virtual-time-budget doesn't
-  run animation frames, and the check would end before the probe does."
+  "Resolves after about `n` frames' time, so redraws land. A timer: under
+  --virtual-time-budget, /_kit/boot.js runs animation frames on timers too."
   [n]
   (js/Promise. (fn [resolve] (js/setTimeout resolve (* 50 n)))))
 
-(defn fingerprint [el]
-  (str (.-outerHTML el)
+(def kit-controls "[data-scrub], .hc-timeline, a[data-set]")
+
+(defn fingerprint
+  "`el`'s markup without the kit's controls, plus the pixels of each canvas in it."
+  [el]
+  (str (let [copy (.cloneNode el true)]
+         (doseq [k (js/Array.from (.querySelectorAll copy kit-controls))] (.remove k))
+         (.-outerHTML copy))
        (apply str (for [c (js/Array.from (.querySelectorAll el "canvas"))]
                     (try (.toDataURL c) (catch :default _ "tainted"))))))
 
@@ -114,13 +124,18 @@
   "Pre: the page has loaded. `report!` is (fn [kind message source])."
   [report!]
   (let [hc js/window.htmlChannel
-        was-paused (.-paused hc)]
+        was-paused (.-paused hc)
+        block-submit (fn [e] (.preventDefault e))]
+    (some-> (.-reportProbe hc) (.call hc "started"))
+    (.addEventListener js/document "submit" block-submit true)
     (when (.-setPaused hc) ((.-setPaused hc) true))
     (doseq [el (js/Array.from (js/document.querySelectorAll "[data-instrument]"))]
       (when-let [[kind message] (js-await (probe-one el))]
         (report! kind message (.. el -dataset -instrument))))
     (js/scrollTo 0 0)
-    (when (.-setPaused hc) ((.-setPaused hc) was-paused))))
+    (when (.-setPaused hc) ((.-setPaused hc) was-paused))
+    (.removeEventListener js/document "submit" block-submit true)
+    (some-> (.-reportProbe hc) (.call hc "done"))))
 
 (defn start!
   "Probes once the page and its adapters have had time to render."

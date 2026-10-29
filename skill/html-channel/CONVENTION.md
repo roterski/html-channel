@@ -208,6 +208,6 @@ Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 
 In this example, `notes` has `rev` 1, which is lower than the page's `rev` 2. That means the answer was carried over and not re-confirmed.
 Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render) and `undeclared`.
-Explorable pages add `explorable`, `inert` and `unprobed` (see EXPLORABLE.md).
+Explorable pages add `explorable`, `inert`, `unprobed` and `probe-cut-off` (see EXPLORABLE.md).
 During `check_page`, `dialog` means the page called `alert()`, `confirm()` or `prompt()`, which would interrupt the reader.
 `check_page` adds `no-reporter` when the page never loaded `/_kit/boot.js`: then no other error could have been seen.

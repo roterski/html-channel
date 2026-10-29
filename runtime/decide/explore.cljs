@@ -32,7 +32,7 @@
   (or (and id (or (js/document.getElementById id)
                   (js/document.querySelector (str "[data-instrument=\"" (js/CSS.escape id) "\"]"))))
       (do (report! "explorable" (str "<" (.toLowerCase (.-tagName el)) " " attr "=\"" id "\">"
-                                     " points at no element with that id")
+                                     " points at no element with that id or data-instrument")
                    attr)
           nil)))
 
@@ -77,7 +77,8 @@
                   (.setAttribute el "aria-valuenow" (str @value))
                   (emit! target "hc-param" {:name name :value @value}))
           set-value! (fn [v]
-                       (let [snapped (+ lo (* step (js/Math.round (/ (- v lo) step))))
+                       ;; rounded to the step's decimals: 0.5 + 17 × 0.01 is 0.6700000000000002
+                       (let [snapped (js/Number (.toFixed (+ lo (* step (js/Math.round (/ (- v lo) step)))) (decimals step)))
                              v (js/Math.min hi (js/Math.max lo snapped))]
                          (when (not= v @value)
                            (reset! value v)
@@ -110,9 +111,11 @@
                                  move (fn [m] (set-value! (+ v0 (* step (js/Math.round (/ (- (.-clientX m) x0) 4))))))
                                  up (fn up [_]
                                       (.removeEventListener el "pointermove" move)
-                                      (.removeEventListener el "pointerup" up))]
+                                      (.removeEventListener el "pointerup" up)
+                                      (.removeEventListener el "pointercancel" up))]
                              (.addEventListener el "pointermove" move)
-                             (.addEventListener el "pointerup" up))))
+                             (.addEventListener el "pointerup" up)
+                             (.addEventListener el "pointercancel" up))))
       (show!))))
 
 ;; ---- state links ----------------------------------------------------------------
@@ -145,7 +148,8 @@
     (let [duration (num-attr el "data-duration" 4)
           step (num-attr el "data-step" (/ duration 100))
           loop? (not= "false" (.. el -dataset -loop))
-          state (atom {:t 0 :playing false :resume false :speed 1 :last nil})
+          ;; :frame is the pending animation frame, so pausing cancels it and playing never runs two loops
+          state (atom {:t 0 :playing false :resume false :speed 1 :last nil :frame nil})
           play (el! "button" {:type "button" :class "hc-tl-play"} nil)
           back (el! "button" {:type "button" :aria-label "Step back"} "⏮")
           fwd (el! "button" {:type "button" :aria-label "Step forward"} "⏭")
@@ -169,24 +173,30 @@
                            t' (cond (< t' duration) t'
                                     loop? (mod t' duration)
                                     :else duration)]
-                       (swap! state assoc :t t' :last now :playing (or loop? (< t' duration)))
+                       (swap! state assoc :t t' :last now :playing (or loop? (< t' duration)) :frame nil)
                        (show!)
-                       (js/requestAnimationFrame tick)))))
+                       (when (:playing @state)
+                         (swap! state assoc :frame (js/requestAnimationFrame tick)))))))
           set-playing! (fn [p]
                          (when (not= p (:playing @state))
-                           (swap! state assoc :playing p :last nil)
-                           (show!)
-                           (when p (js/requestAnimationFrame tick))))]
+                           (some-> (:frame @state) js/cancelAnimationFrame)
+                           ;; playing from the end of a timeline that doesn't loop starts over
+                           (when (and p (>= (:t @state) duration)) (swap! state assoc :t 0))
+                           (swap! state assoc :playing p :last nil
+                                  :frame (when p (js/requestAnimationFrame tick)))
+                           (show!)))
+          ;; the reader's own play, pause or seek outranks resuming after the global pause
+          by-reader! (fn [f] (fn [e] (swap! state assoc :resume false) (f e)))]
       (doseq [s [0.25 0.5 1 2]]
         (let [o (el! "option" {:value (str s)} (str s "×"))]
           (set! (.-selected o) (= s 1))
           (.append speed o)))
       (.add (.-classList el) "hc-timeline")
       (.append el play back fwd bar readout speed)
-      (.addEventListener play "click" (fn [_] (set-playing! (not (:playing @state)))))
-      (.addEventListener back "click" (fn [_] (set-playing! false) (seek! (- (:t @state) step))))
-      (.addEventListener fwd "click" (fn [_] (set-playing! false) (seek! (+ (:t @state) step))))
-      (.addEventListener bar "input" (fn [_] (set-playing! false) (seek! (js/parseFloat (.-value bar)))))
+      (.addEventListener play "click" (by-reader! (fn [_] (set-playing! (not (:playing @state))))))
+      (.addEventListener back "click" (by-reader! (fn [_] (set-playing! false) (seek! (- (:t @state) step)))))
+      (.addEventListener fwd "click" (by-reader! (fn [_] (set-playing! false) (seek! (+ (:t @state) step)))))
+      (.addEventListener bar "input" (by-reader! (fn [_] (set-playing! false) (seek! (js/parseFloat (.-value bar))))))
       (.addEventListener speed "change" (fn [_] (swap! state assoc :speed (js/parseFloat (.-value speed)))))
       (swap! pause-listeners conj
              (fn [paused?]

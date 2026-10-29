@@ -7,7 +7,8 @@
 //    unhandled rejections go to POST <page dir>/_errors. The server stamps the
 //    revision and the time. window.htmlChannel.reportError(kind, message, source)
 //    is the same path, for the runtime and visualization adapters. During a
-//    headless check, alert/confirm/prompt are reported instead of shown.
+//    headless check, alert/confirm/prompt are reported instead of shown, and
+//    requestAnimationFrame runs on timers.
 // 2. Early answers: window.htmlChannel.record(id, value) and `change` events on
 //    data-decision controls work from the first inline script. Until the runtime
 //    starts they are kept in window.htmlChannel.early, which the runtime saves
@@ -62,6 +63,16 @@
   // prompt: null). Readers' pages keep the real dialogs.
   if (check) {
     post("_check", { page: page, check: check });
+    // Headless Chrome under --virtual-time-budget runs no animation frames, so a
+    // page that redraws in requestAnimationFrame would never redraw. Timers do run.
+    var frameStart = Date.now();
+    window.requestAnimationFrame = function (f) {
+      return setTimeout(function () { f(Date.now() - frameStart); }, 16);
+    };
+    window.cancelAnimationFrame = function (id) { clearTimeout(id); };
+    // The interaction probe reports "started", then "done": a check that sees
+    // only "started" knows the probe was cut off.
+    hc.reportProbe = function (stage) { post("_check", { page: page, check: check, probe: stage }); };
     [["alert", undefined], ["confirm", false], ["prompt", null]].forEach(function (d) {
       window[d[0]] = function (message) {
         hc.reportError("dialog", d[0] + "() would block the page: " + (message === undefined ? "" : message), null);

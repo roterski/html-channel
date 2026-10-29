@@ -17,10 +17,10 @@ return `${"html-channel:tier:"}${location.pathname??''}`;
 };
 var saved_level = function () {
 try{
-const G__8_1 = localStorage.getItem(storage_key());
-if ((G__8_1 == null)) {
+const G__11_1 = localStorage.getItem(storage_key());
+if ((G__11_1 == null)) {
 return null} else {
-return parseInt(G__8_1, 10)};
+return parseInt(G__11_1, 10)};
 }
 catch(__2){
 return null;
@@ -51,16 +51,16 @@ return null;
 };
 var level_names = function (max_tier) {
 const named_1 = (() => {
-const G__9_2 = document.querySelector("meta[name=hc-tiers]");
-const G__9_3 = (((G__9_2 == null)) ? (null) : (G__9_2.getAttribute("content")));
-const G__9_4 = (((G__9_3 == null)) ? (null) : (G__9_3.split(",")));
-const G__9_5 = (((G__9_4 == null)) ? (null) : (G__9_4.map((function (_PERCENT_1) {
+const G__12_2 = document.querySelector("meta[name=hc-tiers]");
+const G__12_3 = (((G__12_2 == null)) ? (null) : (G__12_2.getAttribute("content")));
+const G__12_4 = (((G__12_3 == null)) ? (null) : (G__12_3.split(",")));
+const G__12_5 = (((G__12_4 == null)) ? (null) : (G__12_4.map((function (_PERCENT_1) {
 return _PERCENT_1.trim();
 
 }))));
-if ((G__9_5 == null)) {
+if ((G__12_5 == null)) {
 return null} else {
-return G__9_5.filter((function (_PERCENT_1) {
+return G__12_5.filter((function (_PERCENT_1) {
 return (_PERCENT_1.length > 0);
 
 }))};
@@ -110,11 +110,11 @@ bar_3.append(b_13)
 document.body.append(bar_3);
 document.addEventListener("beforematch", (function (e) {
 const temp__23314__auto___14 = (() => {
-const G__10_15 = e.target;
-const G__10_16 = (((G__10_15 == null)) ? (null) : (G__10_15.closest("[data-tier]")));
-if ((G__10_16 == null)) {
+const G__13_15 = e.target;
+const G__13_16 = (((G__13_15 == null)) ? (null) : (G__13_15.closest("[data-tier]")));
+if ((G__13_16 == null)) {
 return null} else {
-return tier_of(G__10_16)};
+return tier_of(G__13_16)};
 
 })();
 if (squint_core.truth_(temp__23314__auto___14)) {

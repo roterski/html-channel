@@ -17,7 +17,7 @@ return document.querySelector(`${"[data-instrument=\""}${CSS.escape(id)??''}${"\
 })()) : (id));
 if (squint_core.truth_(or_3_4)) {
 return or_3_4} else {
-report_BANG_("explorable", `${"<"}${el.tagName.toLowerCase()??''}${" "}${attr??''}${"=\""}${id??''}${"\">"}${" points at no element with that id"}`, attr);
+report_BANG_("explorable", `${"<"}${el.tagName.toLowerCase()??''}${" "}${attr??''}${"=\""}${id??''}${"\">"}${" points at no element with that id or data-instrument"}`, attr);
 return null;
 };
 
@@ -79,7 +79,7 @@ return emit_BANG_(target_2, "hc-param", ({"name": name_3, "value": squint_core.d
 
 });
 const set_value_BANG__9 = (function (v) {
-const snapped_10 = (lo_4 + (step_6 * Math.round(((v - lo_4) / step_6))));
+const snapped_10 = Number((lo_4 + (step_6 * Math.round(((v - lo_4) / step_6)))).toFixed(decimals(step_6)));
 const v_11 = Math.min(hi_5, Math.max(lo_4, snapped_10));
 if (!squint_core._EQ_(v_11, squint_core.deref(value_7))) {
 squint_core.reset_BANG_(value_7, v_11);
@@ -138,11 +138,13 @@ return set_value_BANG__9((v0_24 + (step_6 * Math.round(((m.clientX - x0_23) / 4)
 });
 const up_26 = (function up (_) {
 el.removeEventListener("pointermove", move_25);
-return el.removeEventListener("pointerup", up);
+el.removeEventListener("pointerup", up);
+return el.removeEventListener("pointercancel", up);
 
 });
 el.addEventListener("pointermove", move_25);
-return el.addEventListener("pointerup", up_26);
+el.addEventListener("pointerup", up_26);
+return el.addEventListener("pointercancel", up_26);
 
 }));
 return show_BANG__8();
@@ -202,7 +204,7 @@ const target_2 = temp__23314__auto___1;
 const duration_3 = num_attr(el, "data-duration", 4);
 const step_4 = num_attr(el, "data-step", (duration_3 / 100));
 const loop_QMARK__5 = !("false" === el.dataset.loop);
-const state_6 = squint_core.atom(({"t": 0, "playing": false, "resume": false, "speed": 1, "last": null}));
+const state_6 = squint_core.atom(({"t": 0, "playing": false, "resume": false, "speed": 1, "last": null, "frame": null}));
 const play_7 = el_BANG_("button", ({"type": "button", "class": "hc-tl-play"}), null);
 const back_8 = el_BANG_("button", ({"type": "button", "aria-label": "Step back"}), "⏮");
 const fwd_9 = el_BANG_("button", ({"type": "button", "aria-label": "Step forward"}), "⏭");
@@ -236,49 +238,62 @@ const speed_29 = squint_core.get(map___22_25, "speed");
 if (squint_core.truth_(playing_26)) {
 const t_SINGLEQUOTE__30 = (t_28 + (speed_29 * ((now - ((squint_core.truth_(last_27)) ? (last_27) : (now))) / 1000)));
 const t_SINGLEQUOTE__31 = (((t_SINGLEQUOTE__30 < duration_3)) ? (t_SINGLEQUOTE__30) : (((loop_QMARK__5) ? (squint_core.mod(t_SINGLEQUOTE__30, duration_3)) : ((("else") ? (duration_3) : (null))))));
-squint_core.swap_BANG_(state_6, squint_core.assoc, "t", t_SINGLEQUOTE__31, "last", now, "playing", ((loop_QMARK__5) ? (loop_QMARK__5) : ((t_SINGLEQUOTE__31 < duration_3))));
+squint_core.swap_BANG_(state_6, squint_core.assoc, "t", t_SINGLEQUOTE__31, "last", now, "playing", ((loop_QMARK__5) ? (loop_QMARK__5) : ((t_SINGLEQUOTE__31 < duration_3))), "frame", null);
 show_BANG__13();
-return requestAnimationFrame(tick);
+if (squint_core.truth_(squint_core.get(squint_core.deref(state_6), "playing"))) {
+return squint_core.swap_BANG_(state_6, squint_core.assoc, "frame", requestAnimationFrame(tick));
+};
 };
 
 });
 const set_playing_BANG__32 = (function (p) {
 if (!squint_core._EQ_(p, squint_core.get(squint_core.deref(state_6), "playing"))) {
-squint_core.swap_BANG_(state_6, squint_core.assoc, "playing", p, "last", null);
-show_BANG__13();
-if (squint_core.truth_(p)) {
-return requestAnimationFrame(tick_21);
-};
+const G__4_33 = squint_core.get(squint_core.deref(state_6), "frame");
+if ((G__4_33 == null)) {
+} else {
+cancelAnimationFrame(G__4_33)};
+if (squint_core.truth_(((squint_core.truth_(p)) ? ((squint_core.get(squint_core.deref(state_6), "t") >= duration_3)) : (p)))) {
+squint_core.swap_BANG_(state_6, squint_core.assoc, "t", 0)};
+squint_core.swap_BANG_(state_6, squint_core.assoc, "playing", p, "last", null, "frame", ((squint_core.truth_(p)) ? (requestAnimationFrame(tick_21)) : (null)));
+return show_BANG__13();
 };
 
 });
-for (let G__33 of squint_core.iterable([0.25, 0.5, 1, 2])) {
-const s_34 = G__33;
-const o_35 = el_BANG_("option", ({"value": `${s_34??''}`}), `${s_34??''}${"×"}`);
-o_35.selected = (s_34 === 1);
-speed_11.append(o_35)
+const by_reader_BANG__34 = (function (f) {
+return function (e) {
+squint_core.swap_BANG_(state_6, squint_core.assoc, "resume", false);
+return f(e);
+
+};
+
+});
+for (let G__35 of squint_core.iterable([0.25, 0.5, 1, 2])) {
+const s_36 = G__35;
+const o_37 = el_BANG_("option", ({"value": `${s_36??''}`}), `${s_36??''}${"×"}`);
+o_37.selected = (s_36 === 1);
+speed_11.append(o_37)
 };
 el.classList.add("hc-timeline");
 el.append(play_7, back_8, fwd_9, bar_10, readout_12, speed_11);
-play_7.addEventListener("click", (function (_) {
+play_7.addEventListener("click", by_reader_BANG__34((function (_) {
 return set_playing_BANG__32(squint_core.not(squint_core.get(squint_core.deref(state_6), "playing")));
 
-}));
-back_8.addEventListener("click", (function (_) {
+})));
+back_8.addEventListener("click", by_reader_BANG__34((function (_) {
 set_playing_BANG__32(false);
 return seek_BANG__20((squint_core.get(squint_core.deref(state_6), "t") - step_4));
 
-}));
-fwd_9.addEventListener("click", (function (_) {
+})));
+fwd_9.addEventListener("click", by_reader_BANG__34((function (_) {
 set_playing_BANG__32(false);
 return seek_BANG__20((squint_core.get(squint_core.deref(state_6), "t") + step_4));
 
-}));
-bar_10.addEventListener("input", (function (_) {
+})));
+bar_10.addEventListener("input", by_reader_BANG__34((function (_) {
 set_playing_BANG__32(false);
 return seek_BANG__20(parseFloat(bar_10.value));
 
-}));
+})));
 speed_11.addEventListener("change", (function (_) {
 return squint_core.swap_BANG_(state_6, squint_core.assoc, "speed", parseFloat(speed_11.value));
 
@@ -296,9 +311,9 @@ return set_playing_BANG__32(true);
 }));
 show_BANG__13();
 if (squint_core.truth_((() => {
-const or_36_37 = window.htmlChannel.paused;
-if (squint_core.truth_(or_36_37)) {
-return or_36_37} else {
+const or_38_39 = window.htmlChannel.paused;
+if (squint_core.truth_(or_38_39)) {
+return or_38_39} else {
 return ("false" === el.dataset.autoplay)};
 
 })())) {

@@ -127,8 +127,12 @@ Each instrument is a controlled experiment the reader runs.
 | `explorable` | `data-target`, `data-set`, `data-timeline`, `data-state` | a control points at no element, or its state isn't JSON |
 | `inert` | the instrument | its controls were driven and it didn't change |
 | `unprobed` | the instrument | it has no controls and a synthetic drag changed nothing: check it by hand |
+| `probe-cut-off` | the page URL | the probe ran out of the check's time before the last instrument: fewer controls per instrument |
 
 The probe drives every instrument, so `check_page`'s screenshots show the page after it, not as a reader first sees it.
+It ignores changes to the kit's own controls (scrubs, timelines, state links) inside an instrument: the instrument itself has to change.
+During a check, `requestAnimationFrame` runs on timers, so demos that redraw in a frame are probed like any other.
+The lint runs half a second after the page loads; instruments built after that aren't counted.
 
 Before giving the URL, also check what no tool can:
 

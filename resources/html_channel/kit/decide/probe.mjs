@@ -6,15 +6,24 @@ return setTimeout(resolve, (50 * n));
 })));
 
 };
+var kit_controls = "[data-scrub], .hc-timeline, a[data-set]";
 var fingerprint = function (el) {
-return `${el.outerHTML??''}${squint_core.apply(squint_core.str, squint_core.lazy((function* () {
-for (let G__1 of squint_core.iterable(Array.from(el.querySelectorAll("canvas")))) {
-const c_2 = G__1;
+return `${(() => {
+const copy_1 = el.cloneNode(true);
+for (let G__2 of squint_core.iterable(Array.from(copy_1.querySelectorAll(kit_controls)))) {
+const k_3 = G__2;
+k_3.remove()
+};
+return copy_1.outerHTML;
+
+})()??''}${squint_core.apply(squint_core.str, squint_core.lazy((function* () {
+for (let G__4 of squint_core.iterable(Array.from(el.querySelectorAll("canvas")))) {
+const c_5 = G__4;
 yield (yield* (function* () {
 try{
-return c_2.toDataURL();
+return c_5.toDataURL();
 }
-catch(__3){
+catch(__6){
 return "tainted";
 }
 
@@ -157,21 +166,34 @@ return ["unprobed", `${"instrument \""}${id_1??''}${"\" has no controls, and a s
 var probe_BANG_ = async function (report_BANG_) {
 const hc_1 = window.htmlChannel;
 const was_paused_2 = hc_1.paused;
+const block_submit_3 = (function (e) {
+return e.preventDefault();
+
+});
+const G__9_4 = hc_1.reportProbe;
+if ((G__9_4 == null)) {
+} else {
+G__9_4.call(hc_1, "started")};
+document.addEventListener("submit", block_submit_3, true);
 if (squint_core.truth_(hc_1.setPaused)) {
 hc_1.setPaused(true)};
-for (let G__3 of squint_core.iterable(Array.from(document.querySelectorAll("[data-instrument]")))) {
-const el_4 = G__3;
-const temp__23314__auto___5 = (await probe_one(el_4));
-if (squint_core.truth_(temp__23314__auto___5)) {
-const vec___6_9 = temp__23314__auto___5;
-const kind_10 = squint_core.nth(vec___6_9, 0, null);
-const message_11 = squint_core.nth(vec___6_9, 1, null);
-report_BANG_(kind_10, message_11, el_4.dataset.instrument)}
+for (let G__5 of squint_core.iterable(Array.from(document.querySelectorAll("[data-instrument]")))) {
+const el_6 = G__5;
+const temp__23314__auto___7 = (await probe_one(el_6));
+if (squint_core.truth_(temp__23314__auto___7)) {
+const vec___8_11 = temp__23314__auto___7;
+const kind_12 = squint_core.nth(vec___8_11, 0, null);
+const message_13 = squint_core.nth(vec___8_11, 1, null);
+report_BANG_(kind_12, message_13, el_6.dataset.instrument)}
 };
 scrollTo(0, 0);
 if (squint_core.truth_(hc_1.setPaused)) {
-return hc_1.setPaused(was_paused_2);
-};
+hc_1.setPaused(was_paused_2)};
+document.removeEventListener("submit", block_submit_3, true);
+const G__10_14 = hc_1.reportProbe;
+if ((G__10_14 == null)) {
+return null} else {
+return G__10_14.call(hc_1, "done")};
 
 };
 var start_BANG_ = function (report_BANG_) {
@@ -188,4 +210,4 @@ return window.addEventListener("load", run_1)};
 
 };
 
-export { skip, key_BANG_, fingerprint, frames, drag_BANG_, fire_BANG_, start_BANG_, drive_BANG_, probe_one, probe_BANG_, controls_of }
+export { skip, key_BANG_, fingerprint, frames, drag_BANG_, fire_BANG_, start_BANG_, drive_BANG_, kit_controls, probe_one, probe_BANG_, controls_of }

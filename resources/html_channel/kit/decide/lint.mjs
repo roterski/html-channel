@@ -30,11 +30,11 @@ return ""};
 };
 var labeled_QMARK_ = function (el) {
 const or_3_4 = (() => {
-const G__5_1 = el.getAttribute("aria-label");
-const G__5_2 = (((G__5_1 == null)) ? (null) : (G__5_1.trim()));
-if ((G__5_2 == null)) {
+const G__6_1 = el.getAttribute("aria-label");
+const G__6_2 = (((G__6_1 == null)) ? (null) : (G__6_1.trim()));
+if ((G__6_2 == null)) {
 return null} else {
-return squint_core.seq(G__5_2)};
+return squint_core.seq(G__6_2)};
 
 })();
 if (squint_core.truth_(or_3_4)) {
@@ -43,21 +43,21 @@ const or_5_6 = el.hasAttribute("aria-labelledby");
 if (squint_core.truth_(or_5_6)) {
 return or_5_6} else {
 const or_9_10 = (() => {
-const G__6_7 = el.getAttribute("title");
-const G__6_8 = (((G__6_7 == null)) ? (null) : (G__6_7.trim()));
-if ((G__6_8 == null)) {
+const G__7_7 = el.getAttribute("title");
+const G__7_8 = (((G__7_7 == null)) ? (null) : (G__7_7.trim()));
+if ((G__7_8 == null)) {
 return null} else {
-return squint_core.seq(G__6_8)};
+return squint_core.seq(G__7_8)};
 
 })();
 if (squint_core.truth_(or_9_10)) {
 return or_9_10} else {
 if (((() => {
 const or_12_13 = (() => {
-const G__7_11 = el.labels;
-if ((G__7_11 == null)) {
+const G__8_11 = el.labels;
+if ((G__8_11 == null)) {
 return null} else {
-return G__7_11.length};
+return G__8_11.length};
 
 })();
 if (squint_core.truth_(or_12_13)) {
@@ -97,13 +97,22 @@ return null;
 
 };
 var start_BANG_ = function (report_BANG_) {
-for (let G__1 of squint_core.iterable(findings())) {
-const vec___2_5 = G__1;
-const rule_6 = squint_core.nth(vec___2_5, 0, null);
-const message_7 = squint_core.nth(vec___2_5, 1, null);
-report_BANG_("explorable", message_7, rule_6)
+const run_1 = (function () {
+return setTimeout((function () {
+for (let G__2 of squint_core.iterable(findings())) {
+const vec___3_6 = G__2;
+const rule_7 = squint_core.nth(vec___3_6, 0, null);
+const message_8 = squint_core.nth(vec___3_6, 1, null);
+report_BANG_("explorable", message_8, rule_7)
 }
 return null;
+
+}), 500);
+
+});
+if (("complete" === document.readyState)) {
+return run_1()} else {
+return window.addEventListener("load", run_1)};
 
 };
 
