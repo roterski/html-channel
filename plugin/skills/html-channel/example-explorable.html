@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How a hash table grows</title>
+<link rel="stylesheet" href="/_kit/decide.css">
+<script src="/_kit/boot.js"></script>
+<script type="module" src="/_kit/decide.mjs"></script>
+<meta name="hc-kind" content="explorable">
+<meta name="hc-libs" content="katex">
+<style>
+  main { max-width: 46rem; margin: 0 auto; }
+  [data-instrument] { margin: 1rem 0 .4rem; padding: .7rem; border: 1px solid var(--hc-line); border-radius: 8px; background: var(--hc-card); }
+  [data-instrument] svg { width: 100%; height: auto; display: block; }
+  [data-instrument] p { margin: .4rem 0 0; }
+  .notice { color: var(--hc-muted); }
+  .simpl { font-size: .92rem; color: var(--hc-muted); border-left: 3px solid var(--hc-line); padding-left: .7rem; }
+  .key { color: var(--hc-accent); font-weight: 600; }
+  .bucket { font-weight: 600; }
+  .clash { color: var(--hc-bad); font-weight: 600; }
+  .grow { color: var(--hc-warn); font-weight: 600; }
+  output { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
+  <strong>html-channel server is not running</strong>: your answers won't be saved.
+  Start it with <code>html-channel serve</code> in the project; this notice then disappears on its own.
+</div>
+<main>
+<h1>How a hash table grows</h1>
+<p>A hash table finds a value by its key in about the same time whether it holds ten keys or ten million.
+That sounds impossible, since it has to look somewhere.
+We'll build one from a plain list, break it twice, and fix it twice, until the "about the same time" is earned.</p>
+<p>Throughout, <span class="key">keys</span> are blue, <span class="bucket">buckets</span> are outlined boxes,
+<span class="clash">collisions</span> are red, and a <span class="grow">resize</span> is amber.</p>
+
+<!-- 1 · phenomenon ------------------------------------------------------- -->
+<section data-concept="scan">
+<h2>1. Looking through a list</h2>
+<p><b>Why we need anything better:</b> the obvious way to find a key is to check every key until it turns up.</p>
+<p>Here are <span data-scrub="n" data-target="scan" data-min="4" data-max="40" data-value="16">16</span> unsorted
+<span class="key">keys</span>; drag the number to change how many. Press the button to look one up:</p>
+<div data-instrument="scan">
+  <svg></svg>
+  <p><button type="button" class="find">Find a random key</button> <output></output></p>
+</div>
+<p class="notice">Notice that the work grows with the list: a key near the end costs as many checks as there are keys, and on average you check half of them.</p>
+<p class="simpl">Simplification: comparing two keys costs one unit here, whatever their length.</p>
+</section>
+
+<!-- 2 · toy ---------------------------------------------------------------- -->
+<section data-concept="hash">
+<h2>2. Turning a key into an address</h2>
+<p><b>Why:</b> to skip the search, the key itself has to say where it lives.
+A <em>hash function</em> turns a key into a large number; the remainder after dividing by the number of buckets picks one:</p>
+<pre data-viz="katex">i = h(k) \bmod m</pre>
+<p>Type any key, and change the number of <span class="bucket">buckets</span>
+<span data-viz="katex">m</span> =
+<span data-scrub="m" data-target="hash" data-min="4" data-max="16" data-value="8">8</span>:</p>
+<div data-instrument="hash">
+  <p><label>Key <input class="k" value="apple" size="14"></label></p>
+  <svg></svg>
+</div>
+<p class="notice">Notice that the same key always lands in the same bucket, and that changing <span data-viz="katex">m</span> moves almost every key.</p>
+<p class="simpl">Simplification: <span data-viz="katex">h</span> here is FNV-1a (32-bit), one real hash function chosen for being short; Python and Java use others.</p>
+</section>
+
+<!-- 3 · naive model ------------------------------------------------------------- -->
+<section data-concept="naive">
+<h2>3. One key per bucket</h2>
+<p><b>The naive model:</b> give each <span class="bucket">bucket</span> room for one <span class="key">key</span>.
+A lookup is then a single step: hash, go there, done. Insert keys one at a time into 8 buckets:</p>
+<div data-instrument="naive">
+  <svg></svg>
+  <p><button type="button" class="next">Insert next key</button> <button type="button" class="reset">Reset</button> <output></output></p>
+</div>
+<p>Try <a data-set="naive" data-state='{"count": 3}'>the first three keys</a>,
+then <a data-set="naive" data-state='{"until": "collision"}'>keep inserting until something goes wrong</a>.</p>
+<p class="notice">Notice that a <span class="clash">collision</span> arrives long before the buckets fill up: two keys hash to the same bucket, and this model has nowhere to put the second.</p>
+<p class="simpl">Simplification: the keys arrive in a fixed order, so the page behaves the same every time.</p>
+</section>
+
+<!-- 4 · failure ------------------------------------------------------------- -->
+<section data-concept="birthday">
+<h2>4. Collisions come early</h2>
+<p><b>Why the naive model fails:</b> this is the birthday problem.
+With <span data-viz="katex">m</span> equally likely buckets, the chance that <span data-viz="katex">n</span> keys include at least one <span class="clash">collision</span> is</p>
+<pre data-viz="katex">P(n) = 1 - \prod_{i=0}^{n-1} \left(1 - \frac{i}{m}\right)</pre>
+<p>Place <span data-scrub="n" data-target="birthday" data-min="1" data-max="120" data-value="10">10</span> keys:</p>
+<div data-instrument="birthday">
+  <p><label>Buckets <select class="m"><option>16</option><option>64</option><option selected>365</option><option>1000</option></select></label></p>
+  <svg></svg>
+  <p><output></output></p>
+</div>
+<p>The classic case: <a data-set="birthday" data-state='{"m": 365, "n": 23}'>23 people, 365 birthdays</a> already gives better than even odds.</p>
+<p class="notice">Notice that the curve crosses one half near <span data-viz="katex">1.18\sqrt{m}</span> keys, so a thousand buckets are past even odds at about 38 keys.</p>
+<p class="simpl">Simplification: the formula assumes a perfect hash, where every bucket is equally likely and independent of the others.</p>
+</section>
+
+<!-- 5 · fix ----------------------------------------------------------------- -->
+<section data-concept="chaining">
+<h2>5. Chaining: let buckets hold lists</h2>
+<p><b>The fix:</b> since <span class="clash">collisions</span> can't be avoided, make them harmless.
+Each <span class="bucket">bucket</span> holds a short list of <span class="key">keys</span>, and a lookup walks only that list.
+Play the insertion of 24 keys into 8 buckets:</p>
+<div data-instrument="chaining">
+  <svg></svg>
+  <p><output></output></p>
+</div>
+<div data-timeline="chaining" data-duration="12"></div>
+<p class="notice">Notice that chains grow unevenly: some buckets stay empty while others hold four or five keys.</p>
+<p class="simpl">Simplification: new keys go to the end of a chain; some implementations put them first.</p>
+</section>
+
+<!-- 6 · combine -------------------------------------------------------------- -->
+<section data-concept="load">
+<h2>6. The load factor</h2>
+<p><b>Why:</b> chaining works, but the chains get longer as keys pile in. The number that predicts how long is the <em>load factor</em>,
+keys per bucket:</p>
+<pre data-viz="katex">\alpha = \frac{n}{m}</pre>
+<p>A successful lookup examines on average <span data-viz="katex">1 + \alpha/2 - \alpha/2n</span> keys.
+Insert <span data-scrub="n" data-target="load" data-min="0" data-max="96" data-value="24">24</span> keys:</p>
+<div data-instrument="load">
+  <p><label>Buckets <select class="m"><option>8</option><option selected>16</option><option>32</option></select></label></p>
+  <svg></svg>
+  <p><output></output></p>
+</div>
+<p class="notice">Notice that the measured average stays close to the formula: cost depends on <span data-viz="katex">\alpha</span>, not on <span data-viz="katex">n</span> alone. Keep <span data-viz="katex">\alpha</span> bounded and lookups stay cheap however many keys there are.</p>
+<p class="simpl">Simplification: the formula is an average over random hash outcomes; one particular set of keys can do better or worse, as the bars show.</p>
+</section>
+
+<!-- 7 · fix 2 ---------------------------------------------------------------- -->
+<section data-concept="resize">
+<h2>7. Growing: double and rehash</h2>
+<p><b>The second fix:</b> to keep <span data-viz="katex">\alpha</span> bounded, the table watches it.
+When an insert pushes it past a threshold of
+<span data-scrub="threshold" data-target="resize" data-min="0.5" data-max="1" data-step="0.01" data-value="0.75">0.75</span>,
+the table <span class="grow">doubles</span> its buckets and moves every key to its new bucket.</p>
+<div data-instrument="resize">
+  <svg></svg>
+  <p><output></output></p>
+</div>
+<div data-timeline="resize" data-duration="20"></div>
+<p>Real tables pick different thresholds: <a data-set="resize" data-state='{"threshold": 0.75}'>Java's HashMap uses 0.75</a>,
+and <a data-set="resize" data-state='{"threshold": 0.67}'>CPython's dict keeps its table at most two thirds full</a>.</p>
+<p class="notice">Notice that each <span class="grow">resize</span> moves every key, because <span data-viz="katex">h(k) \bmod m</span> changes with <span data-viz="katex">m</span>.</p>
+<p class="simpl">Simplification: CPython's dict uses open addressing, not chains; the two-thirds rule is what carries over.</p>
+</section>
+
+<!-- 8 · payoff ---------------------------------------------------------------- -->
+<section data-concept="amortized">
+<h2>8. Why moving everything is cheap on average</h2>
+<p><b>The payoff:</b> a resize that moves every key sounds expensive, and it is, once.
+Count one unit per insert plus one per moved key, over
+<span data-scrub="N" data-target="amortized" data-min="16" data-max="512" data-step="16" data-value="128">128</span> inserts:</p>
+<div data-instrument="amortized">
+  <p><label>Growth <select class="policy"><option value="double" selected>double (×2)</option><option value="x1.5">×1.5</option><option value="add8">add 8 buckets</option></select></label></p>
+  <svg></svg>
+  <p><output></output></p>
+</div>
+<p>Compare <a data-set="amortized" data-state='{"policy": "double", "N": 512}'>doubling over 512 inserts</a>
+with <a data-set="amortized" data-state='{"policy": "add8", "N": 512}'>adding 8 buckets each time</a>.</p>
+<p>Growing by a factor <span data-viz="katex">r</span> moves at most</p>
+<pre data-viz="katex">n\left(1 + \tfrac{1}{r} + \tfrac{1}{r^2} + \cdots\right) = \frac{n\,r}{r-1}</pre>
+<p>keys over <span data-viz="katex">n</span> inserts: <span data-viz="katex">2n</span> for doubling, so each insert costs at most 3 units on average.</p>
+<p class="notice">Notice that with doubling the spikes get rarer exactly as fast as they get taller, so the average saws up and down but never passes 3; adding a fixed 8 buckets makes the spikes come at a steady rate while they keep growing, and the average climbs without end.</p>
+<p class="simpl">Simplification: a resize is counted as one unit per moved key; allocating the new table costs extra in practice.</p>
+</section>
+
+<h2>Limits of this model</h2>
+<ul>
+  <li>Every curve assumes a good hash. A poor one, or keys chosen by an attacker, puts many keys in one bucket; Java's HashMap turns a chain of 8 or more into a balanced tree to bound the damage.</li>
+  <li>Counting key comparisons ignores memory. On real hardware, following chain pointers misses the cache, which is why many tables (CPython's among them) use open addressing instead of chains.</li>
+  <li>One resize still stalls the insert that triggers it. Systems that can't afford the pause, such as Redis, move keys a few at a time over many operations.</li>
+  <li>Tables here never shrink after deletions; real ones may.</li>
+</ul>
+
+<h2>Further reading</h2>
+<ul>
+  <li>Cormen, Leiserson, Rivest, Stein, <em>Introduction to Algorithms</em>, chapter 11 (hash tables) and chapter 17 (amortized analysis).</li>
+  <li><a href="https://en.wikipedia.org/wiki/Hash_table">Hash table</a> on Wikipedia, for open addressing and other schemes.</li>
+</ul>
+
+<h2>Sources</h2>
+<ul>
+  <li>FNV-1a constants (offset 2166136261, prime 16777619): <a href="http://www.isthe.com/chongo/tech/comp/fnv/">Fowler/Noll/Vo hash</a>.</li>
+  <li>Birthday problem, 23 people ≈ 50.7%, and the <span data-viz="katex">\sqrt{2m\ln 2} \approx 1.18\sqrt{m}</span> approximation: <a href="https://en.wikipedia.org/wiki/Birthday_problem">Birthday problem</a>.</li>
+  <li>Expected keys examined in a successful search with chaining, <span data-viz="katex">1 + \alpha/2 - \alpha/2n</span>: CLRS 3rd ed., Theorem 11.2 and its proof.</li>
+  <li>Java's default load factor 0.75 and treeification at 8: <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/HashMap.html">java.util.HashMap</a> and OpenJDK's <code>HashMap.java</code> (<code>TREEIFY_THRESHOLD</code>).</li>
+  <li>CPython's two-thirds rule (<code>USABLE_FRACTION</code>) and open addressing: <a href="https://github.com/python/cpython/blob/main/Objects/dictobject.c">Objects/dictobject.c</a>.</li>
+  <li>Redis incremental rehashing: <a href="https://github.com/redis/redis/blob/unstable/src/dict.c">src/dict.c</a>.</li>
+  <li>Illustrative, not sourced: the key words, their order, and every bucket count on this page.</li>
+</ul>
+</main>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const WORDS = ["apple","bread","cheese","dates","eggs","flour","grapes","honey","ice","jam","kale","lemon","mango","nuts",
+  "olive","pear","quince","rice","salt","tea","udon","vanilla","walnut","yam","zest","basil","chili","dill","fennel",
+  "garlic","ginger","hops","kiwi","leek","mint","nutmeg","onion","pepper","radish","sage","thyme","tofu"];
+// random six-letter keys from a fixed seed: sequential ones ("key1", "key2", …) spread unusually evenly
+const KEYS = (() => {
+  let seed = 42;
+  const r = () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+                    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  return Array.from({length: 600}, () => Array.from({length: 6}, () => "abcdefghijklmnopqrstuvwxyz"[Math.floor(r() * 26)]).join(""));
+})();
+
+function fnv(s) {
+  let h = 0x811c9dc5;
+  for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h >>> 0;
+}
+function S(parent, tag, attrs, style) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (style) e.setAttribute("style", style);
+  parent.appendChild(e);
+  return e;
+}
+function T(parent, x, y, text, style, anchor) {
+  const t = S(parent, "text", {x, y, "text-anchor": anchor || "middle", "dominant-baseline": "middle"},
+              "font:12px system-ui,sans-serif;fill:var(--hc-fg);" + (style || ""));
+  t.textContent = text;
+  return t;
+}
+function box(svg, x, y, w, h, fill, stroke) {
+  return S(svg, "rect", {x, y, width: w, height: h, rx: 4},
+           `fill:${fill || "none"};stroke:${stroke || "var(--hc-line)"};stroke-width:1.5`);
+}
+function inst(name) { return document.querySelector(`[data-instrument="${name}"]`); }
+function fresh(svg, w, h) { svg.replaceChildren(); svg.setAttribute("viewBox", `0 0 ${w} ${h}`); return svg; }
+// chains[b] = keys in bucket b, in insertion order
+function chain(keys, m) {
+  const c = Array.from({length: m}, () => []);
+  for (const k of keys) c[fnv(k) % m].push(k);
+  return c;
+}
+function drawChains(svg, chains, opts) {
+  const m = chains.length, w = 640, cw = w / m, bh = 22;
+  const rows = Math.max(4, ...chains.map(c => c.length));
+  fresh(svg, w, 30 + rows * (bh + 4));
+  chains.forEach((c, b) => {
+    const x = b * cw;
+    box(svg, x + 2, 2, cw - 4, 22, "none", opts.flash ? "var(--hc-warn)" : "var(--hc-line)");
+    T(svg, x + cw / 2, 13, String(b), "fill:var(--hc-muted)");
+    c.forEach((k, j) => {
+      const y = 30 + j * (bh + 4), last = k === opts.last;
+      box(svg, x + 3, y, cw - 6, bh, last ? "var(--hc-accent)" : "var(--hc-bg)", "var(--hc-accent)");
+      T(svg, x + cw / 2, y + bh / 2, cw < 60 ? k.slice(0, 3) : k, last ? "fill:var(--hc-on-accent)" : "fill:var(--hc-accent)");
+    });
+  });
+}
+
+// 1 · scan
+(() => {
+  const el = inst("scan"), svg = el.querySelector("svg"), out = el.querySelector("output");
+  let n = 16, target = -1, seed = 5;
+  function draw() {
+    const cols = 8, w = 80, h = 30;
+    fresh(svg, cols * w, Math.ceil(n / cols) * h + 4);
+    for (let i = 0; i < n; i++) {
+      const x = (i % cols) * w, y = Math.floor(i / cols) * h;
+      const found = i === target, checked = target >= 0 && i < target;
+      box(svg, x + 2, y + 2, w - 4, h - 4, found ? "var(--hc-accent)" : checked ? "var(--hc-line)" : "none",
+          found ? "var(--hc-accent)" : "var(--hc-line)");
+      T(svg, x + w / 2, y + h / 2 + 1, WORDS[i], found ? "fill:var(--hc-on-accent)" : "fill:var(--hc-accent)");
+    }
+    out.textContent = target < 0 ? `${n} keys, in no particular order.`
+      : `Found "${WORDS[target]}" after checking ${target + 1} of ${n} keys.`;
+  }
+  el.addEventListener("hc-param", e => { n = e.detail.value; target = -1; draw(); });
+  el.querySelector(".find").addEventListener("click", () => { seed = (seed * 7 + 3) % 101; target = seed % n; draw(); });
+  draw();
+})();
+
+// 2 · hash
+(() => {
+  const el = inst("hash"), svg = el.querySelector("svg"), input = el.querySelector(".k");
+  let m = 8;
+  function draw() {
+    const k = input.value, h = fnv(k), i = h % m, w = 640, cw = w / m;
+    fresh(svg, w, 120);
+    T(svg, 0, 14, `h("${k}") = ${h}`, "fill:var(--hc-accent);font-weight:600", "start");
+    T(svg, 0, 36, `${h} mod ${m} = ${i}`, "", "start");
+    for (let b = 0; b < m; b++) {
+      box(svg, b * cw + 3, 70, cw - 6, 40, b === i ? "var(--hc-accent)" : "none", b === i ? "var(--hc-accent)" : "var(--hc-line)");
+      T(svg, b * cw + cw / 2, 90, String(b), b === i ? "fill:var(--hc-on-accent);font-weight:600" : "fill:var(--hc-muted)");
+    }
+    S(svg, "line", {x1: 60, y1: 46, x2: i * cw + cw / 2, y2: 68}, "stroke:var(--hc-accent);stroke-width:1.5");
+  }
+  el.addEventListener("hc-param", e => { m = e.detail.value; draw(); });
+  input.addEventListener("input", draw);
+  draw();
+})();
+
+// 3 · naive: one key per bucket
+(() => {
+  const el = inst("naive"), svg = el.querySelector("svg"), out = el.querySelector("output"), m = 8;
+  let count = 0;
+  function place(c) {
+    const slots = Array(m).fill(null);
+    for (let j = 0; j < c; j++) {
+      const b = fnv(WORDS[j]) % m;
+      if (slots[b] !== null) return {slots, clash: {key: WORDS[j], b, holder: slots[b]}, placed: j};
+      slots[b] = WORDS[j];
+    }
+    return {slots, clash: null, placed: c};
+  }
+  const firstClash = (() => { for (let c = 1; c <= WORDS.length; c++) if (place(c).clash) return c; return WORDS.length; })();
+  function draw() {
+    const {slots, clash, placed} = place(count), w = 640, cw = w / m;
+    fresh(svg, w, 70);
+    slots.forEach((k, b) => {
+      const hit = clash && clash.b === b;
+      box(svg, b * cw + 3, 20, cw - 6, 40, k ? "var(--hc-bg)" : "none", hit ? "var(--hc-bad)" : k ? "var(--hc-accent)" : "var(--hc-line)");
+      T(svg, b * cw + cw / 2, 10, String(b), "fill:var(--hc-muted)");
+      if (k) T(svg, b * cw + cw / 2, 40, k, "fill:var(--hc-accent)");
+    });
+    out.textContent = clash ? `Collision: "${clash.key}" also hashes to bucket ${clash.b}, which holds "${clash.holder}". ${placed} of 8 buckets are used.`
+      : `${placed} ${placed === 1 ? "key" : "keys"} placed.`;
+    out.className = clash ? "clash" : "";
+  }
+  el.querySelector(".next").addEventListener("click", () => { count = Math.min(count + 1, firstClash); draw(); });
+  el.querySelector(".reset").addEventListener("click", () => { count = 0; draw(); });
+  el.addEventListener("hc-state", e => {
+    if (e.detail.until === "collision") count = firstClash;
+    else if (typeof e.detail.count === "number") count = e.detail.count;
+    draw();
+  });
+  draw();
+})();
+
+// 4 · birthday
+(() => {
+  const el = inst("birthday"), svg = el.querySelector("svg"), out = el.querySelector("output"), sel = el.querySelector(".m");
+  let n = 10;
+  const P = (n, m) => { let q = 1; for (let i = 0; i < n; i++) q *= 1 - i / m; return 1 - q; };
+  function draw() {
+    const m = +sel.value, X = Math.max(n, Math.ceil(4 * Math.sqrt(m))), w = 640, h = 220, L = 40, B = 190;
+    fresh(svg, w, h);
+    const x = v => L + (v / X) * (w - L - 10), y = p => B - p * (B - 15);
+    S(svg, "line", {x1: L, y1: B, x2: w - 10, y2: B}, "stroke:var(--hc-line)");
+    S(svg, "line", {x1: L, y1: y(0.5), x2: w - 10, y2: y(0.5)}, "stroke:var(--hc-line);stroke-dasharray:4 4");
+    T(svg, L - 6, y(0.5), "½", "fill:var(--hc-muted)", "end");
+    T(svg, L - 6, y(1), "1", "fill:var(--hc-muted)", "end");
+    T(svg, w - 10, B + 16, `${X} keys`, "fill:var(--hc-muted)", "end");
+    let d = "";
+    for (let i = 0; i <= X; i++) d += (i ? "L" : "M") + x(i).toFixed(1) + " " + y(P(i, m)).toFixed(1);
+    S(svg, "path", {d}, "fill:none;stroke:var(--hc-bad);stroke-width:2");
+    const p = P(n, m);
+    S(svg, "circle", {cx: x(n), cy: y(p), r: 5}, "fill:var(--hc-accent)");
+    out.textContent = `${n} keys in ${m} buckets: ${(100 * p).toFixed(1)}% chance of at least one collision.`;
+  }
+  el.addEventListener("hc-param", e => { n = e.detail.value; draw(); });
+  el.addEventListener("hc-state", e => { if (e.detail.m) { sel.value = String(e.detail.m); draw(); } });
+  sel.addEventListener("change", draw);
+  draw();
+})();
+
+// 5 · chaining over time
+(() => {
+  const el = inst("chaining"), svg = el.querySelector("svg"), out = el.querySelector("output"), keys = WORDS.slice(0, 24);
+  function draw(t) {
+    const n = Math.min(24, Math.floor(t * 2)), c = chain(keys.slice(0, n), 8);
+    drawChains(svg, c, {last: keys[n - 1]});
+    out.textContent = `${n} keys inserted; longest chain ${Math.max(...c.map(x => x.length))}.`;
+  }
+  el.addEventListener("hc-time", e => draw(e.detail.t));
+  draw(0);
+})();
+
+// 6 · load factor
+(() => {
+  const el = inst("load"), svg = el.querySelector("svg"), out = el.querySelector("output"), sel = el.querySelector(".m");
+  let n = 24;
+  function draw() {
+    const m = +sel.value, c = chain(KEYS.slice(0, n), m), a = n / m;
+    const measured = n ? c.reduce((s, ch) => s + ch.length * (ch.length + 1) / 2, 0) / n : 0;
+    const predicted = n ? 1 + a / 2 - a / (2 * n) : 0;
+    const w = 640, h = 190, bw = w / m, top = Math.max(6, ...c.map(x => x.length));
+    fresh(svg, w, h);
+    c.forEach((ch, b) => {
+      const bh = (ch.length / top) * (h - 40);
+      S(svg, "rect", {x: b * bw + 2, y: h - 20 - bh, width: bw - 4, height: bh}, "fill:var(--hc-accent)");
+      if (m <= 16) T(svg, b * bw + bw / 2, h - 8, String(b), "fill:var(--hc-muted)");
+    });
+    const ya = h - 20 - (a / top) * (h - 40);
+    S(svg, "line", {x1: 0, y1: ya, x2: w, y2: ya}, "stroke:var(--hc-warn);stroke-width:2;stroke-dasharray:6 4");
+    T(svg, 4, 8, `dashed line: α = ${a.toFixed(2)} keys per bucket`, "fill:var(--hc-warn);font-weight:600", "start");
+    out.textContent = `${n} keys, ${m} buckets. Average keys examined to find a key: measured ${measured.toFixed(2)}, formula ${predicted.toFixed(2)}.`;
+  }
+  el.addEventListener("hc-param", e => { n = e.detail.value; draw(); });
+  sel.addEventListener("change", draw);
+  draw();
+})();
+
+// 7 · resize over time
+(() => {
+  const el = inst("resize"), svg = el.querySelector("svg"), out = el.querySelector("output");
+  let threshold = 0.75, t = 0;
+  function simulate(n) {
+    let m = 4, last = null;
+    for (let i = 1; i <= n; i++) if (i / m > threshold) { last = {from: m, to: m * 2, at: i, moved: i - 1}; m *= 2; }
+    return {m, last};
+  }
+  function draw() {
+    const n = Math.min(40, Math.floor(t * 2)), {m, last} = simulate(n), keys = WORDS.concat(KEYS).slice(0, n);
+    const flash = last && last.at === n;
+    drawChains(svg, chain(keys, m), {last: keys[n - 1], flash});
+    out.textContent = `${n} keys, ${m} buckets, α = ${(n / m).toFixed(2)}.` +
+      (last ? ` Last resize: ${last.from} → ${last.to} buckets at key ${last.at}, moving ${last.moved} keys.` : "");
+    out.className = flash ? "grow" : "";
+  }
+  el.addEventListener("hc-time", e => { t = e.detail.t; draw(); });
+  el.addEventListener("hc-param", e => { threshold = e.detail.value; draw(); });
+  draw();
+})();
+
+// 8 · amortized cost
+(() => {
+  const el = inst("amortized"), svg = el.querySelector("svg"), out = el.querySelector("output"), sel = el.querySelector(".policy");
+  let N = 128;
+  const grow = {double: m => m * 2, "x1.5": m => Math.ceil(m * 1.5), add8: m => m + 8};
+  function costs() {
+    let m = 8; const c = [];
+    for (let i = 1; i <= N; i++) {
+      let cost = 1;
+      if (i > m) { cost += i - 1; m = grow[sel.value](m); }
+      c.push(cost);
+    }
+    return c;
+  }
+  function draw() {
+    const c = costs(), w = 640, h = 220, B = 200, L = 40, R = 580, top = Math.max(...c), bw = (R - L) / N;
+    const avg = []; let s = 0;
+    c.forEach((v, i) => { s += v; avg.push(s / (i + 1)); });
+    const topAvg = Math.max(4, Math.ceil(Math.max(...avg)));
+    fresh(svg, w, h);
+    // bars on the left axis (cost of each insert), the running average on the right axis
+    const y = v => B - (v / top) * (B - 20), ya = v => B - (v / topAvg) * (B - 20);
+    c.forEach((v, i) => S(svg, "rect", {x: L + i * bw, y: y(v), width: Math.max(1, bw - 0.5), height: B - y(v)},
+                          v > 1 ? "fill:var(--hc-warn)" : "fill:var(--hc-line)"));
+    S(svg, "path", {d: avg.map((v, i) => (i ? "L" : "M") + (L + (i + 0.5) * bw).toFixed(1) + " " + ya(v).toFixed(1)).join("")},
+      "fill:none;stroke:var(--hc-accent);stroke-width:2.5");
+    T(svg, L - 4, y(top), String(top), "fill:var(--hc-warn)", "end");
+    T(svg, L - 4, B, "0", "fill:var(--hc-muted)", "end");
+    T(svg, R + 4, ya(topAvg), String(topAvg), "fill:var(--hc-accent)", "start");
+    T(svg, R + 4, B, "0", "fill:var(--hc-muted)", "start");
+    T(svg, R + 4, ya(topAvg) + 16, "average", "fill:var(--hc-accent);font-size:11px", "start");
+    out.textContent = `After ${N} inserts: average cost ${(s / N).toFixed(2)} units per insert (blue line, right scale); ` +
+      `amber bars are single inserts that triggered a resize (left scale).`;
+  }
+  el.addEventListener("hc-param", e => { N = e.detail.value; draw(); });
+  el.addEventListener("hc-state", e => { if (e.detail.policy) { sel.value = e.detail.policy; draw(); } });
+  sel.addEventListener("change", draw);
+  draw();
+})();
+</script>
+</body>
+</html>

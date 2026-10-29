@@ -38,6 +38,16 @@
   CDN libraries run within it."
   3000)
 
+(def explorable-settle-ms
+  "Virtual time for an explorable page, whose interaction probe drives every
+  instrument before the screenshot."
+  12000)
+
+(defn explorable-page?
+  "The page file declares <meta name=\"hc-kind\" content=\"explorable\">."
+  [f]
+  (boolean (re-find #"<meta\s+name=\"hc-kind\"\s+content=\"explorable\"" (slurp (fs/file f)))))
+
 (def timeout-ms 45000)
 
 (defn- delete-profile!
@@ -57,14 +67,14 @@
   "Runs Chrome once; throws when it writes no screenshot.
   The screenshot alone decides success: Chrome has been seen to stall in
   teardown and exit non-zero after writing it."
-  [chrome url png flags]
+  [chrome url png flags settle]
   (let [profile (str (fs/create-temp-dir {:prefix "html-channel-chrome-"}))]
     (fs/delete-if-exists png)
     (try
       (let [proc (p/process (concat [chrome "--headless" "--disable-gpu" "--hide-scrollbars"
                                      "--no-first-run" "--no-default-browser-check"
                                      (str "--user-data-dir=" profile)
-                                     (str "--virtual-time-budget=" settle-ms)
+                                     (str "--virtual-time-budget=" settle)
                                      "--window-size=900,1600" (str "--screenshot=" png)]
                                     flags [url])
                             {:in "" :out :string :err :string})
@@ -110,12 +120,13 @@
           :hint (str "No Chrome found (set HTML_CHANNEL_CHROME). These errors come only from "
                      "readers' own page loads, and there are no screenshots.")}
          (let [id (subs (str (random-uuid)) 0 8)
-               dir (check-dir! root session)]
+               dir (check-dir! root session)
+               settle (if (explorable-page? f) explorable-settle-ms settle-ms)]
            (try
              (let [shots (into (array-map)
                                (for [[scheme flags] schemes
                                      :let [png (str (fs/absolutize (fs/path dir (str page "@" rev "-" scheme ".png"))))]]
-                                 (do (screenshot! chrome (str url "?_check=" id) png flags)
+                                 (do (screenshot! chrome (str url "?_check=" id) png flags settle)
                                      [scheme png])))]
                {:page page :rev rev :chrome true
                 :errors (cond->> (store/errors root session page rev id)

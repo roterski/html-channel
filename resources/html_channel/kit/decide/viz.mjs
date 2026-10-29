@@ -1,11 +1,11 @@
 import * as squint_core from '../squint-core.js';
 var declared_libs = function () {
-const G__8_1 = document.querySelector("meta[name=hc-libs]");
-const G__8_2 = (((G__8_1 == null)) ? (null) : (G__8_1.getAttribute("content")));
-const G__8_3 = (((G__8_2 == null)) ? (null) : (G__8_2.split(/[\s,]+/)));
-if ((G__8_3 == null)) {
+const G__11_1 = document.querySelector("meta[name=hc-libs]");
+const G__11_2 = (((G__11_1 == null)) ? (null) : (G__11_1.getAttribute("content")));
+const G__11_3 = (((G__11_2 == null)) ? (null) : (G__11_2.split(/[\s,]+/)));
+if ((G__11_3 == null)) {
 return null} else {
-return G__8_3.filter((function (_PERCENT_1) {
+return G__11_3.filter((function (_PERCENT_1) {
 return (_PERCENT_1.length > 0);
 
 }))};
@@ -36,7 +36,7 @@ return or_2_3} else {
 return []};
 
 })());
-const blocks_4 = Array.from(document.querySelectorAll("pre[data-viz]"));
+const blocks_4 = Array.from(document.querySelectorAll("pre[data-viz], span[data-viz]"));
 const by_lib_5 = squint_core.group_by((function (_PERCENT_1) {
 return _PERCENT_1.dataset.viz;
 

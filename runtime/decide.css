@@ -116,6 +116,24 @@ html.decide-is-offline [data-decision] { opacity: .75; }
 }
 #decide-tiers button[aria-pressed="true"] { background: var(--hc-accent); border-color: var(--hc-accent); color: var(--hc-on-accent); }
 
+/* ---- explorable controls (data-scrub, data-set, data-timeline) ---------- */
+
+[data-scrub] {
+  color: var(--hc-accent); border-bottom: 1px dashed var(--hc-accent);
+  cursor: ew-resize; user-select: none; touch-action: none; font-variant-numeric: tabular-nums;
+}
+[data-scrub]:focus-visible { outline: 2px solid var(--hc-accent); outline-offset: 2px; }
+a[data-set] { color: var(--hc-accent); text-decoration: underline dotted; cursor: pointer; }
+.hc-timeline { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin: .5rem 0; font: 14px system-ui, sans-serif; }
+.hc-timeline button { min-width: 2.2rem; min-height: 2rem; padding: .15rem .4rem; }
+.hc-timeline input[type=range] { flex: 1 1 10rem; min-width: 8rem; }
+.hc-timeline output { min-width: 4.5rem; font-variant-numeric: tabular-nums; color: var(--hc-muted); }
+#hc-pause {
+  position: fixed; left: 1rem; bottom: 1rem; z-index: 10; padding: .35rem .7rem; border-radius: 8px;
+  font: 14px system-ui, sans-serif; background: var(--hc-card); color: var(--hc-fg);
+  border: 1px solid var(--hc-line); box-shadow: 0 2px 8px #0003; cursor: pointer;
+}
+
 @media (prefers-color-scheme: dark) {
   #decide-clear-carried { background: #2e1065; color: #ddd6fe; border-color: #8b5cf6; }
 }

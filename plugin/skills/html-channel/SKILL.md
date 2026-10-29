@@ -10,6 +10,8 @@ The markup rules are in [CONVENTION.md](CONVENTION.md). Follow them exactly.
 Its "Choosing a representation" and "Choosing a control" tables say which form fits which content and question.
 [example.html](example.html) is a worked page that uses every form and control. Read it before writing your first page.
 Your page may use JavaScript to render things, but answers go only through its `data-decision` controls.
+To explain a topic in depth with instruments the reader drives, also read [EXPLORABLE.md](EXPLORABLE.md)
+and the worked [example-explorable.html](example-explorable.html).
 
 Pick the first branch that applies.
 

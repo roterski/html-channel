@@ -173,7 +173,7 @@
         (spit (fs/file (decisions-file root session)) (str (json/generate-string stored) "\n") :append true))
       stored)))
 
-(def error-kinds #{"load" "js" "viz" "undeclared" "dialog"})
+(def error-kinds #{"load" "js" "viz" "undeclared" "dialog" "explorable" "inert" "unprobed"})
 
 (defn- check-error-file
   "The errors one headless check's page load reported."

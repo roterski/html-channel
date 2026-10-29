@@ -9,6 +9,9 @@ Answers are saved only through `data-decision` controls, which one shared runtim
 For a worked example of every form and control below, read the source of `/_kit/example.html` on the server
 (for example, `curl http://127.0.0.1:8787/_kit/example.html`), or `example.html` next to this file in the skill.
 
+Writing a page that explains a topic in depth, with instruments the reader drives? Also read `/_kit/EXPLORABLE.md`
+(`EXPLORABLE.md` next to this file in the skill).
+
 ## Where pages live
 
 ```
@@ -92,13 +95,14 @@ For a static picture, the kit's forms are simpler (see Choosing a representation
 The kit renders these blocks itself. List the libraries a page uses in `<head>`:
 
 ```html
-<meta name="hc-libs" content="mermaid vega-lite">
+<meta name="hc-libs" content="mermaid vega-lite katex">
 ```
 
 | Block | Content |
 |---|---|
 | `<pre data-viz="mermaid">` | a Mermaid diagram |
 | `<pre data-viz="vega-lite">` | a Vega-Lite JSON spec |
+| `<pre data-viz="katex">`, `<span data-viz="katex">` | display math, inline math (TeX) |
 
 - A block that fails to render keeps its source visible, gets an inline notice, and is reported to you as an error of kind `viz`.
 - A block whose library isn't listed in `hc-libs` is reported as `undeclared` and left as text.
@@ -204,5 +208,6 @@ Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 
 In this example, `notes` has `rev` 1, which is lower than the page's `rev` 2. That means the answer was carried over and not re-confirmed.
 Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render) and `undeclared`.
+Explorable pages add `explorable`, `inert` and `unprobed` (see EXPLORABLE.md).
 During `check_page`, `dialog` means the page called `alert()`, `confirm()` or `prompt()`, which would interrupt the reader.
 `check_page` adds `no-reporter` when the page never loaded `/_kit/boot.js`: then no other error could have been seen.

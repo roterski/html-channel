@@ -1,5 +1,5 @@
 (ns decide.viz
-  "Renders <pre data-viz=\"<lib>\"> blocks with the adapters a page declares in
+  "Renders <pre data-viz=\"<lib>\"> blocks, and inline <span data-viz=\"<lib>\"> ones, with the adapters a page declares in
   <meta name=\"hc-libs\" content=\"<lib> …\">.
 
   An adapter is /_kit/viz/<lib>.mjs (dashes become underscores) exporting
@@ -36,7 +36,7 @@
   "Pre: the DOM is parsed. `report!` is (fn [kind message source])."
   [report!]
   (let [declared (or (declared-libs) [])
-        blocks (js/Array.from (js/document.querySelectorAll "pre[data-viz]"))
+        blocks (js/Array.from (js/document.querySelectorAll "pre[data-viz], span[data-viz]"))
         by-lib (group-by #(.. % -dataset -viz) blocks)]
     (doseq [[lib bs] by-lib
             :when (not (.includes declared lib))]
