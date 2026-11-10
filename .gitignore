@@ -1,5 +1,6 @@
 .lsp/
 .clj-kondo/
+.cpcache/
 node_modules/
 build/
 examples/**/decisions.jsonl

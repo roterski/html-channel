@@ -46,5 +46,5 @@
 
   test {:doc "Unit tests, then browser and MCP end-to-end tests (needs .venv with playwright)"
         :task (do (shell "bb -cp src:resources:test -m html-channel.test-runner")
-                  (doseq [t ["test/e2e.py" "test/takeover.py" "test/mcp_e2e.py" "test/revisions.py" "test/rich.py" "test/explorable.py"]]
+                  (doseq [t ["test/e2e.py" "test/takeover.py" "test/mcp_e2e.py" "test/revisions.py" "test/rich.py" "test/explorable.py" "test/code_links.py"]]
                     (shell ".venv/bin/python" t)))}}}

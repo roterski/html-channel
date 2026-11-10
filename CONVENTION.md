@@ -71,7 +71,7 @@ A page with no `<style>` at all is readable.
 | `<button data-deeper="TARGET">` | a request to go deeper on `TARGET` (see Page kinds) |
 
 - Each `ID` is unique per question on the page.
-- The ids `status` (the Done button) and `deeper` are reserved.
+- The ids `status` (the Done button), `deeper` and `sources` (see Code links) are reserved.
 
 ## JavaScript
 
@@ -107,6 +107,51 @@ The kit renders these blocks itself. List the libraries a page uses in `<head>`:
 - A block that fails to render keeps its source visible, gets an inline notice, and is reported to you as an error of kind `viz`.
 - A block whose library isn't listed in `hc-libs` is reported as `undeclared` and left as text.
 
+## Code links
+
+Link every piece of code you show, block or inline, to the code it comes from.
+The reader opens it in VS Code or on GitHub, or copies its path, from their own checkout.
+
+Declare each repo once in `<head>`:
+
+```html
+<meta name="hc-repo" content="name=api; root=/Users/me/src/api; web=https://github.com/acme/api/blob/3f9c2a1b…/">
+```
+
+- `name` matches `[a-z0-9._-]+` and is unique on the page.
+- `root` is the absolute path of the checkout you read the code from, which may differ from your working directory.
+- `web` is optional. When `origin` is on GitHub, build it from `origin` as an https URL plus `/blob/` plus `git rev-parse HEAD` and a slash.
+  Use HEAD even if it isn't pushed: the link works once it is. Other hosts get no `web`.
+
+Mark each reference with `data-src="NAME:PATH#Lstart-Lend"`. `PATH` is relative to the repo root; the lines are optional.
+`PATH` may contain spaces. Write a `#` in it as `%23` and a `%` as `%25`.
+
+```html
+<pre data-src="api:src/cache.ts#L10-L20">if (size > max) evict(oldest)</pre>
+<p>Called from <code data-src="api:src/store.ts#L42">store.put</code>.</p>
+```
+
+- Only reference code that exists: the file in `root`, and the lines when you give them.
+- Always write `NAME:`, even when the page has a single repo.
+- A block (`<pre data-src>`, or `<pre><code data-src>`) gets a link line above it; inline code becomes the link. Each gets a copy button.
+  Inline code inside your own `<a>` keeps your link and gets only the copy button.
+- Changing or removing a `data-src` later replaces or removes its link.
+- Your own SVG may hold `<a data-src="…">`. The kit sets its `href` and `xlink:href`, and keeps them current.
+- References your page JS adds later are linked when they appear.
+- A malformed meta or reference, or one naming an undeclared repo, is reported as `code-link` and left as text.
+
+The kit adds a collapsed bar at the top of the page: the format (VS Code or GitHub), and each repo's root and GitHub URL.
+The reader's changes are kept per page in their browser, and "Save as default" shares them with other pages of the same repo.
+The bar opens by itself when a root differs from yours.
+
+On a decision page, clicking Done also records `sources`, the settings the reader answered under:
+
+```json
+{"format":"vscode","repos":{"api":{"root":"/home/me/api-fork","default":"/Users/me/src/api","overridden":true}}}
+```
+
+`sources` is not a question. When a repo is `overridden`, the reader looked at a different checkout than you did.
+
 ## Depth
 
 What the reader needs for the decision stays visible. Put supporting detail in `<details>`.
@@ -130,6 +175,7 @@ Pick the form that matches the content's shape. These are what the kit offers; a
 | Options compared on several criteria | `<table>`, one row per option, one column per criterion |
 | Flow, sequence, dependencies, state | `<pre data-viz="mermaid">` |
 | Numbers over time or across categories | `<pre data-viz="vega-lite">` |
+| Code from a repo | `<pre data-src>` or `<code data-src>` (see Code links) |
 | A main point with supporting detail | visible summary, detail in `<details>` |
 | Layers of abstraction | `data-tier` levels |
 | A spatial or structural picture | inline `<svg>` using the color tokens |
@@ -185,7 +231,7 @@ To revise a page, rewrite the same file.
 - The server snapshots each new version as `<page>@<n>.html`, and that version is revision `n`.
 - An open tab reloads itself when the page gets a new revision.
 - Earlier answers carry over to the new revision for any control with the same `ID`. They are shown as *carried*, and a "Clear carried answers" button appears.
-- `status` and `deeper` never carry over: each revision needs its own Done.
+- `status`, `deeper` and `sources` never carry over: each revision needs its own Done.
 
 ## What the agent gets back
 
@@ -207,7 +253,7 @@ Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 ```
 
 In this example, `notes` has `rev` 1, which is lower than the page's `rev` 2. That means the answer was carried over and not re-confirmed.
-Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render) and `undeclared`.
+Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render), `undeclared` and `code-link` (a malformed repo meta or code reference).
 Explorable pages add `explorable`, `inert`, `unprobed` and `probe-cut-off` (see EXPLORABLE.md).
 During `check_page`, `dialog` means the page called `alert()`, `confirm()` or `prompt()`, which would interrupt the reader.
 `check_page` adds `no-reporter` when the page never loaded `/_kit/boot.js`: then no other error could have been seen.

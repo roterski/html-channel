@@ -67,6 +67,16 @@
     (store/append-entry! root "s1" {:page "p" :id "status" :value "done"})
     (is (:done (store/effective root "s1" "p")))))
 
+(deftest sources-counts-only-at-its-revision
+  (let [root (temp-dir)
+        sources {:format "vscode" :repos {:api {:root "/r" :default "/r" :overridden false}}}]
+    (write-page! root "s1" "p" "v1")
+    (store/append-entry! root "s1" {:page "p" :id "sources" :value sources})
+    (is (= sources (get-in (store/effective root "s1" "p") [:decisions "sources" :value])))
+    (write-page! root "s1" "p" "v2")
+    (is (not (contains? (:decisions (store/effective root "s1" "p")) "sources"))
+        "a rev-1 sources must not pass for the settings behind a rev-2 Done")))
+
 (deftest append-entry-rules
   (let [root (temp-dir)]
     (write-page! root "s1" "p" "v1")
@@ -166,6 +176,11 @@
                      (store/append-error! root "s1" {:page "p" :kind "js" :message "m" :check bad}))
             (pr-str bad))))
     (is (thrown? clojure.lang.ExceptionInfo (store/append-check-run! root "s1" {:page "../x" :check "c"})))))
+
+(deftest code-link-is-an-error-kind
+  (let [root (temp-dir)]
+    (write-page! root "s1" "p" "v1")
+    (is (= "code-link" (:kind (store/append-error! root "s1" {:page "p" :kind "code-link" :message "bad ref"}))))))
 
 (deftest errors-are-stamped-and-stored-once
   (let [root (temp-dir)

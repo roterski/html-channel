@@ -116,6 +116,27 @@ html.decide-is-offline [data-decision] { opacity: .75; }
 }
 #decide-tiers button[aria-pressed="true"] { background: var(--hc-accent); border-color: var(--hc-accent); color: var(--hc-on-accent); }
 
+/* ---- code links (data-src, meta hc-repo) ---------------------------------- */
+
+#decide-code-links {
+  margin: 0 0 1rem; padding: .45rem .75rem; border-radius: 8px; font: 14px system-ui, sans-serif;
+  background: var(--hc-card); color: var(--hc-fg); border: 1px solid var(--hc-line);
+}
+#decide-code-links summary { cursor: pointer; }
+#decide-code-links[open] summary { margin-bottom: .5rem; }
+#decide-code-links label { display: flex; flex-wrap: wrap; gap: .25rem .5rem; align-items: center; }
+#decide-code-links fieldset { display: grid; gap: .35rem; margin: .5rem 0; padding: .4rem .65rem; border: 1px solid var(--hc-line); border-radius: 6px; }
+#decide-code-links input[type=text] { flex: 1 1 16rem; min-width: 0; font: 13px ui-monospace, monospace; }
+#decide-code-links .hc-cl-unavailable { color: var(--hc-muted); }
+#decide-code-links .hc-cl-hint, #decide-code-links .hc-cl-root-hint { color: var(--hc-bad); }
+#decide-code-links .hc-cl-actions { display: flex; gap: .5rem; }
+.hc-src { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .75rem 0 .25rem; font: 13px ui-monospace, monospace; }
+.hc-src + pre { margin-top: 0; }
+a.hc-src-link { color: var(--hc-accent); }
+a.hc-src-link code { color: inherit; }
+.hc-src-copy { font: 12px system-ui, sans-serif; padding: 0 .4rem; margin-left: .25rem; cursor: pointer; }
+.hc-src-path { margin-left: .4rem; font: 12px ui-monospace, monospace; }
+
 /* ---- explorable controls (data-scrub, data-set, data-timeline) ---------- */
 
 [data-scrub] {

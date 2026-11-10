@@ -133,11 +133,17 @@
   (doseq [b (js/document.querySelectorAll "button[data-deeper]")]
     (.toggle (.-classList b) "chosen" (.includes (or targets []) (.. b -dataset -deeper)))))
 
+(def report-only-ids
+  "Ids the runtime records for the agent but never shows back on the page:
+  the code-link settings live in the reader's browser (decide.code-links)."
+  #{"sources"})
+
 (defn restore!
   "Shows the effective answers. Pre: `rev` is the page's current revision."
   [decisions rev]
   (let [carried (atom [])]
-    (doseq [[id entry] (js/Object.entries decisions)]
+    (doseq [[id entry] (js/Object.entries decisions)
+            :when (not (contains? report-only-ids id))]
       (let [els (els-for id)
             v (:value entry)
             carried? (and (< (:rev entry) rev) (some? v) (pos? (.-length els)))]

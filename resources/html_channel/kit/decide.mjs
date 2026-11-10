@@ -1,4 +1,6 @@
 import * as squint_core from './squint-core.js';
+import * as code_links from './decide/code_links.mjs';
+import * as decide_DOT_code_links from './decide/code_links.mjs';
 import * as core from './decide/core.mjs';
 import * as decide_DOT_core from './decide/core.mjs';
 import * as explore from './decide/explore.mjs';
@@ -17,6 +19,7 @@ core.start_BANG_(http.transport());
 tiers.start_BANG_();
 viz.start_BANG_(core.report_error_BANG_);
 explore.start_BANG_(core.report_error_BANG_);
+code_links.start_BANG_(core.report_error_BANG_);
 if (squint_core.truth_(explore.explorable_QMARK_())) {
 lint.start_BANG_(core.report_error_BANG_);
 if (squint_core.truth_((new URLSearchParams(location.search)).get("_check"))) {

@@ -9,6 +9,7 @@
 <script type="module" src="/_kit/decide.mjs"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <meta name="hc-libs" content="mermaid vega-lite">
+<meta name="hc-repo" content="name=session-svc; root=/srv/session-svc; web=https://github.com/acme/session-svc/blob/4e1d0c9a7b3f2e8d6c5b4a3928170f6e5d4c3b2a/">
 <meta name="hc-tiers" content="Overview,Shape,Detail">
 <style>
   .lede, .use { color: var(--hc-muted); }
@@ -282,10 +283,11 @@ sequenceDiagram
 <!-- 7. before/after + checkbox -->
 <section id="cols">
   <h2>7. The change <span class="tag">two columns</span></h2>
-  <p class="use">Two side-by-side columns show before and after, and they stack on narrow screens. This is a layout pattern, not a kit component: a few lines of grid CSS.</p>
+  <p class="use">Two side-by-side columns show before and after, and they stack on narrow screens. This is a layout pattern, not a kit component: a few lines of grid CSS.
+  The "Before" block and <code data-src="session-svc:src/session/metrics.clj#L8">metrics/timed</code> carry <code>data-src</code>, so the kit links them to the code: see the "Code links" bar at the top.</p>
   <div class="cols">
     <div class="before"><h4>Before</h4>
-<pre><code>(defn fetch [id]
+<pre data-src="session-svc:src/session/store.clj#L12-L14"><code>(defn fetch [id]
   (metrics/timed :fetch
     (db/query id)))</code></pre>
       <p>Every request reaches Postgres.</p>

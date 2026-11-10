@@ -26,11 +26,11 @@ return document.documentElement.classList.toggle("decide-is-offline", squint_cor
 };
 var report_error_BANG_ = function (kind, message, source) {
 const temp__23255__auto___1 = (() => {
-const G__1_2 = window;
-const G__1_3 = (((G__1_2 == null)) ? (null) : (G__1_2.htmlChannel));
-if ((G__1_3 == null)) {
+const G__18_2 = window;
+const G__18_3 = (((G__18_2 == null)) ? (null) : (G__18_2.htmlChannel));
+if ((G__18_3 == null)) {
 return null} else {
-return G__1_3.reportError};
+return G__18_3.reportError};
 
 })();
 if (squint_core.truth_(temp__23255__auto___1)) {
@@ -64,8 +64,8 @@ return mark_BANG_(id_9, s);
 };
 
 });
-const G__2_11 = outcome_7;
-switch (G__2_11) {case "saved":
+const G__19_11 = outcome_7;
+switch (G__19_11) {case "saved":
 settled_BANG__10("saved");
 continue;
 
@@ -97,10 +97,10 @@ return p_3;
 
 };
 var remove_clear_button_BANG_ = function () {
-const G__3_1 = document.getElementById("decide-clear-carried");
-if ((G__3_1 == null)) {
+const G__20_1 = document.getElementById("decide-clear-carried");
+if ((G__20_1 == null)) {
 return null} else {
-return G__3_1.remove()};
+return G__20_1.remove()};
 
 };
 var uncarry_BANG_ = function (id) {
@@ -177,12 +177,14 @@ b_2.classList.toggle("chosen", ((squint_core.truth_(targets)) ? (targets) : ([])
 return null;
 
 };
+var report_only_ids = (new Set (["sources"]));
 var restore_BANG_ = function (decisions, rev) {
 const carried_1 = squint_core.atom([]);
 for (let G__2 of squint_core.iterable(Object.entries(decisions))) {
 const vec___3_6 = G__2;
 const id_7 = squint_core.nth(vec___3_6, 0, null);
 const entry_8 = squint_core.nth(vec___3_6, 1, null);
+if (!squint_core.contains_QMARK_(report_only_ids, id_7)) {
 const els_9 = els_for(id_7);
 const v_10 = squint_core.get(entry_8, "value");
 const carried_QMARK__11 = (((squint_core.get(entry_8, "rev") < rev)) && (((!(v_10 == null)) && ((els_9.length > 0)))));
@@ -192,7 +194,7 @@ for (let G__12 of squint_core.iterable(els_9)) {
 const el_13 = G__12;
 show_value_BANG_(el_13, v_10);
 el_13.dataset.state = ((carried_QMARK__11) ? ("carried") : ("saved"))
-}
+}}
 };
 squint_core.swap_BANG_(state, squint_core.assoc, "carried", squint_core.deref(carried_1));
 if (squint_core.truth_(squint_core.seq(squint_core.deref(carried_1)))) {
@@ -301,4 +303,4 @@ return setInterval(check_BANG_, 3000);
 
 };
 
-export { restore_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, save_early_answers_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_, send_queue_BANG_ }
+export { restore_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, save_early_answers_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, report_only_ids, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_, send_queue_BANG_ }

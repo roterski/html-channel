@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache fix: code links</title>
+<link rel="stylesheet" href="/_kit/decide.css">
+<script src="/_kit/boot.js"></script>
+<script type="module" src="/_kit/decide.mjs"></script>
+<meta name="hc-repo" content="name=api; root=/work/api; web=https://github.com/acme/api/blob/0123456789abcdef0123456789abcdef01234567/">
+<meta name="hc-repo" content="name=docs; root=/work/my docs">
+</head>
+<body>
+<div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
+  <strong>html-channel server is not running</strong>: your answers won't be saved.
+  Start it with <code>html-channel serve</code> in the project; this notice then disappears on its own.
+</div>
+<h1>Cache fix</h1>
+<p>The eviction check runs before the size update:</p>
+<pre id="block" data-src="api:src/cache.ts#L10-L20">if (size > max) evict(oldest)
+size += entry.bytes</pre>
+<p>It is called from <code id="inline" data-src="api:src/store.ts#L42">store.put</code>,
+and the limits are documented in <code id="doc" data-src="docs:guide/limits.md#L3">limits.md</code>.</p>
+<p>Swap the two lines?</p>
+<button data-decision="swap" data-choice="yes">Yes</button>
+<button data-decision="swap" data-choice="no">No</button>
+<p><button data-decision="status" data-choice="done">Done</button></p>
+</body>
+</html>

@@ -248,10 +248,10 @@ return squint_core.swap_BANG_(state_6, squint_core.assoc, "frame", requestAnimat
 });
 const set_playing_BANG__32 = (function (p) {
 if (!squint_core._EQ_(p, squint_core.get(squint_core.deref(state_6), "playing"))) {
-const G__4_33 = squint_core.get(squint_core.deref(state_6), "frame");
-if ((G__4_33 == null)) {
+const G__21_33 = squint_core.get(squint_core.deref(state_6), "frame");
+if ((G__21_33 == null)) {
 } else {
-cancelAnimationFrame(G__4_33)};
+cancelAnimationFrame(G__21_33)};
 if (squint_core.truth_(((squint_core.truth_(p)) ? ((squint_core.get(squint_core.deref(state_6), "t") >= duration_3)) : (p)))) {
 squint_core.swap_BANG_(state_6, squint_core.assoc, "t", 0)};
 squint_core.swap_BANG_(state_6, squint_core.assoc, "playing", p, "last", null, "frame", ((squint_core.truth_(p)) ? (requestAnimationFrame(tick_21)) : (null)));
