@@ -6,6 +6,8 @@
     GET  /_kit/<file>                    runtime files from the classpath
     GET  /                               index of pages
     GET  /<mount>/<session>/<file>       static file (pages get their rev checked first)
+    GET  /<mount>/<session>/<page>       302 to <page>.html when that page exists and no
+                                         file is named <page>; agents sometimes drop the .html
     GET  /<mount>/<session>/_rev?page=   {rev}; the runtime's health poll
     GET  /<mount>/<session>/_decisions?page=   effective answers
     POST /<mount>/<session>/_decisions   append one entry
@@ -77,6 +79,8 @@
 
 (defn- not-found [] (respond 404 "text/plain" "not found"))
 
+(defn- redirect [location] (assoc-in (respond 302) [:headers "Location"] location))
+
 (defn- content-type [name] (get mime (fs/extension name) "application/octet-stream"))
 
 (defn- query-param [query-string k]
@@ -108,7 +112,7 @@
                   "<body style='font:15px system-ui;max-width:44rem;margin:3rem auto;padding:0 1rem'>"
                   "<h1>Pages</h1><ul>" (apply str rows) "</ul>"))))
 
-(defn- session-route [{:keys [request-method query-string body]} root session rest]
+(defn- session-route [{:keys [request-method uri query-string body]} root session rest]
   (let [page (query-param query-string "page")]
     (cond
       (and (= rest "_rev") (= request-method :get))
@@ -134,9 +138,13 @@
       (= request-method :get)
       (do (when-let [[_ page] (re-matches #"([a-z0-9][a-z0-9-]*)\.html" rest)]
             (store/current-rev! root session page))
-          (if-let [f (file-under (store/session-dir root session) rest)]
-            (respond 200 (content-type rest) (fs/file f))
-            (not-found)))
+          (let [dir (store/session-dir root session)]
+            (if-let [f (file-under dir rest)]
+              (respond 200 (content-type rest) (fs/file f))
+              (if (and (re-matches #"[a-z0-9][a-z0-9-]*" rest) (file-under dir (str rest ".html")))
+                ;; `uri` is the raw request path, so mount and session stay as sent
+                (redirect (str uri ".html" (when (seq query-string) (str "?" query-string))))
+                (not-found)))))
 
       :else (not-found))))
 
