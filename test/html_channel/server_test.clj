@@ -86,6 +86,31 @@
     (is (= 404 (:status (req :get (str base "missing.html")))))
     (is (= 400 (:status (req :get (str base "_rev") "page=Bad" nil))))))
 
+(deftest page-without-extension-redirects
+  (let [{:keys [root base]} (setup)]
+    (testing "an existing page redirects to its .html URL, without snapshotting"
+      (let [r (req :get (str base "p"))]
+        (is (= 302 (:status r)))
+        (is (= (str base "p.html") (get-in r [:headers "Location"])))
+        (is (= "no-store" (get-in r [:headers "Cache-Control"])))
+        (is (not (fs/exists? (fs/path root "s1" "p@1.html"))))))
+    (testing "the query string is kept"
+      (is (= (str base "p.html?_check=c1")
+             (get-in (req :get (str base "p") "_check=c1" nil) [:headers "Location"]))))
+    (testing "the followed redirect snapshots as before"
+      (is (= 200 (:status (req :get (str base "p.html")))))
+      (is (fs/exists? (fs/path root "s1" "p@1.html"))))
+    (testing "a missing page is still a 404"
+      (is (= 404 (:status (req :get (str base "missing"))))))
+    (testing "snapshots and routes don't match a page name"
+      (is (= 404 (:status (req :get (str base "p@1")))))
+      (is (= 200 (:status (req :get (str base "_rev") "page=p" nil)))))
+    (testing "a file with exactly that name is served instead"
+      (spit (fs/file root "s1" "p") "plain")
+      (let [r (req :get (str base "p"))]
+        (is (= 200 (:status r)))
+        (is (= "plain" (:body r)))))))
+
 (deftest post-rules
   (let [{:keys [root base]} (setup)
         post #(req :post (str base "_decisions") nil (json/generate-string %))]
@@ -110,7 +135,11 @@
         stop (server/try-bind port)]
     (try
       (let [{:keys [base]} (setup)]
-        (is (= 200 (:status (hc/get (str "http://127.0.0.1:" port base "p.html") {:throw false})))))
+        (is (= 200 (:status (hc/get (str "http://127.0.0.1:" port base "p.html") {:throw false}))))
+        (testing "a page URL without .html follows the redirect to the page"
+          (let [r (hc/get (str "http://127.0.0.1:" port base "p") {:throw false})]
+            (is (= 200 (:status r)))
+            (is (= "<p>v1</p>" (:body r))))))
       (testing "a second bind on the same port fails, so only one owner"
         (is (nil? (server/try-bind port))))
       (finally (http-kit-stop stop)))))
