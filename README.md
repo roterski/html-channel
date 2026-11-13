@@ -6,7 +6,7 @@ The agent writes a static page into `<project>/ai/html-channel/<session>/`.
 You open it in a browser and answer with buttons and fields.
 The agent reads your answers back, either blocking on an MCP tool or through the CLI.
 
-- Pages may use JavaScript to render, and the kit renders Mermaid, Vega-Lite and KaTeX blocks itself. Explorable pages, which explain a topic with instruments the reader drives, get scrubbable numbers, state links, timelines and an interaction check ([EXPLORABLE.md](EXPLORABLE.md)). Answers go only through the runtime's controls. The markup rules are in [CONVENTION.md](CONVENTION.md).
+- Pages may use JavaScript to render, and the kit renders Mermaid, Vega-Lite and KaTeX blocks itself. Explorable pages, which explain a topic with instruments the reader drives, get scrubbable numbers, state links, timelines and an interaction check ([EXPLORABLE.md](EXPLORABLE.md)). Statecharts the reader drives come from a definition alone ([STATECHART.md](STATECHART.md)). Answers go only through the runtime's controls. The markup rules are in [CONVENTION.md](CONVENTION.md).
 - Before showing a page, the agent can render it in headless Chrome (`check_page`) to catch errors and see light and dark screenshots.
 - It runs on localhost only (`127.0.0.1:8787`), for a single user, with no auth.
   Other websites open in your browser can't read it or write to it.
@@ -121,11 +121,11 @@ Screenshots go to `<session>/.check/`, which it keeps out of git.
 
 ```sh
 npm i                                    # squint, for building the runtime only
-bb build                                 # runtime/ -> resources/html_channel/kit/; copies CONVENTION.md, EXPLORABLE.md and the skill
+bb build                                 # runtime/ -> resources/html_channel/kit/; copies CONVENTION.md, EXPLORABLE.md, STATECHART.md and the skill
 python3 -m venv .venv && .venv/bin/pip install playwright && .venv/bin/playwright install chromium
 bb test                                  # unit tests, then browser and MCP end-to-end tests
 bb serve --root examples                 # try the demo: open http://127.0.0.1:8787/
 ```
 
 Build outputs (`resources/html_channel/`, `skill/html-channel/CONVENTION.md`, `plugin/skills/`) are committed, so installing needs only `bb`.
-Edit `CONVENTION.md` and `EXPLORABLE.md` at the repo root, never their copies.
+Edit `CONVENTION.md`, `EXPLORABLE.md` and `STATECHART.md` at the repo root, never their copies.

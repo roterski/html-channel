@@ -48,10 +48,10 @@ return `${u_2??''}${"/"}`};
 
 };
 var remote_of = function (web) {
-const G__1_1 = web;
-if ((G__1_1 == null)) {
+const G__2_1 = web;
+if ((G__2_1 == null)) {
 return null} else {
-return G__1_1.replace(/\/blob\/[^/]+\/?$/, "")};
+return G__2_1.replace(/\/blob\/[^/]+\/?$/, "")};
 
 };
 var meta_fields = function (content) {
@@ -124,16 +124,16 @@ const m_2 = temp__23314__auto___1;
 const path_3 = decoded(m_2[2]);
 if (squint_core.truth_(((squint_core.truth_(path_3)) ? (squint_core.not(path_3.startsWith("/"))) : (path_3)))) {
 return ({"repo": m_2[1], "path": path_3, "start": (() => {
-const G__2_4 = m_2[3];
-if ((G__2_4 == null)) {
+const G__3_4 = m_2[3];
+if ((G__3_4 == null)) {
 return null} else {
-return parseInt(G__2_4, 10)};
+return parseInt(G__3_4, 10)};
 
 })(), "end": (() => {
-const G__3_5 = m_2[4];
-if ((G__3_5 == null)) {
+const G__4_5 = m_2[4];
+if ((G__4_5 == null)) {
 return null} else {
-return parseInt(G__3_5, 10)};
+return parseInt(G__4_5, 10)};
 
 })()});
 };
@@ -156,10 +156,10 @@ return ref_2;
 };
 var read_json = function (k) {
 try{
-const G__4_1 = localStorage.getItem(k);
-if ((G__4_1 == null)) {
+const G__5_1 = localStorage.getItem(k);
+if ((G__5_1 == null)) {
 return null} else {
-return JSON.parse(G__4_1)};
+return JSON.parse(G__5_1)};
 }
 catch(__2){
 return null;
@@ -338,11 +338,11 @@ return squint_core.conj(squint_core.vec(squint_core.remove((function (_PERCENT_1
 return same_repo_QMARK_(_PERCENT_1, repo);
 
 }), records)), (() => {
-const G__5_9 = ({"name": squint_core.get(repo, "name"), "root": squint_core.get(repo, "root"), "savedRoot": squint_core.get(squint_core.get(s_1, "roots"), squint_core.get(repo, "name"))});
-const G__5_10 = ((squint_core.truth_(squint_core.get(repo, "remote"))) ? (({...G__5_9,["remote"]:squint_core.get(repo, "remote")})) : (G__5_9));
+const G__6_9 = ({"name": squint_core.get(repo, "name"), "root": squint_core.get(repo, "root"), "savedRoot": squint_core.get(squint_core.get(s_1, "roots"), squint_core.get(repo, "name"))});
+const G__6_10 = ((squint_core.truth_(squint_core.get(repo, "remote"))) ? (({...G__6_9,["remote"]:squint_core.get(repo, "remote")})) : (G__6_9));
 if (squint_core.truth_(web_6)) {
-return squint_core.assoc(G__5_10, "savedWeb", web_6)} else {
-return G__5_10};
+return squint_core.assoc(G__6_10, "savedWeb", web_6)} else {
+return G__6_10};
 
 })());
 
@@ -365,8 +365,8 @@ return encodeURIComponent(seg)};
 })).join("/");
 
 };
-var vscode_url = function (root, p__6) {
-const map___1_3 = p__6;
+var vscode_url = function (root, p__7) {
+const map___1_3 = p__7;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const path_5 = squint_core.get(map___1_4, "path");
 const start_6 = squint_core.get(map___1_4, "start");
@@ -374,8 +374,8 @@ const abs_7 = `${root??''}${"/"}${path_5??''}`;
 return `${"vscode://file"}${((squint_core.truth_(abs_7.startsWith("/"))) ? (null) : ("/"))??''}${encode_path(abs_7)??''}${((squint_core.truth_(start_6)) ? (`${":"}${start_6??''}${":1"}`) : (null))??''}`;
 
 };
-var github_url = function (web, p__7) {
-const map___1_3 = p__7;
+var github_url = function (web, p__8) {
+const map___1_3 = p__8;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const path_5 = squint_core.get(map___1_4, "path");
 const start_6 = squint_core.get(map___1_4, "start");
@@ -390,8 +390,8 @@ return github_url(web_1, ref)} else {
 return vscode_url(squint_core.get(squint_core.get(s, "roots"), squint_core.get(ref, "repo")), ref)};
 
 };
-var copy_text = function (s, p__8) {
-const map___1_3 = p__8;
+var copy_text = function (s, p__9) {
+const map___1_3 = p__9;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const repo_5 = squint_core.get(map___1_4, "repo");
 const path_6 = squint_core.get(map___1_4, "path");
@@ -399,8 +399,8 @@ const start_7 = squint_core.get(map___1_4, "start");
 return `${squint_core.get(squint_core.get(s, "roots"), repo_5)??''}${"/"}${path_6??''}${((squint_core.truth_(start_7)) ? (`${":"}${start_7??''}`) : (null))??''}`;
 
 };
-var label = function (p__9) {
-const map___1_3 = p__9;
+var label = function (p__10) {
+const map___1_3 = p__10;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const repo_5 = squint_core.get(map___1_4, "repo");
 const path_6 = squint_core.get(map___1_4, "path");
@@ -425,7 +425,7 @@ return null;
 
 };
 var el_BANG_ = /* @__PURE__ */ (() => {
-const impl14_1 = (function (tag, attrs, children) {
+const impl15_1 = (function (tag, attrs, children) {
 const e_2 = document.createElement(tag);
 for (let G__3 of squint_core.iterable(Object.entries(attrs))) {
 const vec___4_7 = G__3;
@@ -440,13 +440,13 @@ e_2.append(c_11)
 return e_2;
 
 });
-const f10 = (function (arg11, arg12, ...rest13) {
+const f11 = (function (arg12, arg13, ...rest14) {
 const self__23546__auto___12 = this;
-return impl14_1.call(self__23546__auto___12, arg11, arg12, (((rest13.length === 0)) ? (null) : (rest13)));
+return impl15_1.call(self__23546__auto___12, arg12, arg13, (((rest14.length === 0)) ? (null) : (rest14)));
 
 });
-(f10["squint$lang$variadic"] = impl14_1);
-return f10;
+(f11["squint$lang$variadic"] = impl15_1);
+return f11;
 
 })();
 var format_name = function (f) {
@@ -578,8 +578,8 @@ return el_BANG_("a", ({"class": "hc-src-link", "data-src": src, "data-src-linked
 };
 var last_decoration_id = squint_core.atom(0);
 var block_of = function (el) {
-const G__15_1 = el.localName;
-switch (G__15_1) {case "pre":
+const G__16_1 = el.localName;
+switch (G__16_1) {case "pre":
 return el;
 
 break;
@@ -602,10 +602,10 @@ return n;
 });
 const block_3 = block_of(el);
 const page_link_4 = (() => {
-const G__16_5 = el.parentElement;
-if ((G__16_5 == null)) {
+const G__17_5 = el.parentElement;
+if ((G__17_5 == null)) {
 return null} else {
-return G__16_5.closest("a")};
+return G__17_5.closest("a")};
 
 })();
 el.setAttribute("data-src-id", id_1);
@@ -679,10 +679,10 @@ return false;
 var link_within_BANG_ = function (root) {
 const sel_1 = "[data-src]:not([data-src-linked])";
 const els_2 = (() => {
-const G__17_3 = Array.from(root.querySelectorAll(sel_1));
+const G__18_3 = Array.from(root.querySelectorAll(sel_1));
 if (squint_core.truth_(root.matches(sel_1))) {
-return G__17_3.concat([root])} else {
-return G__17_3};
+return G__18_3.concat([root])} else {
+return G__18_3};
 
 })();
 return (squint_core.count(squint_core.filter(squint_core.identity, squint_core.mapv(link_BANG_, els_2))) > 0);

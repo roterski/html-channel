@@ -11,6 +11,8 @@ import * as lint from './decide/lint.mjs';
 import * as decide_DOT_lint from './decide/lint.mjs';
 import * as probe from './decide/probe.mjs';
 import * as decide_DOT_probe from './decide/probe.mjs';
+import * as statechart from './decide/statechart.mjs';
+import * as decide_DOT_statechart from './decide/statechart.mjs';
 import * as tiers from './decide/tiers.mjs';
 import * as decide_DOT_tiers from './decide/tiers.mjs';
 import * as viz from './decide/viz.mjs';
@@ -18,9 +20,22 @@ import * as decide_DOT_viz from './decide/viz.mjs';
 core.start_BANG_(http.transport());
 tiers.start_BANG_();
 viz.start_BANG_(core.report_error_BANG_);
+statechart.start_BANG_(core.report_error_BANG_);
 explore.start_BANG_(core.report_error_BANG_);
 code_links.start_BANG_(core.report_error_BANG_);
 if (squint_core.truth_(explore.explorable_QMARK_())) {
-lint.start_BANG_(core.report_error_BANG_);
-if (squint_core.truth_((new URLSearchParams(location.search)).get("_check"))) {
-probe.start_BANG_(core.report_error_BANG_)}};
+lint.start_BANG_(core.report_error_BANG_)};
+if (squint_core.truth_((() => {
+let and_31 = (() => {
+const or_1_2 = explore.explorable_QMARK_();
+if (squint_core.truth_(or_1_2)) {
+return or_1_2} else {
+return statechart.present_QMARK_()};
+
+})();
+if (squint_core.truth_(and_31)) {
+return (new URLSearchParams(location.search)).get("_check")} else {
+return and_31};
+
+})())) {
+probe.start_BANG_(core.report_error_BANG_)};

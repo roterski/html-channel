@@ -27,18 +27,22 @@
                  (fs/copy "node_modules/squint-cljs/src/squint/core.js" (fs/path kit "squint-core.js"))
                  (fs/copy "runtime/decide.css" (fs/path kit "decide.css"))
                  (fs/copy "runtime/boot.js" (fs/path kit "boot.js"))
-                 (doseq [doc ["CONVENTION.md" "EXPLORABLE.md"]
+                 (doseq [doc ["CONVENTION.md" "EXPLORABLE.md" "STATECHART.md"]
                          dest ["resources/html_channel" "skill/html-channel"]]
                    (fs/create-dirs dest)
                    (fs/copy doc (fs/path dest doc) {:replace-existing true}))
                  ;; agents fetch EXPLORABLE.md from the server, like example.html
                  (fs/copy "EXPLORABLE.md" (fs/path kit "EXPLORABLE.md"))
+                 (fs/copy "STATECHART.md" (fs/path kit "STATECHART.md"))
                  ;; the demo doubles as the worked example agents read: served at /_kit/example.html, shipped in the skill
                  (doseq [dest [(fs/path kit "example.html") "skill/html-channel/example.html"]]
                    (fs/copy "examples/demo/cache-layer-review.html" dest {:replace-existing true}))
                  ;; the golden explorable: served at /_kit/example-explorable.html, shipped in the skill
                  (doseq [dest [(fs/path kit "example-explorable.html") "skill/html-channel/example-explorable.html"]]
                    (fs/copy "examples/explorable/hash-table-growth.html" dest {:replace-existing true}))
+                 ;; the statechart example: served at /_kit/example-statechart.html, shipped in the skill
+                 (doseq [dest [(fs/path kit "example-statechart.html") "skill/html-channel/example-statechart.html"]]
+                   (fs/copy "examples/statechart/answer-runtime.html" dest {:replace-existing true}))
                  ;; the plugin bundles a copy of the skill
                  (fs/delete-tree "plugin/skills")
                  (fs/copy-tree "skill" "plugin/skills")
@@ -46,5 +50,5 @@
 
   test {:doc "Unit tests, then browser and MCP end-to-end tests (needs .venv with playwright)"
         :task (do (shell "bb -cp src:resources:test -m html-channel.test-runner")
-                  (doseq [t ["test/e2e.py" "test/takeover.py" "test/mcp_e2e.py" "test/revisions.py" "test/rich.py" "test/explorable.py" "test/code_links.py"]]
+                  (doseq [t ["test/e2e.py" "test/takeover.py" "test/mcp_e2e.py" "test/revisions.py" "test/rich.py" "test/explorable.py" "test/code_links.py" "test/statechart.py"]]
                     (shell ".venv/bin/python" t)))}}}

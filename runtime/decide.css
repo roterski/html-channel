@@ -158,3 +158,44 @@ a[data-set] { color: var(--hc-accent); text-decoration: underline dotted; cursor
 @media (prefers-color-scheme: dark) {
   #decide-clear-carried { background: #2e1065; color: #ddd6fe; border-color: #8b5cf6; }
 }
+
+/* ---- statecharts (decide.statechart) --------------------------------------------- */
+
+[data-statechart] { margin: 1rem 0; }
+.hc-sc-inferred { margin: .25rem 0; font-size: 14px; color: var(--hc-muted); font-style: italic; }
+.hc-sc-chart { overflow-x: auto; margin: .5rem 0; }
+.hc-sc-chart svg { max-width: 100%; height: auto; }
+.hc-sc-events, .hc-sc-log-head { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin: .5rem 0; }
+.hc-sc-events button, .hc-sc-log button { min-height: 2rem; padding: .15rem .6rem; font: 14px ui-monospace, monospace; }
+.hc-sc-context { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin: .5rem 0; font-size: 14px; }
+.hc-sc-context label { display: inline-flex; gap: .4rem; align-items: center; }
+.hc-sc-context input[type=number] { width: 6rem; }
+.hc-sc-log { font-size: 14px; }
+.hc-sc-log-head span { font-weight: 600; }
+.hc-sc-log-entries { margin: .25rem 0; padding-left: 1.5rem; }
+.hc-sc-log-entries li { margin: .15rem 0; }
+.hc-sc-log-entries button { text-align: left; }
+.hc-sc-log-entries li.hc-sc-current button { border-color: var(--hc-accent); box-shadow: 0 0 0 1px var(--hc-accent); }
+.hc-sc-log-entries li.hc-sc-later button { opacity: .5; text-decoration: line-through; }
+.hc-sc-log-entries li.hc-sc-edit button { font-style: italic; color: var(--hc-muted); }
+.hc-sc-code { font-size: 14px; }
+.hc-sc-code p { margin: .5rem 0 .25rem; font-weight: 600; }
+.hc-sc-code li { margin: .15rem 0; }
+.hc-sc-code li > span { margin-right: .5rem; }
+.hc-sc-code li.hc-sc-flash { outline: 2px solid var(--hc-accent); outline-offset: 2px; }
+.hc-sc-source { max-height: 16rem; overflow: auto; }
+.hc-sc-chart [data-hc-event] { cursor: pointer; }
+.hc-sc-chart [data-hc-event]:hover { text-decoration: underline; }
+
+/* state-machine-cat draws in fixed black and white through presentation attributes;
+   map each original value to a token, and leave "none" alone */
+.hc-sc-smcat svg .graph > polygon { fill: transparent; }
+.hc-sc-smcat svg :is([fill="white" i], [fill="#ffffff" i]) { fill: var(--hc-card); }
+.hc-sc-smcat svg [fill="black" i] { fill: var(--hc-fg); }
+.hc-sc-smcat svg [stroke="black" i] { stroke: var(--hc-fg); }
+.hc-sc-smcat svg text { fill: var(--hc-fg); }
+/* a composite's body is the page background, so the states inside it stand out */
+.hc-sc-smcat svg g.cluster > :is(path, polygon):is([fill="white" i], [fill="#ffffff" i]) { fill: var(--hc-bg); }
+.hc-sc-smcat svg g.hc-sc-active > :is(path, polygon, ellipse):not([stroke="none" i]) {
+  stroke: var(--hc-sc-accent, var(--hc-accent)); stroke-width: 4;
+}

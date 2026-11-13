@@ -12,6 +12,9 @@ For a worked example of every form and control below, read the source of `/_kit/
 Writing a page that explains a topic in depth, with instruments the reader drives? Also read `/_kit/EXPLORABLE.md`
 (`EXPLORABLE.md` next to this file in the skill).
 
+Drawing a statechart, a chart of modes and the events between them that the reader drives? Also read `/_kit/STATECHART.md`
+(`STATECHART.md` next to this file in the skill).
+
 ## Where pages live
 
 ```
@@ -173,7 +176,8 @@ Pick the form that matches the content's shape. These are what the kit offers; a
 | Content | Form |
 |---|---|
 | Options compared on several criteria | `<table>`, one row per option, one column per criterion |
-| Flow, sequence, dependencies, state | `<pre data-viz="mermaid">` |
+| Flow, sequence, dependencies | `<pre data-viz="mermaid">` |
+| State: modes and the events between them | `<figure data-statechart>` (see STATECHART.md) |
 | Numbers over time or across categories | `<pre data-viz="vega-lite">` |
 | Code from a repo | `<pre data-src>` or `<code data-src>` (see Code links) |
 | A main point with supporting detail | visible summary, detail in `<details>` |
@@ -253,7 +257,7 @@ Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 ```
 
 In this example, `notes` has `rev` 1, which is lower than the page's `rev` 2. That means the answer was carried over and not re-confirmed.
-Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render), `undeclared` and `code-link` (a malformed repo meta or code reference).
-Explorable pages add `explorable`, `inert`, `unprobed` and `probe-cut-off` (see EXPLORABLE.md).
+Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render), `undeclared`, `code-link` (a malformed repo meta or code reference) and `statechart` (a statechart definition problem, see STATECHART.md).
+Explorable pages add `explorable`; explorable pages and pages with a statechart add `inert`, `unprobed` and `probe-cut-off` (see EXPLORABLE.md).
 During `check_page`, `dialog` means the page called `alert()`, `confirm()` or `prompt()`, which would interrupt the reader.
 `check_page` adds `no-reporter` when the page never loaded `/_kit/boot.js`: then no other error could have been seen.

@@ -182,6 +182,11 @@
     (write-page! root "s1" "p" "v1")
     (is (= "code-link" (:kind (store/append-error! root "s1" {:page "p" :kind "code-link" :message "bad ref"}))))))
 
+(deftest statechart-is-an-error-kind
+  (let [root (temp-dir)]
+    (write-page! root "s1" "p" "v1")
+    (is (= "statechart" (:kind (store/append-error! root "s1" {:page "p" :kind "statechart" :message "bad target"}))))))
+
 (deftest errors-are-stamped-and-stored-once
   (let [root (temp-dir)
         e {:page "p" :kind "load" :message "failed to load <script> x" :source "x"}

@@ -26,11 +26,11 @@ return document.documentElement.classList.toggle("decide-is-offline", squint_cor
 };
 var report_error_BANG_ = function (kind, message, source) {
 const temp__23255__auto___1 = (() => {
-const G__18_2 = window;
-const G__18_3 = (((G__18_2 == null)) ? (null) : (G__18_2.htmlChannel));
-if ((G__18_3 == null)) {
+const G__19_2 = window;
+const G__19_3 = (((G__19_2 == null)) ? (null) : (G__19_2.htmlChannel));
+if ((G__19_3 == null)) {
 return null} else {
-return G__18_3.reportError};
+return G__19_3.reportError};
 
 })();
 if (squint_core.truth_(temp__23255__auto___1)) {
@@ -64,8 +64,8 @@ return mark_BANG_(id_9, s);
 };
 
 });
-const G__19_11 = outcome_7;
-switch (G__19_11) {case "saved":
+const G__20_11 = outcome_7;
+switch (G__20_11) {case "saved":
 settled_BANG__10("saved");
 continue;
 
@@ -97,10 +97,10 @@ return p_3;
 
 };
 var remove_clear_button_BANG_ = function () {
-const G__20_1 = document.getElementById("decide-clear-carried");
-if ((G__20_1 == null)) {
+const G__21_1 = document.getElementById("decide-clear-carried");
+if ((G__21_1 == null)) {
 return null} else {
-return G__20_1.remove()};
+return G__21_1.remove()};
 
 };
 var uncarry_BANG_ = function (id) {
