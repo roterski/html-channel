@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saving an answer: html-channel's runtime as a statechart</title>
+<link rel="stylesheet" href="/_kit/decide.css">
+<script src="/_kit/boot.js"></script>
+<script type="module" src="/_kit/decide.mjs"></script>
+<meta name="hc-repo" content="name=html-channel; root=/path/to/html-channel; web=https://github.com/roterski/html-channel/blob/07cf251608411f3bacdfb369c5f2445a302dd8eb/">
+</head>
+<body>
+<div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
+  <strong>html-channel server is not running</strong>: your answers won't be saved.
+  Start it with <code>html-channel serve</code> in the project; this notice then disappears on its own.
+</div>
+
+<h1>Saving an answer</h1>
+<p>Every control on an html-channel page goes through the same few states between the reader's click and the server's copy.
+The runtime keeps no explicit state machine: the states below are the values of each control's <code>data-state</code> and the page's online flag, in <code>runtime/decide/core.cljs</code>.
+The repo's root, <code>/path/to/html-channel</code>, is a placeholder: set it to your checkout in the code-links bar at the top. The GitHub links work as they are.</p>
+
+<script type="application/json" id="answer-runtime">
+{ "id": "answer-runtime", "initial": "page",
+  "context": { "serverUp": true, "rejects": false, "answerRev": 2, "queued": 0 },
+  "meta": { "inferred": { "basis": "each control's data-state and the online flag in runtime/decide/core.cljs" } },
+  "states": {
+    "page": { "type": "parallel", "states": {
+      "answer": { "initial": "unanswered", "states": {
+        "unanswered": {
+          "on": {
+            "LOAD": [ { "target": "carried", "guard": { "lt": ["answerRev", 2] },
+                        "meta": { "code": "html-channel:runtime/decide/core.cljs#L141-L155" } },
+                      { "target": "saved" } ],
+            "CHANGE": { "target": "sending", "actions": { "assign": { "queued": { "add": 1 } } } } } },
+        "sending": {
+          "always": [ { "target": "saved", "guard": { "and": [ { "eq": ["serverUp", true] }, { "eq": ["rejects", false] } ] },
+                        "actions": { "assign": { "queued": { "set": 0 } } } },
+                      { "target": "rejected", "guard": { "and": [ { "eq": ["serverUp", true] }, { "eq": ["rejects", true] } ] },
+                        "actions": { "assign": { "queued": { "set": 0 } } } },
+                      { "target": "pending" } ],
+          "meta": { "code": ["html-channel:runtime/decide/core.cljs#L93-L99", "html-channel:runtime/decide/core.cljs#L53-L74"] } },
+        "pending": {
+          "after": { "3000": "sending" },
+          "on": { "CHANGE": { "target": "sending", "actions": { "assign": { "queued": { "add": 1 } } } } },
+          "meta": { "code": ["html-channel:runtime/decide/core.cljs#L182-L193", "html-channel:runtime/decide/core.cljs#L223"] } },
+        "saved": { "on": { "CHANGE": { "target": "sending", "actions": { "assign": { "queued": { "add": 1 } } } } } },
+        "rejected": { "on": { "CHANGE": { "target": "sending", "actions": { "assign": { "queued": { "add": 1 } } } } },
+                      "meta": { "code": "html-channel:runtime/decide/core.cljs#L69-L72" } },
+        "carried": { "on": { "CHANGE": { "target": "sending", "actions": { "assign": { "queued": { "add": 1 } } } } },
+                     "meta": { "code": "html-channel:runtime/decide/core.cljs#L89-L91" } } } },
+      "connection": { "initial": "online", "states": {
+        "online": { "after": { "3000": "polling" } },
+        "offline": { "after": { "3000": "polling" }, "meta": { "code": "html-channel:runtime/decide/core.cljs#L37-L42" } },
+        "polling": { "always": [ { "target": "online", "guard": { "eq": ["serverUp", true] } }, { "target": "offline" } ],
+                     "meta": { "code": ["html-channel:runtime/decide/core.cljs#L182-L193", "html-channel:runtime/decide/core.cljs#L223"] } } } } } } } }
+</script>
+
+<h2>One answer</h2>
+<p>Start with a single control, and leave the connection folded away.
+A <b>CHANGE</b> queues the answer and sends the queue at once: the answer becomes saved, or rejected if the server refuses it. If the server can't be reached, it stays pending.
+On a reload, an answer from an earlier revision of the page comes back as carried.
+This page is at revision 2, and the stored answer was given in revision
+<span data-scrub="answerRev" data-target="one" data-min="1" data-max="2" data-value="2">2</span>.
+Send <b>LOAD</b>:</p>
+<figure data-statechart data-instrument="one" data-machine="answer-runtime" data-collapse="connection"></figure>
+<p>Notice that <b>LOAD</b> goes to carried only while the answer's revision is below the page's, and that any <b>CHANGE</b> sends the answer again.</p>
+
+<h2>And the connection</h2>
+<p>Now unfold <b>connection</b>. The runtime polls the server every three seconds, and each poll sends whatever is still queued.
+Untick <b>serverUp</b> in the context panel, then
+<a data-set="all" data-state='{"events": ["CHANGE"]}'>change an answer</a>:</p>
+<figure data-statechart data-instrument="all" data-machine="answer-runtime"></figure>
+<p>Notice that the answer waits in pending with the queue at 1, the connection drops to offline at the next poll, and ticking serverUp again doesn't save it at once: the next poll does, within three seconds.
+The refined state is <b>connection</b>; the answer's states keep their names and places.</p>
+
+<h2>A chart with a history state</h2>
+<p>Illustrative, not from html-channel's code: a settings dialog that reopens on the tab you left.
+A history state needs state-machine-cat, so the kit switches renderer on its own. Open it, pick Advanced, close it, and open it again:</p>
+<figure data-statechart data-instrument="dialog">
+<script type="application/json">
+{ "initial": "closed",
+  "states": {
+    "closed": { "on": { "OPEN": "open.last" } },
+    "open": { "initial": "general", "on": { "CLOSE": "closed" },
+              "states": { "general": { "on": { "ADVANCED": "advanced" } },
+                          "advanced": { "on": { "GENERAL": "general" } },
+                          "last": { "type": "history" } } } } }
+</script>
+</figure>
+<p>Notice that the second <b>OPEN</b> lands on advanced, not on the initial general tab.</p>
+</body>
+</html>

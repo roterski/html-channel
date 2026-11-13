@@ -76,6 +76,7 @@ Each instrument is a controlled experiment the reader runs.
 - **Let the reader break it.** Inputs that produce the failure the next section fixes.
 - **Hold a baseline.** When comparing, keep the old state visible next to the new one.
 - **Reuse one model.** Grow the same demo across sections rather than starting a new one each time.
+- **A statechart for modes and events.** When a concept is a set of modes and the events between them, the instrument can be a `<figure data-statechart>` (STATECHART.md). When a later section refines the chart, its "Notice that…" line names the state that was refined.
 - Put controls that belong to a demo inside its `data-instrument`. Put scrubs and links in the prose, and timelines right after the instrument.
 
 ## Representation

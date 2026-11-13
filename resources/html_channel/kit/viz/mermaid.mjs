@@ -3,10 +3,15 @@ import * as load from './load.mjs';
 import * as viz_DOT_load from './load.mjs';
 import * as versions from './versions.mjs';
 import * as viz_DOT_versions from './versions.mjs';
-var render_BANG_ = async function (blocks, fail_BANG_) {
+var ready_BANG_ = async function () {
 (await load.scripts_BANG_(versions.mermaid));
 const m_1 = window.mermaid;
 m_1.initialize(({"startOnLoad": false, "securityLevel": "strict", "suppressErrorRendering": true, "theme": ((squint_core.truth_(load.dark_QMARK_())) ? ("dark") : ("default"))}));
+return m_1;
+
+};
+var render_BANG_ = async function (blocks, fail_BANG_) {
+const m_1 = (await ready_BANG_());
 for (let G__2 of squint_core.iterable(squint_core.map_indexed(squint_core.vector, blocks))) {
 const vec___3_6 = G__2;
 const i_7 = squint_core.nth(vec___3_6, 0, null);
@@ -32,4 +37,4 @@ return null;
 
 };
 
-export { render_BANG_ }
+export { ready_BANG_, render_BANG_ }
