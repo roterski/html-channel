@@ -6,23 +6,17 @@
   The process stands by for the HTTP port for as long as it runs, so pages stay
   served while any session lives.
 
-  With --channel, the server is also a Claude Code channel: when a reader clicks
-  Done or Deeper on a page of a session this process set up, and no ask_human
-  call is waiting on that page, it sends notifications/claude/channel, which
-  wakes an idle session. Without the flag it never declares or sends one.
-
   Only JSON-RPC messages go to stdout; everything else is logged to stderr."
   (:require [babashka.fs :as fs]
             [cheshire.core :as json]
             [clojure.java.io :as io]
-            [clojure.string :as str]
             [html-channel.check :as check]
             [html-channel.registry :as registry]
             [html-channel.server :as server]
             [html-channel.session :as session]
             [html-channel.store :as store]))
 
-(def version "0.3.0")
+(def version "0.4.0")
 
 (def poll-ms 500)
 (def progress-every-ms 30000)
@@ -43,76 +37,17 @@
 
 (def ^:private default-session (atom nil))
 
-;; ---- channel events (--channel) ----------------------------------------------
-
-;; session -> number of decision entries already looked at
-(def ^:private watched (atom {}))
-;; [session page] -> number of ask_human calls waiting on it
-(def ^:private waiting (atom {}))
 ;; [session page] -> entries before this index were answered by an ask_human return.
-;; ask_human reports only Deeper requests from here on; channel events skip what it answered.
+;; ask_human reports only Deeper requests from here on.
 (def ^:private consumed (atom {}))
-
-(defn- watch!
-  "Starts watching `session` for reader events, from its current end."
-  [root session]
-  (when-not (contains? @watched session)
-    (swap! watched #(if (contains? % session) % (assoc % session (count (store/entries root session)))))))
-
-(defn- reader-event? [{:keys [id value]}]
-  (or (and (= "status" id) (= "done" value))
-      (and (= "deeper" id) (string? value))))
-
-(defn- event-notification [session page {:keys [rev done deeper]}]
-  {:method "notifications/claude/channel"
-   :params {:content (str "The reader "
-                          (if done "clicked Done" (str "asked to go deeper on " (str/join ", " deeper)))
-                          " on html-channel page " page " (rev " rev "). Call get_decisions with page ""
-                          page "" and session "" session "".")
-            :meta {:page page :session session :rev (str rev) :status (if done "done" "deeper")}}})
-
-(defn- push-events!
-  "One pass over the watched sessions: notifies about new Done/Deeper clicks at
-  a page's current revision, unless an ask_human call answered them."
-  [root]
-  (doseq [[session seen] @watched]
-    (let [es (vec (store/entries root session))
-          fresh (->> (map-indexed vector es) (drop seen)
-                     (filter (fn [[i e]] (and (reader-event? e)
-                                              (zero? (get @waiting [session (:page e)] 0))
-                                              (>= i (get @consumed [session (:page e)] 0))))))]
-      (swap! watched assoc session (count es))
-      (doseq [page (distinct (map (comp :page second) fresh))
-              :let [r (store/effective root session page)]
-              :when (or (:done r) (seq (:deeper r)))]
-        (send! (event-notification session page r))))))
-
-(defn- run-event-loop! [root]
-  (future
-    (loop []
-      (try (push-events! root)
-           (catch Exception e (server/log "channel events:" (ex-message e))))
-      (Thread/sleep 1000)
-      (recur))))
-
-(def channel-instructions
-  (str "html-channel pages are local HTML pages that the user answers in a browser. "
-       "When the user clicks Done or a Deeper button on a page and no ask_human call is waiting on it, "
-       "an event arrives as <channel source=\"html-channel\" page=\"…\" session=\"…\" rev=\"…\" status=\"done|deeper\">. "
-       "On status=done, call get_decisions and act on the answers. "
-       "On status=deeper, call get_decisions, revise the page so the requested targets are expanded, "
-       "then call ask_human."))
-
-;; ---- channel context -------------------------------------------------------
 
 (defn- channel
   "Registers the root and resolves the session: argument, else this process's
   default, else the client's id or a fresh one (which becomes the default)."
-  [{:keys [root port channel?]} explicit-session]
+  [{:keys [root port]} explicit-session]
   (let [mount (registry/register! root)
         s (or explicit-session @default-session (swap! default-session #(or % (session/pick nil))))]
     (store/session-dir root s) ; validates the name
-    (when channel? (watch! root s))
     {:root root :session s :mount mount
      :url-base (str "http://127.0.0.1:" port "/" mount "/" s "/")}))
 
@@ -158,7 +93,6 @@
         seen (volatile! (get @consumed k 0))]
     (when-not (fs/regular-file? f)
       (throw (ex-info (str "no page at " f "; write it first (see channel_setup's convention)") {})))
-    (swap! waiting update k (fnil inc 0))
     (try
       (let [deadline (+ (System/currentTimeMillis) (* 1000 max-wait-s))]
         (loop [next-progress (+ (System/currentTimeMillis) progress-every-ms) ticks 0]
@@ -181,8 +115,7 @@
                 (recur (if due? (+ now progress-every-ms) next-progress)
                        (if due? (inc ticks) ticks)))))))
       (finally
-        (swap! consumed assoc k @seen)
-        (swap! waiting update k dec)))))
+        (swap! consumed assoc k @seen)))))
 
 (def page-arg {:type "string" :description "Page slug: the file name without .html, matching [a-z0-9-]+."})
 (def session-arg {:type "string" :description "Session id from channel_setup. Defaults to this conversation's session."})
@@ -241,11 +174,9 @@
 (defn- handle! [ctx {:keys [id method params] :as _msg}]
   (case method
     "initialize"
-    (send! {:id id :result (cond-> {:protocolVersion (or (:protocolVersion params) "2025-06-18")
-                                    :capabilities (cond-> {:tools {}}
-                                                    (:channel? ctx) (assoc :experimental {"claude/channel" {}}))
-                                    :serverInfo {:name "html-channel" :version version}}
-                             (:channel? ctx) (assoc :instructions channel-instructions))})
+    (send! {:id id :result {:protocolVersion (or (:protocolVersion params) "2025-06-18")
+                            :capabilities {:tools {}}
+                            :serverInfo {:name "html-channel" :version version}}})
     "ping" (send! {:id id :result {}})
     "tools/list" (send! {:id id :result {:tools tools}})
     "tools/call"
@@ -261,12 +192,10 @@
 
 (defn serve-stdio!
   "Serves MCP on stdin/stdout until stdin closes, standing by for the HTTP port meanwhile."
-  [{:keys [root port max-wait-s channel?]}]
+  [{:keys [root port max-wait-s]}]
   (let [port (server/port-from port)
-        ctx {:root (store/root-from root) :port port :max-wait-s (or max-wait-s default-max-wait-s)
-             :channel? (boolean channel?)}]
+        ctx {:root (store/root-from root) :port port :max-wait-s (or max-wait-s default-max-wait-s)}]
     (server/run-standby! port)
-    (when channel? (run-event-loop! (:root ctx)))
     (doseq [line (line-seq (io/reader System/in))
             :when (seq line)]
       (let [msg (try (json/parse-string line true) (catch Exception _ nil))]

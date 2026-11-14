@@ -210,15 +210,27 @@ Don't gather questions into a form at the bottom. Only open notes and the Done b
 <button data-decision="status" data-choice="done">Done</button>
 ```
 
-The agent then waits for that click with `ask_human` (MCP).
-Before calling `ask_human`, show the user the page's full URL in a short text message, with the URL on its own line.
-`ask_human` blocks, and the user can't answer a page they can't find.
-Without MCP, the user says "done" in chat and the agent reads the answers with `get_decisions` or `html-channel decisions <session>/<page>`.
+The agent waits for the click without blocking the conversation:
+it runs `html-channel wait <session>/<page>` as a background command,
+then ends its turn with a short text message that shows the page's full URL on its own line.
+The URL goes in that final message, because a client may hide text written between tool calls.
+While the wait runs, the user can keep talking to the agent.
+The command exits when the reader acts, and its exit wakes the agent.
+It prints the same JSON as `html-channel decisions`, plus `status`:
+
+- `done`: act on `decisions`.
+- `deeper`: the reader asked for more on the targets in `deeper` (see below).
+- `superseded`: the page got a new revision, so answers to the old one no longer count. Do nothing: the wait for the new revision covers it.
+- `waiting`: only with `--max-wait`, when it passed. Start the wait again.
+
+Start a new wait after every rewrite of the page, including one the user asked for in chat.
+If the client can't run a background command that wakes the agent when it exits,
+ask the user to say "done" in chat, then read the answers with `get_decisions` or `html-channel decisions <session>/<page>`.
+`ask_human` (MCP) waits for the same clicks inside a tool call, which blocks the conversation until the reader acts.
 
 A decision page may offer **Deeper** buttons, `<button data-deeper="TARGET">`, where the reader may want more than the page shows.
-A click ends the wait: `ask_human` returns `status: "deeper"`, with the targets requested since its last return in `deeper`.
-Rewrite the page with those targets expanded, then call `ask_human` again.
-Calling it again without a rewrite waits for the next click.
+A click ends the wait with `status: "deeper"` and the requested targets in `deeper`.
+Rewrite the page with those targets expanded, start a new wait, and give the user the URL again in the final message.
 
 **Report-only pages** just present output. They have no Done button, and the agent doesn't wait on them.
 
@@ -247,8 +259,8 @@ Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 
 - The last entry per `page` + `id` wins.
 - `value: null` means the answer was cleared.
-- `ask_human`, `get_decisions` and `html-channel decisions` return the effective answers, Deeper requests, and the errors the page reported at this revision.
-  `deeper` from `ask_human` lists only the targets requested since its last return, whatever the status; from the other two it lists every target at this revision.
+- `html-channel wait`, `ask_human`, `get_decisions` and `html-channel decisions` return the effective answers, Deeper requests, and the errors the page reported at this revision.
+  `deeper` from `wait` lists only the targets requested since it started; from `ask_human`, only those since its last return, whatever the status; from the other two, every target at this revision.
 
 ```json
 {"page":"cache-layer-review","rev":2,"done":true,"deeper":[],

@@ -16,21 +16,26 @@ and the worked [example-explorable.html](example-explorable.html).
 
 Pick the first branch that applies.
 
-## 1. MCP tools available (`channel_setup`, `ask_human`)
+## 1. MCP tools available (`channel_setup`, `check_page`)
 
 1. Call `channel_setup`. It returns `dir`, `url_base`, `session` and the convention text.
 2. Write `<dir>/<page>.html`, where `<page>` matches `[a-z0-9-]+`.
 3. Call `check_page {page}`. Fix every error in `errors` and read the dark screenshot; check again after each fix.
-4. Show the user the full URL, `<url_base><page>.html`, in a text message before you call `ask_human`.
-   `ask_human` blocks, and the user can't answer a page they can't find.
-   Keep that message short and put the URL on its own line, so a condensed view of the message still shows it.
-   For a revision of a page the user already has open, it's enough to say the page was updated.
-5. Decision page: call `ask_human {page}`.
-   - If it returns `status: "waiting"`, call it again.
-   - If it returns `status: "deeper"`, rewrite the page with the targets in `deeper` expanded, then call it again.
-   - If it returns `status: "done"`, act on `decisions`.
-   - If the call fails or times out in your client, ask the user to say "done" in chat, then call `get_decisions {page}`.
-6. Report-only page: don't call `ask_human`.
+4. Decision page: run `html-channel wait <session>/<page>` as a background command.
+   The user can keep talking to you meanwhile. When the command exits, you're woken with its JSON:
+   - `status: "done"`: act on `decisions`.
+   - `status: "deeper"`: rewrite the page with the targets in `deeper` expanded, start a new wait, and give the URL again.
+   - `status: "superseded"`: the page got a new revision; do nothing, the wait for that revision covers it.
+   - `status: "waiting"` (only with `--max-wait`): start the wait again.
+
+   Start a new wait after every rewrite of the page, including one the user asked for in chat.
+   If your client can't run a background command that wakes you when it exits,
+   ask the user to say "done" in chat, then call `get_decisions {page}`.
+   Report-only page: don't wait.
+5. End your turn with a short text message that shows the full URL, `<url_base><page>.html`, on its own line,
+   so a condensed view of the message still shows it.
+   The URL goes in this final message, after the wait has started, because a client may hide text written between tool calls.
+   Give it for every revision too.
 
 ## 2. `html-channel` on PATH (no MCP tools)
 
@@ -38,10 +43,11 @@ Pick the first branch that applies.
 2. Run `html-channel session new`. It prints `session`, `dir` and `url_base` as JSON.
    Reuse the same session for the rest of the conversation.
 3. Write `<dir>/<page>.html`, run `html-channel check <session>/<page>`, fix its `errors` and read the dark screenshot.
-4. Give the user `<url_base><page>.html`.
-5. Decision page: ask the user to click Done and then tell you in chat.
+4. Decision page: wait as in step 4 of branch 1, with `html-channel wait <session>/<page>` in the background.
+   Without background commands that wake you, ask the user to click Done and then tell you in chat.
    Then run `html-channel decisions <session>/<page>`. Act only when `done` is `true`.
    If `deeper` lists targets instead, rewrite the page with them expanded and ask again.
+5. End your turn with `<url_base><page>.html`, as in step 5 of branch 1.
 
 ## 3. Neither is available
 

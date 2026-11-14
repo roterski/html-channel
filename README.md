@@ -4,7 +4,7 @@ Interactive HTML pages as an output channel for agents.
 
 The agent writes a static page into `<project>/ai/html-channel/<session>/`.
 You open it in a browser and answer with buttons and fields.
-The agent reads your answers back, either blocking on an MCP tool or through the CLI.
+The agent reads your answers back. Clicking Done wakes it, while the chat stays free until then.
 
 - Pages may use JavaScript to render, and the kit renders Mermaid, Vega-Lite and KaTeX blocks itself. Explorable pages, which explain a topic with instruments the reader drives, get scrubbable numbers, state links, timelines and an interaction check ([EXPLORABLE.md](EXPLORABLE.md)). Statecharts the reader drives come from a definition alone ([STATECHART.md](STATECHART.md)). Answers go only through the runtime's controls. The markup rules are in [CONVENTION.md](CONVENTION.md).
 - Before showing a page, the agent can render it in headless Chrome (`check_page`) to catch errors and see light and dark screenshots.
@@ -31,21 +31,14 @@ Add to `.mcp.json`, or run `claude mcp add html-channel -- html-channel mcp`:
 { "mcpServers": { "html-channel": { "command": "html-channel", "args": ["mcp"] } } }
 ```
 
-The agent calls `channel_setup`, writes the page, checks it with `check_page`, then calls `ask_human`.
-`ask_human` blocks until you click Done or a Deeper button, and it sends progress every 30 s to keep the call alive.
-After 25 minutes it returns `waiting`, and the agent calls it again.
+The agent calls `channel_setup`, writes the page, checks it with `check_page`,
+runs `html-channel wait <session>/<page>` as a background command, then ends its turn with the URL.
+You can keep chatting, for example to ask about the page or have it reshaped.
+When you click Done or a Deeper button, `wait` exits, and Claude Code wakes the agent with its output.
+A rewrite of the page ends the old wait with `superseded`, and the agent starts a new one.
 
-#### Waking an idle session (channels, research preview)
-
-With `--channel`, html-channel is also a [Claude Code channel](https://code.claude.com/docs/en/channels-reference):
-a Done or Deeper click on a page no `ask_human` call is waiting on wakes the session.
-
-```sh
-claude mcp add html-channel -- html-channel mcp --channel
-claude --dangerously-load-development-channels server:html-channel
-```
-
-Without `--channel`, html-channel never declares or sends channel events, so other clients are unaffected.
+`ask_human` waits for the same clicks inside a tool call, which blocks the chat until you click.
+It sends progress every 30 s to keep the call alive, and after 25 minutes it returns `waiting`.
 
 To also get the skill, install the plugin in [plugin/](plugin/). It bundles the skill and this MCP config.
 
@@ -77,8 +70,9 @@ html-channel serve &                     # serve; stands by if another process o
 html-channel session new                 # {session, dir, url_base}
 # write <dir>/<page>.html
 html-channel check <session>/<page>      # {errors, screenshots} from headless Chrome
-# open <url_base><page>.html, click Done
-html-channel decisions <session>/<page>
+# open <url_base><page>.html
+html-channel wait <session>/<page>       # blocks until Done, Deeper or a new revision; prints decisions + status
+html-channel decisions <session>/<page>  # the current answers, without waiting
 ```
 
 The skill in [skill/html-channel/](skill/html-channel/) follows this flow when no MCP tools are available.
@@ -106,13 +100,18 @@ A relative root resolves against `<project>`, and sessions go directly under it:
 
 ```
 html-channel serve [--root ai/html-channel] [--port 8787]
-html-channel mcp [--root] [--max-wait 1500] [--port] [--channel]
+html-channel mcp [--root] [--max-wait 1500] [--port]
 html-channel session new [--root]
 html-channel decisions <session>/<page> [--root]
+html-channel wait <session>/<page> [--root] [--max-wait S]
 html-channel check <session>/<page> [--root]
 html-channel health [--port]
 html-channel version
 ```
+
+`wait` blocks until the reader acts on the page's revision at start, then prints the `decisions` JSON plus `status`:
+`done`, `deeper` (with only the targets requested during the wait), `superseded` (the page got a new revision) or `waiting` (`--max-wait` seconds passed; no timeout without it).
+It exits 0 for each status and 1 for a missing page.
 
 `check` finds Chrome through `HTML_CHANNEL_CHROME`, then the standard macOS app, then `google-chrome` or `chromium` on PATH.
 Screenshots go to `<session>/.check/`, which it keeps out of git.

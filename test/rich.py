@@ -1,5 +1,5 @@
 """Rich pages: error reporting, visualization adapters, depth tiers, Deeper,
-page-JS answers, check_page and channel events.
+page-JS answers and check_page.
 
   .venv/bin/python test/rich.py
 
@@ -110,9 +110,7 @@ def main():
         project = sb.dir / "proj"
         project.mkdir()
         mcp = Mcp(sb, project, "--max-wait", "3")
-        init = mcp.init()
-        if "experimental" in init["result"]["capabilities"] or "instructions" in init["result"]:
-            fail("channel capability declared without --channel: %s" % init["result"])
+        mcp.init()
         setup = mcp.call("channel_setup")
         s, root = setup["session"], project / "ai/html-channel"
         base = setup["url_base"]
@@ -337,46 +335,6 @@ def main():
                      5, "htmlChannel.record not saved")
             print("record ok: window.htmlChannel.record saved an answer")
 
-            # 7.4: with --channel, a Done nobody waits on becomes a channel event
-            ch = Mcp(sb, project, "--channel")
-            init = ch.init()
-            caps = init["result"]["capabilities"]
-            if caps.get("experimental") != {"claude/channel": {}} or "instructions" not in init["result"]:
-                fail("--channel didn't declare the capability: %s" % init["result"])
-            ch.call("channel_setup", session=s)
-            page.click("button[data-choice=done]")
-            end, event = time.time() + 10, None
-            while time.time() < end and event is None:
-                try:
-                    m = ch.msgs.get(timeout=0.5)
-                except Exception:
-                    continue
-                if m.get("method") == "notifications/claude/channel":
-                    event = m["params"]
-            if not event or event["meta"] != {"page": "deeper", "session": s, "rev": "2", "status": "done"}:
-                fail("no channel event for Done: %s" % event)
-            print("channel ok: Done on an unwatched page sent %s" % event["meta"])
-
-            # ... but not for a click an ask_human call answered
-            write_page(root, s, "deeper", DEEPER % (3, 3))
-            expect(page.locator("#v3")).to_be_visible(timeout=4500)
-            result.clear()
-            t = threading.Thread(target=lambda: result.update(ch.call("ask_human", timeout=20, page="deeper")))
-            t.start()
-            time.sleep(0.5)
-            page.click("button[data-deeper=risk]")
-            t.join()
-            if result.get("status") != "deeper":
-                fail("ask_human with --channel: %s" % result)
-            end = time.time() + 3
-            while time.time() < end:
-                try:
-                    m = ch.msgs.get(timeout=0.5)
-                except Exception:
-                    continue
-                if m.get("method") == "notifications/claude/channel":
-                    fail("channel event for a click ask_human already returned: %s" % m)
-            print("channel ok: no event for a Deeper that ask_human answered")
             browser.close()
 
         # Deeper clicks racing ask_human returns: each target returned exactly once

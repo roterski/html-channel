@@ -1,5 +1,5 @@
 (ns html-channel.cli
-  "html-channel serve|mcp|session new|decisions|check|health|version"
+  "html-channel serve|mcp|session new|decisions|wait|check|health|version"
   (:require [babashka.cli :as cli]
             [babashka.fs :as fs]
             [babashka.http-client :as hc]
@@ -10,23 +10,26 @@
             [html-channel.registry :as registry]
             [html-channel.server :as server]
             [html-channel.session :as session]
-            [html-channel.store :as store]))
+            [html-channel.store :as store]
+            [html-channel.wait :as wait]))
 
 (def usage
   "html-channel — interactive HTML pages as an output channel for agents
 
   serve [--root ai/html-channel] [--port 8787]   serve registered roots; stand by if the port is taken
   mcp [--root] [--max-wait 1500] [--port]        MCP server on stdio (channel_setup, ask_human, get_decisions, check_page)
-      [--channel]                                also a Claude Code channel: Done/Deeper clicks wake the session
   session new [--root]                           print {session, dir, url_base} for a new page session
   decisions <session>/<page> [--root]            print {done, rev, deeper, decisions, errors} as JSON
+  wait <session>/<page> [--root] [--max-wait S]  block until Done, Deeper or a new revision, then print
+                                                 decisions' JSON plus status: done|deeper|superseded|waiting.
+                                                 Run it in the background: its exit wakes the agent
   check <session>/<page> [--root]                render in headless Chrome, light and dark; print {errors, screenshots}
 
   --root defaults to $HTML_CHANNEL_ROOT, else ai/html-channel; relative to $CLAUDE_PROJECT_DIR, else the cwd
   health [--port]                     print the running server's /_health; exit 1 if none
   version")
 
-(def spec {:coerce {:port :long :max-wait :long :channel :boolean}
+(def spec {:coerce {:port :long :max-wait :long}
            :alias {:p :port :r :root}})
 
 (defn- print-json [data] (println (json/generate-string data {:pretty true})))
@@ -76,12 +79,20 @@
           (recur (inc n)))))
     (print-json (check/check-page root s page (str (url-base port mount s) page ".html")))))
 
-(defn- decisions [target {:keys [root port]}]
-  (let [[s page] (session-page "decisions" target)
+(defn- print-page
+  "Prints {page, url} merged with `(state-of root session page)`."
+  [cmd target {:keys [root port]} state-of]
+  (let [[s page] (session-page cmd target)
         root (store/root-from root)
         mount (registry/register! root)]
     (print-json (merge {:page page :url (str (url-base (server/port-from port) mount s) page ".html")}
-                       (store/page-state root s page)))))
+                       (state-of root s page)))))
+
+(defn- decisions [target opts]
+  (print-page "decisions" target opts store/page-state))
+
+(defn- wait-for-reader [target {:keys [max-wait] :as opts}]
+  (print-page "wait" target opts #(wait/await-reader %1 %2 %3 {:max-wait-s max-wait})))
 
 (defn- health [{:keys [port]}]
   (let [r (try (hc/get (str "http://127.0.0.1:" (server/port-from port) "/_health")
@@ -98,10 +109,10 @@
     (try
       (case cmd
         "serve" (serve opts)
-        "mcp" (mcp/serve-stdio! {:root (:root opts) :port (:port opts) :max-wait-s (:max-wait opts)
-                                 :channel? (:channel opts)})
+        "mcp" (mcp/serve-stdio! {:root (:root opts) :port (:port opts) :max-wait-s (:max-wait opts)})
         "session" (if (= "new" (first args)) (session-new opts) (throw (ex-info usage {})))
         "decisions" (decisions (first args) opts)
+        "wait" (wait-for-reader (first args) opts)
         "check" (do (check-page (first args) opts) (System/exit 0))
         "health" (health opts)
         "version" (println "html-channel" mcp/version)
