@@ -305,11 +305,18 @@
     (aset d "hcBuild" nil)
     (.append d (build))))
 
+(defn range-label
+  "start,count the way git writes it, where an empty range starts at the line
+  before it (-0,0 for a new file). Pre: `start` is jsdiff's, which counts an
+  empty range from the line after (formatPatch undoes it the same way)."
+  [start count]
+  (str (if (zero? count) (dec start) start) "," count))
+
 (defn hunk-head [model {:keys [path deleted?]} hunk]
-  (let [os (+ (:old-start hunk) (:old-offset model))
-        new-start (+ (:new-start hunk) (:new-offset model))
+  (let [new-start (+ (:new-start hunk) (:new-offset model))
         nl (:new-lines hunk)
-        head (str "@@ -" os "," (:old-lines hunk) " +" new-start "," nl " @@")]
+        head (str "@@ -" (range-label (+ (:old-start hunk) (:old-offset model)) (:old-lines hunk))
+                  " +" (range-label new-start nl) " @@")]
     (el! "div" {"class" "hc-diff-hunk-head"}
          (el! "span" {} head)
          (when (and (:repo model) (seq path) (not deleted?))
@@ -338,24 +345,32 @@
     d))
 
 (defn gap
-  "A \"Show N unchanged lines\" button for old lines [from, to] of a two-text diff;
-  clicking it puts those lines in its place. nil when the range is empty."
+  "A \"Show N unchanged lines\" toggle for old lines [from, to] of a two-text diff:
+  the first click builds those lines right after it, later clicks hide and show
+  them again. nil when the range is empty."
   [model from to delta ot]
   (when (<= from to)
     (let [n (inc (- to from))
+          label (fn [verb] (str verb " " n " unchanged line" (if (= 1 n) "" "s")))
           old-lines (.split (:old (:texts model)) "\n")
           g (el! "div" {"class" "hc-diff-gap"})
-          btn (el! "button" {"type" "button" "class" "hc-diff-expand"}
-                   (str "Show " n " unchanged line" (if (= 1 n) "" "s")))]
+          btn (el! "button" {"type" "button" "class" "hc-diff-expand" "aria-expanded" "false"} (label "Show"))
+          lines (atom nil)]
       (.addEventListener btn "click"
                          (fn [_]
-                           (let [rs (mapv (fn [o] {:kind "ctx" :old o :new (+ o delta) :text (aget old-lines (dec o))
-                                                   :tokens (some-> ot (aget (dec o)))})
-                                          (range from (inc to)))]
-                             (let [b (body rs (fn [side r] (+ (get r side) (get model (if (= side :old) :old-offset :new-offset)))))
-                                   d (.closest g ".hc-diff")]
-                               (.replaceWith g b)
-                               (build-shown-splits! d)))))
+                           (when-not @lines
+                             (let [rs (mapv (fn [o] {:kind "ctx" :old o :new (+ o delta) :text (aget old-lines (dec o))
+                                                     :tokens (some-> ot (aget (dec o)))})
+                                            (range from (inc to)))
+                                   b (body rs (fn [side r] (+ (get r side) (get model (if (= side :old) :old-offset :new-offset)))))]
+                               (set! (.-hidden b) true)
+                               (.after g b)
+                               (reset! lines b)))
+                           (let [show? (.-hidden @lines)]
+                             (set! (.-hidden @lines) (not show?))
+                             (.setAttribute btn "aria-expanded" (str show?))
+                             (set! (.-textContent btn) (label (if show? "Hide" "Show")))
+                             (when show? (build-shown-splits! (.closest g ".hc-diff"))))))
       (.append g btn)
       g)))
 
@@ -402,8 +417,8 @@
         (when id
           (let [k (get ks i)]
             (aset keyed k {:file path
-                          :old (str (+ (:old-start h) (:old-offset model)) "," (:old-lines h))
-                          :new (str (+ (:new-start h) (:new-offset model)) "," (:new-lines h))})
+                          :old (range-label (+ (:old-start h) (:old-offset model)) (:old-lines h))
+                          :new (range-label (+ (:new-start h) (:new-offset model)) (:new-lines h))})
             (.append section (choice-controls (str id "." k) choices))))))
     (when (and texts (seq hunks))
       (let [l (last hunks)]

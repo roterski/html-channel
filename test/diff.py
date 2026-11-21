@@ -271,13 +271,24 @@ def main():
             expect(long).to_have_count(1, timeout=20000)
             expect(long.locator(".hc-diff-unified tr")).to_have_count(8)
             expect(long.locator(".hc-diff-expand")).to_have_text(["Show 96 unchanged lines", "Show 97 unchanged lines"])
-            long.locator(".hc-diff-expand").first.click()
+            first_gap = long.locator(".hc-diff-expand").first
+            opened = long.locator(".hc-diff-gap + .hc-diff-body")
+            first_gap.click()
             expect(long.locator(".hc-diff-unified tr")).to_have_count(8 + 96)
+            expect(opened).to_be_visible()
+            expect(first_gap).to_have_text("Hide 96 unchanged lines")
+            expect(first_gap).to_have_attribute("aria-expanded", "true")
+            first_gap.click()
+            expect(opened).to_be_hidden()
+            expect(first_gap).to_have_text("Show 96 unchanged lines")
+            first_gap.click()
+            expect(opened).to_be_visible()
+            expect(long.locator(".hc-diff-unified tr")).to_have_count(8 + 96)  # built once, not again
             comment = page.locator("#comment + .hc-diff .hc-diff-unified .hc-diff-add .hc-diff-code span").first
             expect(comment).to_have_attribute("style", "color: var(--shiki-token-comment);")
             expect(page.locator("#minified + .hc-diff .hc-diff-unified .hc-diff-add")).to_have_count(1)
             expect(page.locator("#minified + .hc-diff .hc-diff-word")).to_have_count(0)
-            print("texts ok: 3 lines of context, expanders, comment colored as comment, no word marks past the cap")
+            print("texts ok: 3 lines of context, expanders that show and hide, comment colored as comment, no word marks past the cap")
 
             # 3.9, 4.2: failures keep the source, notices and diff errors; a duplicate ID renders read-only
             page.goto(base + "broken.html")
@@ -320,8 +331,9 @@ def main():
                 fail("repeated hunks should get distinct context keys, not -N: %s" % ids)
             gone = page.locator("#gone + .hc-diff")
             expect(gone.locator(".hc-diff-file-head")).to_have_text("old.ts (deleted)")
+            expect(gone.locator(".hc-diff-hunk-head")).to_have_text("@@ -1,2 +0,0 @@")  # as git writes it
             expect(gone.locator("a.hc-src-link")).to_have_count(0)
-            print("keys ok: repeated changes keyed by context; deleted file unlinked")
+            print("keys ok: repeated changes keyed by context; deleted file unlinked, its header as git writes it")
 
             # review 3: Shiki doesn't load, jsdiff does -> the diff renders plain, with a highlight error
             nohl = browser.new_context().new_page()

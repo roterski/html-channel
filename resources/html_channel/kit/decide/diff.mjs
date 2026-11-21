@@ -520,26 +520,29 @@ d_2.append(build_3())}
 return null;
 
 };
+var range_label = function (start, count) {
+return `${(((count === 0)) ? ((start - 1)) : (start))??''}${","}${count??''}`;
+
+};
 var hunk_head = function (model, p__32, hunk) {
 const map___1_3 = p__32;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const path_5 = squint_core.get(map___1_4, "path");
 const deleted_QMARK__6 = squint_core.get(map___1_4, "deleted?");
-const os_7 = (squint_core.get(hunk, "old-start") + squint_core.get(model, "old-offset"));
-const new_start_8 = (squint_core.get(hunk, "new-start") + squint_core.get(model, "new-offset"));
-const nl_9 = squint_core.get(hunk, "new-lines");
-const head_10 = `${"@@ -"}${os_7}${","}${squint_core.get(hunk, "old-lines")??''}${" +"}${new_start_8}${","}${nl_9??''}${" @@"}`;
-return el_BANG_("div", ({"class": "hc-diff-hunk-head"}), el_BANG_("span", ({}), head_10), ((squint_core.truth_((() => {
-const and_11_12 = squint_core.get(model, "repo");
-if (squint_core.truth_(and_11_12)) {
-const and_13_14 = squint_core.seq(path_5);
-if (squint_core.truth_(and_13_14)) {
+const new_start_7 = (squint_core.get(hunk, "new-start") + squint_core.get(model, "new-offset"));
+const nl_8 = squint_core.get(hunk, "new-lines");
+const head_9 = `${"@@ -"}${range_label((squint_core.get(hunk, "old-start") + squint_core.get(model, "old-offset")), squint_core.get(hunk, "old-lines"))??''}${" +"}${range_label(new_start_7, nl_8)??''}${" @@"}`;
+return el_BANG_("div", ({"class": "hc-diff-hunk-head"}), el_BANG_("span", ({}), head_9), ((squint_core.truth_((() => {
+const and_10_11 = squint_core.get(model, "repo");
+if (squint_core.truth_(and_10_11)) {
+const and_12_13 = squint_core.seq(path_5);
+if (squint_core.truth_(and_12_13)) {
 return squint_core.not(deleted_QMARK__6)} else {
-return and_13_14};
+return and_12_13};
 } else {
-return and_11_12};
+return and_10_11};
 
-})())) ? (el_BANG_("code", ({"data-src": `${squint_core.get(model, "repo")??''}${":"}${path_5??''}${"#L"}${new_start_8}${(((nl_9 > 1)) ? (`-L${(new_start_8 + nl_9 + -1)}`) : (""))??''}`}), `${path_5??''}${":"}${new_start_8}`)) : (null)));
+})())) ? (el_BANG_("code", ({"data-src": `${squint_core.get(model, "repo")??''}${":"}${path_5??''}${"#L"}${new_start_7}${(((nl_8 > 1)) ? (`-L${(new_start_7 + nl_8 + -1)}`) : (""))??''}`}), `${path_5??''}${":"}${new_start_7}`)) : (null)));
 
 };
 var file_head = function (model, p__33) {
@@ -568,31 +571,45 @@ return d_1;
 var gap = function (model, from, to, delta, ot) {
 if ((from <= to)) {
 const n_1 = ((to - from) + 1);
-const old_lines_2 = squint_core.get(squint_core.get(model, "texts"), "old").split("\n");
-const g_3 = el_BANG_("div", ({"class": "hc-diff-gap"}));
-const btn_4 = el_BANG_("button", ({"type": "button", "class": "hc-diff-expand"}), `${"Show "}${n_1}${" unchanged line"}${(((1 === n_1)) ? ("") : ("s"))??''}`);
-btn_4.addEventListener("click", (function (_) {
-const rs_5 = squint_core.mapv((function (o) {
-return ({"kind": "ctx", "old": o, "new": (o + delta), "text": old_lines_2[(o - 1)], "tokens": (() => {
-const G__34_6 = ot;
-if ((G__34_6 == null)) {
+const label_2 = (function (verb) {
+return `${verb??''}${" "}${n_1}${" unchanged line"}${(((1 === n_1)) ? ("") : ("s"))??''}`;
+
+});
+const old_lines_3 = squint_core.get(squint_core.get(model, "texts"), "old").split("\n");
+const g_4 = el_BANG_("div", ({"class": "hc-diff-gap"}));
+const btn_5 = el_BANG_("button", ({"type": "button", "class": "hc-diff-expand", "aria-expanded": "false"}), label_2("Show"));
+const lines_6 = squint_core.atom(null);
+btn_5.addEventListener("click", (function (_) {
+if (squint_core.truth_(squint_core.deref(lines_6))) {
+} else {
+const rs_7 = squint_core.mapv((function (o) {
+return ({"kind": "ctx", "old": o, "new": (o + delta), "text": old_lines_3[(o - 1)], "tokens": (() => {
+const G__34_8 = ot;
+if ((G__34_8 == null)) {
 return null} else {
-return G__34_6[(o - 1)]};
+return G__34_8[(o - 1)]};
 
 })()});
 
 }), squint_core.range(from, (to + 1)));
-const b_7 = body(rs_5, (function (side, r) {
+const b_9 = body(rs_7, (function (side, r) {
 return (squint_core.get(r, side) + squint_core.get(model, (((side === "old")) ? ("old-offset") : ("new-offset"))));
 
 }));
-const d_8 = g_3.closest(".hc-diff");
-g_3.replaceWith(b_7);
-return build_shown_splits_BANG_(d_8);
+b_9.hidden = true;
+g_4.after(b_9);
+squint_core.reset_BANG_(lines_6, b_9)};
+const show_QMARK__10 = squint_core.deref(lines_6).hidden;
+squint_core.deref(lines_6).hidden = squint_core.not(show_QMARK__10);
+btn_5.setAttribute("aria-expanded", `${show_QMARK__10??''}`);
+btn_5.textContent = label_2(((squint_core.truth_(show_QMARK__10)) ? ("Hide") : ("Show")));
+if (squint_core.truth_(show_QMARK__10)) {
+return build_shown_splits_BANG_(g_4.closest(".hc-diff"));
+};
 
 }));
-g_3.append(btn_4);
-return g_3;
+g_4.append(btn_5);
+return g_4;
 };
 
 };
@@ -667,7 +684,7 @@ section_9.append(G__35_24)}};
 section_9.append(hunk_head(model, file, h_20), body(rs_21, num_8));
 if (squint_core.truth_(id)) {
 const k_25 = squint_core.get(ks_12, i_19);
-(keyed_10[k_25] = ({"file": path_1, "old": `${(squint_core.get(h_20, "old-start") + squint_core.get(model, "old-offset"))}${","}${squint_core.get(h_20, "old-lines")??''}`, "new": `${(squint_core.get(h_20, "new-start") + squint_core.get(model, "new-offset"))}${","}${squint_core.get(h_20, "new-lines")??''}`}));
+(keyed_10[k_25] = ({"file": path_1, "old": range_label((squint_core.get(h_20, "old-start") + squint_core.get(model, "old-offset")), squint_core.get(h_20, "old-lines")), "new": range_label((squint_core.get(h_20, "new-start") + squint_core.get(model, "new-offset")), squint_core.get(h_20, "new-lines"))}));
 section_9.append(choice_controls(`${id??''}${"."}${k_25??''}`, choices))}
 };
 if (squint_core.truth_(((squint_core.truth_(texts_5)) ? (squint_core.seq(hunks_11)) : (texts_5)))) {
@@ -876,4 +893,4 @@ return report_BANG_("diff", `${"jsdiff didn't load, so "}${squint_core.count(src
 
 };
 
-export { signs, diff_label, gap, choice_label, hunk_map, body, file_section, split_row, unified_table, max_marked_line, jsdiff_promise, tokens_or_nil, build_shown_splits_BANG_, tokens_of_lines, side_cells, numeric_sort, sign_cell, layouts, blocks, jsdiff_BANG_, start_BANG_, color_text_rows_BANG_, layout_bar, context_lines, min_similarity, choices_of, mark_words_BANG_, split_table, texts_model, render_diff_BANG_, stored_layout, el_BANG_, hunk_of, layout_key, ensure_newline, file_head, fnv1a, rows, choice_controls, line_nodes, hunk_head, language, patch_model, fail_BANG_, patch_path, hunk_keys, on_done, set_layout_BANG_, spoken, color_patch_rows_BANG_, file_name }
+export { signs, range_label, diff_label, gap, choice_label, hunk_map, body, file_section, split_row, unified_table, max_marked_line, jsdiff_promise, tokens_or_nil, build_shown_splits_BANG_, tokens_of_lines, side_cells, numeric_sort, sign_cell, layouts, blocks, jsdiff_BANG_, start_BANG_, color_text_rows_BANG_, layout_bar, context_lines, min_similarity, choices_of, mark_words_BANG_, split_table, texts_model, render_diff_BANG_, stored_layout, el_BANG_, hunk_of, layout_key, ensure_newline, file_head, fnv1a, rows, choice_controls, line_nodes, hunk_head, language, patch_model, fail_BANG_, patch_path, hunk_keys, on_done, set_layout_BANG_, spoken, color_patch_rows_BANG_, file_name }

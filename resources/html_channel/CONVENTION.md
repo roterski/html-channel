@@ -208,7 +208,7 @@ Give the kit the change one of two ways:
 - `data-repo="NAME"` on a patch, or `data-src` on either text, links each file and hunk to the code (see Code links). A file the patch deletes isn't linked.
   On two texts, the `#L` line of `data-src` numbers their first line.
 - Lines are colored by the file's language (see Highlighting); `data-lang` on the diff overrides it. Changed words are marked on top.
-- Two texts show 3 lines around each change; the reader opens the rest with "Show N unchanged lines". A patch shows the context it has.
+- Two texts show 3 lines around each change; the reader opens the rest with "Show N unchanged lines" and closes it again with "Hide". A patch shows the context it has.
 - The reader sees a split view when the diff is at least 46rem wide (about 740px), unified otherwise, and can pick either; the pick is kept in their browser.
 
 ### Decisions per hunk
