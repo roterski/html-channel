@@ -177,24 +177,28 @@ b_2.classList.toggle("chosen", ((squint_core.truth_(targets)) ? (targets) : ([])
 return null;
 
 };
-var report_only_ids = (new Set (["sources"]));
+var report_only_ids = (new Set (["sources", "hunks"]));
+var show_entry_BANG_ = function (els, entry, rev) {
+const v_1 = squint_core.get(entry, "value");
+const carried_QMARK__2 = (((squint_core.get(entry, "rev") < rev)) && (((!(v_1 == null)) && ((els.length > 0)))));
+for (let G__3 of squint_core.iterable(els)) {
+const el_4 = G__3;
+show_value_BANG_(el_4, v_1);
+el_4.dataset.state = ((carried_QMARK__2) ? ("carried") : ("saved"))
+};
+return carried_QMARK__2;
+
+};
 var restore_BANG_ = function (decisions, rev) {
+squint_core.swap_BANG_(state, squint_core.assoc, "loaded", ({"decisions": decisions, "rev": rev}));
 const carried_1 = squint_core.atom([]);
 for (let G__2 of squint_core.iterable(Object.entries(decisions))) {
 const vec___3_6 = G__2;
 const id_7 = squint_core.nth(vec___3_6, 0, null);
 const entry_8 = squint_core.nth(vec___3_6, 1, null);
 if (!squint_core.contains_QMARK_(report_only_ids, id_7)) {
-const els_9 = els_for(id_7);
-const v_10 = squint_core.get(entry_8, "value");
-const carried_QMARK__11 = (((squint_core.get(entry_8, "rev") < rev)) && (((!(v_10 == null)) && ((els_9.length > 0)))));
-if (carried_QMARK__11) {
-squint_core.swap_BANG_(carried_1, squint_core.conj, id_7)};
-for (let G__12 of squint_core.iterable(els_9)) {
-const el_13 = G__12;
-show_value_BANG_(el_13, v_10);
-el_13.dataset.state = ((carried_QMARK__11) ? ("carried") : ("saved"))
-}}
+if (squint_core.truth_(show_entry_BANG_(els_for(id_7), entry_8, rev))) {
+squint_core.swap_BANG_(carried_1, squint_core.conj, id_7)}}
 };
 squint_core.swap_BANG_(state, squint_core.assoc, "carried", squint_core.deref(carried_1));
 if (squint_core.truth_(squint_core.seq(squint_core.deref(carried_1)))) {
@@ -202,23 +206,77 @@ return insert_clear_button_BANG_()} else {
 return remove_clear_button_BANG_()};
 
 };
-var on_click = function (e) {
-const temp__23255__auto___1 = e.target.closest("button[data-decision][data-choice]");
-if (squint_core.truth_(temp__23255__auto___1)) {
-const btn_2 = temp__23255__auto___1;
-const id_3 = btn_2.dataset.decision;
-for (let G__4 of squint_core.iterable(els_for(id_3))) {
-const b_5 = G__4;
-b_5.classList.remove("chosen")
+var restore_within_BANG_ = function (root) {
+const temp__23314__auto___1 = squint_core.get(squint_core.deref(state), "loaded");
+if (squint_core.truth_(temp__23314__auto___1)) {
+const map___2_4 = temp__23314__auto___1;
+const map___2_5 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___2_4))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___2_4))) ? (map___2_4) : (squint_core.seq_to_map_for_destructuring(map___2_4)))) : (map___2_4));
+const decisions_6 = squint_core.get(map___2_5, "decisions");
+const rev_7 = squint_core.get(map___2_5, "rev");
+const ids_8 = squint_core.distinct(squint_core.map((function (_PERCENT_1) {
+return _PERCENT_1.dataset.decision;
+
+}), Array.from(root.querySelectorAll("[data-decision]"))));
+for (let G__9 of squint_core.iterable(ids_8)) {
+const id_10 = G__9;
+const entry_11 = decisions_6[id_10];
+if (squint_core.truth_(((squint_core.truth_(entry_11)) ? (!squint_core.contains_QMARK_(report_only_ids, id_10)) : (entry_11)))) {
+const els_12 = root.querySelectorAll(`${"[data-decision=\""}${CSS.escape(id_10)??''}${"\"]"}`);
+if (squint_core.truth_((() => {
+const and_13_14 = show_entry_BANG_(els_12, entry_11, rev_7);
+if (squint_core.truth_(and_13_14)) {
+return squint_core.not(squint_core.get(squint_core.deref(state), "carried").includes(id_10))} else {
+return and_13_14};
+
+})())) {
+squint_core.swap_BANG_(state, squint_core.update, "carried", squint_core.conj, id_10);
+insert_clear_button_BANG_()}}
+}
+return null;
 };
-btn_2.classList.add("chosen");
-return record_BANG_(id_3, btn_2.dataset.choice);
+
+};
+var clear_BANG_ = function (id) {
+for (let G__1 of squint_core.iterable(els_for(id))) {
+const el_2 = G__1;
+show_value_BANG_(el_2, null)
+};
+return record_BANG_(id, null);
+
+};
+var on_click = function (e) {
+const t_1 = e.target;
+const temp__23255__auto___2 = t_1.closest("button[data-decision][data-choice]");
+if (squint_core.truth_(temp__23255__auto___2)) {
+const btn_3 = temp__23255__auto___2;
+const id_4 = btn_3.dataset.decision;
+if (squint_core.truth_((() => {
+const and_5_6 = btn_3.classList.contains("chosen");
+if (squint_core.truth_(and_5_6)) {
+return !("status" === id_4)} else {
+return and_5_6};
+
+})())) {
+return clear_BANG_(id_4)} else {
+for (let G__7 of squint_core.iterable(els_for(id_4))) {
+const b_8 = G__7;
+b_8.classList.remove("chosen")
+};
+btn_3.classList.add("chosen");
+return record_BANG_(id_4, btn_3.dataset.choice);
+};
 } else {
-const temp__23314__auto___6 = e.target.closest("button[data-deeper]");
-if (squint_core.truth_(temp__23314__auto___6)) {
-const btn_7 = temp__23314__auto___6;
-btn_7.classList.add("chosen");
-return record_BANG_("deeper", btn_7.dataset.deeper);
+const temp__23255__auto___9 = t_1.closest("button[data-clear]");
+if (squint_core.truth_(temp__23255__auto___9)) {
+const btn_10 = temp__23255__auto___9;
+return clear_BANG_(btn_10.dataset.clear);
+} else {
+const temp__23314__auto___11 = t_1.closest("button[data-deeper]");
+if (squint_core.truth_(temp__23314__auto___11)) {
+const btn_12 = temp__23314__auto___11;
+btn_12.classList.add("chosen");
+return record_BANG_("deeper", btn_12.dataset.deeper);
+};
 };
 };
 
@@ -303,4 +361,4 @@ return setInterval(check_BANG_, 3000);
 
 };
 
-export { restore_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, save_early_answers_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, report_only_ids, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_, send_queue_BANG_ }
+export { restore_BANG_, restore_within_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, clear_BANG_, save_early_answers_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, report_only_ids, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, show_entry_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_, send_queue_BANG_ }

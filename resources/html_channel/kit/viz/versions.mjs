@@ -5,5 +5,8 @@ var katex_css = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css";
 var katex = ["https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"];
 var xstate = ["https://cdn.jsdelivr.net/npm/xstate@5.33.4/dist/xstate.umd.min.js"];
 var state_machine_cat = "https://cdn.jsdelivr.net/npm/state-machine-cat@15.0.10/+esm";
+var shiki = "https://cdn.jsdelivr.net/npm/shiki@4.6.0/+esm";
+var shiki_js_engine = "https://cdn.jsdelivr.net/npm/shiki@4.6.0/engine/javascript/+esm";
+var jsdiff = "https://cdn.jsdelivr.net/npm/diff@9.0.0/+esm";
 
-export { mermaid, vega_lite, katex_css, katex, xstate, state_machine_cat }
+export { katex, state_machine_cat, jsdiff, vega_lite, xstate, mermaid, shiki_js_engine, shiki, katex_css }

@@ -77,6 +77,16 @@
     (is (not (contains? (:decisions (store/effective root "s1" "p")) "sources"))
         "a rev-1 sources must not pass for the settings behind a rev-2 Done")))
 
+(deftest hunks-counts-only-at-its-revision
+  (let [root (temp-dir)
+        hunks {:fix {:a1b2c3d4 {:file "src/a.ts" :old "10,5" :new "10,6"}}}]
+    (write-page! root "s1" "p" "v1")
+    (store/append-entry! root "s1" {:page "p" :id "hunks" :value hunks})
+    (is (= hunks (get-in (store/effective root "s1" "p") [:decisions "hunks" :value])))
+    (write-page! root "s1" "p" "v2")
+    (is (not (contains? (:decisions (store/effective root "s1" "p")) "hunks"))
+        "a rev-1 hunk map must not describe the diffs of rev 2")))
+
 (deftest append-entry-rules
   (let [root (temp-dir)]
     (write-page! root "s1" "p" "v1")

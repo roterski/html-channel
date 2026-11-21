@@ -135,36 +135,72 @@
 
 (def report-only-ids
   "Ids the runtime records for the agent but never shows back on the page:
-  the code-link settings live in the reader's browser (decide.code-links)."
-  #{"sources"})
+  the code-link settings live in the reader's browser (decide.code-links), and
+  the hunk map describes the page's diffs (decide.diff)."
+  #{"sources" "hunks"})
+
+(defn show-entry!
+  "Shows saved `entry` on `els`. True when it is carried from an earlier revision.
+  Pre: `rev` is the page's current revision."
+  [els entry rev]
+  (let [v (:value entry)
+        carried? (and (< (:rev entry) rev) (some? v) (pos? (.-length els)))]
+    (doseq [el els]
+      (show-value! el v)
+      (set! (.. el -dataset -state) (if carried? "carried" "saved")))
+    carried?))
 
 (defn restore!
-  "Shows the effective answers. Pre: `rev` is the page's current revision."
+  "Shows the effective answers, and keeps them for controls added later
+  (restore-within!). Pre: `rev` is the page's current revision."
   [decisions rev]
+  (swap! state assoc :loaded {:decisions decisions :rev rev})
   (let [carried (atom [])]
     (doseq [[id entry] (js/Object.entries decisions)
             :when (not (contains? report-only-ids id))]
-      (let [els (els-for id)
-            v (:value entry)
-            carried? (and (< (:rev entry) rev) (some? v) (pos? (.-length els)))]
-        (when carried? (swap! carried conj id))
-        (doseq [el els]
-          (show-value! el v)
-          (set! (.. el -dataset -state) (if carried? "carried" "saved")))))
+      (when (show-entry! (els-for id) entry rev) (swap! carried conj id)))
     (swap! state assoc :carried @carried)
     (if (seq @carried) (insert-clear-button!) (remove-clear-button!))))
 
+(defn restore-within!
+  "Shows the loaded answers on the controls under `root`, for controls page code
+  or the kit added after the first load. A no-op before it: restore! covers them.
+  Pre: no control under `root` was answered since it was added."
+  [root]
+  (when-let [{:keys [decisions rev]} (:loaded @state)]
+    (let [ids (distinct (map #(.. % -dataset -decision)
+                             (js/Array.from (.querySelectorAll root "[data-decision]"))))]
+      (doseq [id ids
+              :let [entry (aget decisions id)]
+              :when (and entry (not (contains? report-only-ids id)))]
+        (let [els (.querySelectorAll root (str "[data-decision=\"" (js/CSS.escape id) "\"]"))]
+          (when (and (show-entry! els entry rev) (not (.includes (:carried @state) id)))
+            (swap! state update :carried conj id)
+            (insert-clear-button!)))))))
+
 ;; ---- events ------------------------------------------------------------------
 
-(defn on-click [e]
-  (if-let [btn (.closest (.-target e) "button[data-decision][data-choice]")]
-    (let [id (.. btn -dataset -decision)]
-      (doseq [b (els-for id)] (.remove (.-classList b) "chosen"))
-      (.add (.-classList btn) "chosen")
-      (record! id (.. btn -dataset -choice)))
-    (when-let [btn (.closest (.-target e) "button[data-deeper]")]
-      (.add (.-classList btn) "chosen")
-      (record! "deeper" (.. btn -dataset -deeper)))))
+(defn clear! [id]
+  (doseq [el (els-for id)] (show-value! el nil))
+  (record! id nil))
+
+(defn on-click
+  "A choice records its value; clicking the chosen one again clears it, except
+  Done. <button data-clear=\"ID\"> clears ID, leaving its note."
+  [e]
+  (let [t (.-target e)]
+    (if-let [btn (.closest t "button[data-decision][data-choice]")]
+      (let [id (.. btn -dataset -decision)]
+        (if (and (.contains (.-classList btn) "chosen") (not= "status" id))
+          (clear! id)
+          (do (doseq [b (els-for id)] (.remove (.-classList b) "chosen"))
+              (.add (.-classList btn) "chosen")
+              (record! id (.. btn -dataset -choice)))))
+      (if-let [btn (.closest t "button[data-clear]")]
+        (clear! (.. btn -dataset -clear))
+        (when-let [btn (.closest t "button[data-deeper]")]
+          (.add (.-classList btn) "chosen")
+          (record! "deeper" (.. btn -dataset -deeper)))))))
 
 (defn on-change [e]
   (let [el (.-target e)]

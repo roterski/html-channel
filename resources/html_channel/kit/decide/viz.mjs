@@ -1,11 +1,11 @@
 import * as squint_core from '../squint-core.js';
 var declared_libs = function () {
-const G__70_1 = document.querySelector("meta[name=hc-libs]");
-const G__70_2 = (((G__70_1 == null)) ? (null) : (G__70_1.getAttribute("content")));
-const G__70_3 = (((G__70_2 == null)) ? (null) : (G__70_2.split(/[\s,]+/)));
-if ((G__70_3 == null)) {
+const G__95_1 = document.querySelector("meta[name=hc-libs]");
+const G__95_2 = (((G__95_1 == null)) ? (null) : (G__95_1.getAttribute("content")));
+const G__95_3 = (((G__95_2 == null)) ? (null) : (G__95_2.split(/[\s,]+/)));
+if ((G__95_3 == null)) {
 return null} else {
-return G__70_3.filter((function (_PERCENT_1) {
+return G__95_3.filter((function (_PERCENT_1) {
 return (_PERCENT_1.length > 0);
 
 }))};

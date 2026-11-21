@@ -1,5 +1,5 @@
 (ns viz.versions
-  "Pinned CDN builds the visualization adapters and the statechart control load, in load order.
+  "Pinned CDN builds the visualization adapters, the statechart control, highlighting and diffs load, in load order.
   The only place library versions live: a version bump is a one-line change here.")
 
 (def mermaid ["https://cdn.jsdelivr.net/npm/mermaid@12.3.0/dist/mermaid.min.js"])
@@ -17,3 +17,10 @@
 
 ;; the statechart renderer for charts with history states; an ES module, imported on first use
 (def state-machine-cat "https://cdn.jsdelivr.net/npm/state-machine-cat@15.0.10/+esm")
+
+;; syntax highlighting (decide.highlight): Shiki with its JS regex engine, so no .wasm; ES modules
+(def shiki "https://cdn.jsdelivr.net/npm/shiki@4.6.0/+esm")
+(def shiki-js-engine "https://cdn.jsdelivr.net/npm/shiki@4.6.0/engine/javascript/+esm")
+
+;; diffs (decide.diff): parsePatch, structuredPatch, diffWordsWithSpace; an ES module
+(def jsdiff "https://cdn.jsdelivr.net/npm/diff@9.0.0/+esm")

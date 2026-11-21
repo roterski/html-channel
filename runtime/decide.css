@@ -16,6 +16,20 @@
   --hc-good: #166534;
   --hc-warn: #92400e;
   --hc-bad: #b91c1c;
+  /* syntax highlighting (decide.highlight): token colors on --hc-card and every diff background */
+  --hc-code-keyword: #a3195b;
+  --hc-code-string: #0a5a2c;
+  --hc-code-comment: #535a66;
+  --hc-code-function: #5b30b3;
+  --hc-code-constant: #8a3d00;
+  --hc-code-parameter: #7a3500;
+  --hc-code-punctuation: #3d4350;
+  --hc-code-link: #1a44c2;
+  /* diffs (decide.diff): added and removed lines, and the changed words on them */
+  --hc-diff-add-bg: #e6f6ea;
+  --hc-diff-del-bg: #fbeaea;
+  --hc-diff-add-mark: #c6ecd0;
+  --hc-diff-del-mark: #f8d3d3;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,7 +44,37 @@
     --hc-good: #4ade80;
     --hc-warn: #fbbf24;
     --hc-bad: #f87171;
+    --hc-code-keyword: #ff9cc0;
+    --hc-code-string: #8fe0a6;
+    --hc-code-comment: #b0b7c3;
+    --hc-code-function: #c9b2ff;
+    --hc-code-constant: #ffb86b;
+    --hc-code-parameter: #ffc89a;
+    --hc-code-punctuation: #c4c9d2;
+    --hc-code-link: #93c5fd;
+    --hc-diff-add-bg: #14281c;
+    --hc-diff-del-bg: #2c171a;
+    --hc-diff-add-mark: #1d4029;
+    --hc-diff-del-mark: #4d1f24;
   }
+}
+
+/* Shiki's css-variables theme (decide.highlight) colors tokens with these. */
+:root {
+  --shiki-foreground: var(--hc-fg);
+  --shiki-background: var(--hc-card);
+  --shiki-token-keyword: var(--hc-code-keyword);
+  --shiki-token-string: var(--hc-code-string);
+  --shiki-token-string-expression: var(--hc-code-string);
+  --shiki-token-comment: var(--hc-code-comment);
+  --shiki-token-function: var(--hc-code-function);
+  --shiki-token-constant: var(--hc-code-constant);
+  --shiki-token-parameter: var(--hc-code-parameter);
+  --shiki-token-punctuation: var(--hc-code-punctuation);
+  --shiki-token-link: var(--hc-code-link);
+  --shiki-token-inserted: var(--hc-good);
+  --shiki-token-deleted: var(--hc-bad);
+  --shiki-token-changed: var(--hc-warn);
 }
 
 /* ---- elements ------------------------------------------------------------ */
@@ -101,6 +145,62 @@ html.decide-is-offline [data-decision] { opacity: .75; }
   margin: .4rem 0; padding: .4rem .7rem; border-radius: 6px; font-size: .9rem;
   border: 1px solid var(--hc-bad); color: var(--hc-bad); white-space: pre-wrap;
 }
+
+/* ---- diffs (pre[data-diff], figure[data-diff]) ----------------------------- */
+
+/* The kit renders both layouts; the container's width or the reader's pick shows one. */
+.hc-diff { container-type: inline-size; margin: .8rem 0; font-size: 13px; }
+.hc-diff-layout { display: flex; gap: .25rem; justify-content: flex-end; margin-bottom: .3rem; font: 12px system-ui, sans-serif; }
+.hc-diff-layout button {
+  font: inherit; padding: .1rem .5rem; border-radius: 5px; cursor: pointer;
+  border: 1px solid var(--hc-line); background: var(--hc-bg); color: var(--hc-fg);
+}
+.hc-diff-layout button[aria-pressed="true"] { background: var(--hc-accent); border-color: var(--hc-accent); color: var(--hc-on-accent); }
+.hc-diff-file { border: 1px solid var(--hc-line); border-radius: 6px; margin-bottom: .8rem; background: var(--hc-card); }
+.hc-diff-file-head { padding: .35rem .6rem; border-bottom: 1px solid var(--hc-line); font: 13px ui-monospace, monospace; }
+.hc-diff-file-head code, .hc-diff-hunk-head code { background: none; }
+.hc-diff-hunk-head {
+  display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: center; padding: .25rem .6rem;
+  color: var(--hc-muted); font: 12px ui-monospace, monospace; border-top: 1px solid var(--hc-line);
+}
+.hc-diff-file-head + .hc-diff-hunk-head { border-top: 0; }
+.hc-diff-body > div { overflow-x: auto; }
+.hc-diff-split { display: none; }
+.hc-diff[data-layout="split"] .hc-diff-split { display: block; }
+.hc-diff[data-layout="split"] .hc-diff-unified { display: none; }
+@container (min-width: 46rem) {
+  .hc-diff[data-layout="auto"] .hc-diff-split { display: block; }
+  .hc-diff[data-layout="auto"] .hc-diff-unified { display: none; }
+}
+.hc-diff-table { width: 100%; border-collapse: collapse; font: 13px/1.45 ui-monospace, monospace; }
+.hc-diff-split .hc-diff-table { table-layout: fixed; }
+.hc-diff-table td { border: 0; padding: 0 .4rem; vertical-align: top; }
+.hc-diff-table td.hc-diff-code { white-space: pre; width: 100%; }
+.hc-diff-split .hc-diff-table td.hc-diff-code { width: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.hc-diff-split .hc-diff-table td.hc-diff-no { width: 3.2em; }
+.hc-diff-split .hc-diff-table td.hc-diff-sign { width: 1.2em; }
+.hc-diff-table td.hc-diff-no { color: var(--hc-muted); text-align: right; user-select: none; min-width: 2.5em; }
+.hc-diff-table td.hc-diff-sign { color: var(--hc-muted); user-select: none; padding: 0 .2rem; }
+/* "added" / "removed" for screen readers, next to the visible sign */
+.hc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.hc-diff-table .hc-diff-del { background: var(--hc-diff-del-bg); }
+.hc-diff-table .hc-diff-add { background: var(--hc-diff-add-bg); }
+.hc-diff-table .hc-diff-del .hc-diff-sign { color: var(--hc-bad); }
+.hc-diff-table .hc-diff-add .hc-diff-sign { color: var(--hc-good); }
+.hc-diff-table .hc-diff-none { background: var(--hc-bg); }
+.hc-diff-del .hc-diff-word { background: var(--hc-diff-del-mark); border-radius: 2px; }
+.hc-diff-add .hc-diff-word { background: var(--hc-diff-add-mark); border-radius: 2px; }
+.hc-diff-gap { padding: .15rem .6rem; border-top: 1px solid var(--hc-line); }
+.hc-diff-expand {
+  font: 12px system-ui, sans-serif; padding: .1rem .5rem; cursor: pointer; border-radius: 5px;
+  border: 1px solid var(--hc-line); background: var(--hc-bg); color: var(--hc-accent);
+}
+.hc-hunk-choice {
+  display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; padding: .5rem .6rem;
+  border-top: 1px solid var(--hc-line); background: var(--hc-bg);
+}
+.hc-hunk-choice textarea { flex: 1 1 100%; min-height: 2.5rem; }
+.hc-hunk-clear { font: 13px system-ui, sans-serif; cursor: pointer; }
 
 /* ---- depth switch (data-tier) -------------------------------------------- */
 

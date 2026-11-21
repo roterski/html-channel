@@ -25,12 +25,6 @@
   .ask .tag { margin-left: .3rem; font-weight: 400; }
   .row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
   .stack { display: grid; gap: .35rem; }
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  @media (max-width: 40rem) { .cols { grid-template-columns: 1fr; } }
-  .cols > div { border: 1px solid var(--hc-line); border-radius: 8px; padding: .6rem .9rem; min-width: 0; }
-  .cols h4 { margin: 0 0 .3rem; }
-  .before h4 { color: var(--hc-bad); }
-  .after h4 { color: var(--hc-good); }
   .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .5rem; }
   .sw { display: flex; align-items: center; gap: .5rem; font: .85rem ui-monospace, monospace; }
   .sw i { width: 1.4rem; height: 1.4rem; border-radius: 4px; border: 1px solid var(--hc-line); flex: none; }
@@ -69,6 +63,9 @@
   #mind-detail { margin-top: .6rem; padding: .6rem .9rem; border-radius: 8px; background: var(--hc-card); border: 1px solid var(--hc-line); min-height: 3.2rem; }
   #mind-detail .crumb { color: var(--hc-muted); font-size: .85rem; }
   #mind-detail p { margin: .25rem 0 .5rem; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 40rem) { .cols { grid-template-columns: 1fr; } }
+  .cols > div { border: 1px solid var(--hc-line); border-radius: 8px; padding: .6rem .9rem; min-width: 0; }
 </style>
 </head>
 <body>
@@ -91,7 +88,7 @@ Mermaid and Vega-Lite blocks are drawn by the kit's own adapters. Everything els
   <li><a href="#details">Summary + details</a></li>
   <li><a href="#tiers">Depth tiers</a></li>
   <li><a href="#svg">Inline SVG</a></li>
-  <li><a href="#cols">Before / after</a></li>
+  <li><a href="#cols">The change (diff)</a></li>
   <li><a href="#tokens">Color tokens</a></li>
   <li><a href="#mind">Mind map (D3)</a></li>
   <li><a href="#finish">Notes + Done</a></li>
@@ -280,26 +277,23 @@ sequenceDiagram
   </div>
 </section>
 
-<!-- 7. before/after + checkbox -->
+<!-- 7. diff + hunk choices + checkbox -->
 <section id="cols">
-  <h2>7. The change <span class="tag">two columns</span></h2>
-  <p class="use">Two side-by-side columns show before and after, and they stack on narrow screens. This is a layout pattern, not a kit component: a few lines of grid CSS.
-  The "Before" block and <code data-src="session-svc:src/session/metrics.clj#L8">metrics/timed</code> carry <code>data-src</code>, so the kit links them to the code: see the "Code links" bar at the top.</p>
-  <div class="cols">
-    <div class="before"><h4>Before</h4>
-<pre data-src="session-svc:src/session/store.clj#L12-L14"><code>(defn fetch [id]
+  <h2>7. The change <span class="tag">figure data-diff</span></h2>
+  <p class="use">A proposed edit goes in as its old and new text; changes already made go in as <code>git diff</code> output in <code>&lt;pre data-diff&gt;</code>.
+  The kit colors both sides by the file's language, marks the changed words, and shows a split view when there is room.
+  <code>data-hunk-choices</code> asks about each hunk, with a Clear button and a note.
+  The old text and <code data-src="session-svc:src/session/metrics.clj#L8">metrics/timed</code> carry <code>data-src</code>, so the kit links them to the code: see the "Code links" bar at the top.</p>
+<figure data-diff="fetch-cache" data-hunk-choices="accept reject">
+<pre data-diff-old data-src="session-svc:src/session/store.clj#L12-L14">(defn fetch [id]
   (metrics/timed :fetch
-    (db/query id)))</code></pre>
-      <p>Every request reaches Postgres.</p>
-    </div>
-    <div class="after"><h4>After</h4>
-<pre><code>(defn fetch [id]
+    (db/query id)))</pre>
+<pre data-diff-new>(defn fetch [id]
   (metrics/timed :fetch
     (or (cache/get id)
-        (cache/put! id (db/query id)))))</code></pre>
-      <p>Only misses reach Postgres: about 85% fewer queries.</p>
-    </div>
-  </div>
+        (cache/put! id (db/query id)))))</pre>
+</figure>
+  <p>Only misses reach Postgres: about 85% fewer queries.</p>
   <div class="ask">
     <p>Keep the metrics hook? <span class="tag">input type="checkbox"</span></p>
     <label><input type="checkbox" data-decision="keep-metrics"> Keep <code>metrics/timed</code> around <code>fetch</code></label>

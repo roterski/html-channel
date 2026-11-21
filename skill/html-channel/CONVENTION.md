@@ -72,9 +72,11 @@ A page with no `<style>` at all is readable.
 | `<input type="checkbox" data-decision="ID">` | `true` or `false` |
 | `<input type="radio" name="…" data-decision="ID" value="VALUE">` | the checked radio's `VALUE` |
 | `<button data-deeper="TARGET">` | a request to go deeper on `TARGET` (see Page kinds) |
+| `<button data-clear="ID">` | `null` for `ID`: takes back its answer, and leaves `ID-note` alone |
 
 - Each `ID` is unique per question on the page.
-- The ids `status` (the Done button), `deeper` and `sources` (see Code links) are reserved.
+- Clicking a chosen button again also takes its answer back (`null`), except Done.
+- The ids `status` (the Done button), `deeper`, `sources` (see Code links) and `hunks` (see Diffs) are reserved.
 
 ## JavaScript
 
@@ -155,6 +157,86 @@ On a decision page, clicking Done also records `sources`, the settings the reade
 
 `sources` is not a question. When a repo is `overridden`, the reader looked at a different checkout than you did.
 
+## Highlighting
+
+The kit colors code by its language, with no meta and no markup beyond naming the language.
+
+| Code | Colored when |
+|---|---|
+| `<pre>…</pre>`, `<pre><code>…</code></pre>` | always: name the language, or mark it plain text |
+| `<code>…</code>` inline | it has `data-lang`, `data-src` or a `language-*` class; other inline code stays plain, and so does a `data-src` to a file of unknown type |
+
+The language is the first of:
+1. `data-lang="ts"`, on the `<pre>` or its `<code>`: a language name or alias, such as `ts`, `py`, `clojure`, `sh`.
+2. `class="language-ts"`, as Markdown writes it.
+3. The file named by `data-src`: its name (`Dockerfile`) or its extension (`.clj`).
+
+- `data-lang="text"` (or `plaintext`) shows a block as plain text, such as command output or prose.
+- The kit never guesses. A block with no language, or an unknown name, stays plain and is reported as `highlight`: one error per cause, with a count.
+- Code that already holds your own elements (links, `<b>`) is left as it is.
+- Escape `<` as `&lt;` and `&` as `&amp;` in code. An unescaped `Array<string>` becomes a `<string>` element and its text is lost; the kit reports such code as `highlight` and leaves it plain.
+- Highlighting keeps the text and the attributes, so code links work on highlighted code.
+
+## Diffs
+
+Show a code change as a diff, not as before and after copies.
+Give the kit the change one of two ways:
+
+| You have | Write |
+|---|---|
+| Changes already made (on disk, in a commit) | the output of `git diff`, in `<pre data-diff="ID">` |
+| An edit you propose and haven't applied | the old and the new text, in `<pre data-diff-old>` and `<pre data-diff-new>` inside `<figure data-diff="ID">` |
+
+```html
+<pre data-diff="cache-fix" data-repo="api">diff --git a/src/cache.ts b/src/cache.ts
+--- a/src/cache.ts
++++ b/src/cache.ts
+@@ -10,2 +10,3 @@ class Cache {
+   size = 0;
+-  max = 100;
++  max = 1000;
++  ttl = 60;
+</pre>
+
+<figure data-diff="put-rename">
+  <pre data-diff-old data-src="api:src/store.clj#L5">(defn put [m k v] …)</pre>
+  <pre data-diff-new>(defn put! [m k v] …)</pre>
+</figure>
+```
+
+- HTML-escape the text as in any `<pre>` (`&lt;`, `&amp;`): a diff whose text the browser read as tags is a `diff` error. A patch may hold several files.
+- `data-repo="NAME"` on a patch, or `data-src` on either text, links each file and hunk to the code (see Code links). A file the patch deletes isn't linked.
+  On two texts, the `#L` line of `data-src` numbers their first line.
+- Lines are colored by the file's language (see Highlighting); `data-lang` on the diff overrides it. Changed words are marked on top.
+- Two texts show 3 lines around each change; the reader opens the rest with "Show N unchanged lines". A patch shows the context it has.
+- The reader sees a split view when the diff is at least 46rem wide (about 740px), unified otherwise, and can pick either; the pick is kept in their browser.
+
+### Decisions per hunk
+
+Add `data-hunk-choices` with the choices, separated by spaces, to ask about each hunk:
+
+```html
+<pre data-diff="cache-fix" data-repo="api" data-hunk-choices="accept reject">…</pre>
+```
+
+Each hunk gets one button per choice, a Clear button and a note field, saved as `ID.KEY` and `ID.KEY-note`.
+`KEY` is a hash of the hunk's file and changed lines, so an answer carries over to a revision that only moves the hunk.
+When the same change appears more than once in a file, its context lines tell those hunks apart.
+On Done the kit also records `hunks`: for each `KEY`, its file and its line range (`start,count`) on the old and the new side:
+
+```json
+{"cache-fix":{"3fa9c1d2":{"file":"src/cache.ts","old":"10,3","new":"10,4"}}}
+```
+
+`hunks` is not a question. Read it to tell which hunk an answer is about, and name hunks by file and lines, not by key.
+An `ID.KEY` answer whose `KEY` isn't in `hunks` carried over from a revision where that hunk was different: it's stale.
+Hunk choices need an `ID` no other diff on the page uses.
+
+### When a diff can't render
+
+The source stays visible with a notice, and you get an error of kind `diff`: unescaped text the browser read as tags, a patch that doesn't parse, a figure without both texts, two equal texts, or hunk choices on a diff whose `ID` is missing or taken (that diff renders without its controls).
+When the highlighter or a language doesn't load, the diff renders without colors and you get a `highlight` error.
+
 ## Depth
 
 What the reader needs for the decision stays visible. Put supporting detail in `<details>`.
@@ -179,11 +261,12 @@ Pick the form that matches the content's shape. These are what the kit offers; a
 | Flow, sequence, dependencies | `<pre data-viz="mermaid">` |
 | State: modes and the events between them | `<figure data-statechart>` (see STATECHART.md) |
 | Numbers over time or across categories | `<pre data-viz="vega-lite">` |
-| Code from a repo | `<pre data-src>` or `<code data-src>` (see Code links) |
+| Code from a repo | `<pre data-src>` or `<code data-src>` (see Code links), colored by its language (see Highlighting) |
 | A main point with supporting detail | visible summary, detail in `<details>` |
 | Layers of abstraction | `data-tier` levels |
 | A spatial or structural picture | inline `<svg>` using the color tokens |
-| Before and after | two columns side by side (`display:grid; grid-template-columns:1fr 1fr`, one column on narrow screens) |
+| A code change | `<pre data-diff>` or `<figure data-diff>` (see Diffs) |
+| Before and after, other than code | two columns side by side (`display:grid; grid-template-columns:1fr 1fr`, one column on narrow screens) |
 | A tree, graph or map the reader explores | your own library, such as D3 or Leaflet (see JavaScript) |
 
 ## Choosing a control
@@ -197,6 +280,7 @@ Pick the form that matches the content's shape. These are what the kit offers; a
 | A short value, such as a number, name or size | `<input>` |
 | Open feedback | one `<textarea>`, usually at the end |
 | "I can't decide without more on X" | `<button data-deeper="X">` next to X |
+| Accept or reject each change in a diff | `data-hunk-choices` on the diff (see Diffs) |
 | An answer given through a picture | your own JS and `htmlChannel.record` (see JavaScript) |
 
 Put each question right after the table, diagram or chart it's about, so the reader answers with the evidence in view.
@@ -247,7 +331,7 @@ To revise a page, rewrite the same file.
 - The server snapshots each new version as `<page>@<n>.html`, and that version is revision `n`.
 - An open tab reloads itself when the page gets a new revision.
 - Earlier answers carry over to the new revision for any control with the same `ID`. They are shown as *carried*, and a "Clear carried answers" button appears.
-- `status`, `deeper` and `sources` never carry over: each revision needs its own Done.
+- `status`, `deeper`, `sources` and `hunks` never carry over: each revision needs its own Done.
 
 ## What the agent gets back
 
@@ -269,7 +353,7 @@ Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 ```
 
 In this example, `notes` has `rev` 1, which is lower than the page's `rev` 2. That means the answer was carried over and not re-confirmed.
-Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render), `undeclared`, `code-link` (a malformed repo meta or code reference) and `statechart` (a statechart definition problem, see STATECHART.md).
+Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render), `undeclared`, `code-link` (a malformed repo meta or code reference), `statechart` (a statechart definition problem, see STATECHART.md), `highlight` (code with no or an unknown language, or the highlighter didn't load) and `diff` (a diff that didn't render, or hunk choices without a unique ID).
 Explorable pages add `explorable`; explorable pages and pages with a statechart add `inert`, `unprobed` and `probe-cut-off` (see EXPLORABLE.md).
 During `check_page`, `dialog` means the page called `alert()`, `confirm()` or `prompt()`, which would interrupt the reader.
 `check_page` adds `no-reporter` when the page never loaded `/_kit/boot.js`: then no other error could have been seen.

@@ -38,5 +38,25 @@
         (is (>= (contrast (ts fg) (ts bg)) 4.5)
             (format "%.2f:1" (contrast (ts fg) (ts bg))))))))
 
+(def code-colors ["fg" "code-keyword" "code-string" "code-comment" "code-function" "code-constant"
+                  "code-parameter" "code-punctuation" "code-link"])
+
+(def code-backgrounds
+  "Where code text sits: blocks, diff tables, and changed words in diffs."
+  ["card" "bg" "diff-add-bg" "diff-del-bg" "diff-add-mark" "diff-del-mark"])
+
+(def diff-pairs
+  "Line numbers and signs on diff rows."
+  [["muted" "diff-add-bg"] ["muted" "diff-del-bg"] ["good" "diff-add-bg"] ["bad" "diff-del-bg"]])
+
+(deftest every-code-color-reaches-aa-on-every-code-background
+  (doseq [[scheme ts] [["light" light] ["dark" dark]]
+          [fg bg] (concat (for [fg code-colors bg code-backgrounds] [fg bg]) diff-pairs)]
+    (testing (str scheme " " fg " on " bg)
+      (is (and (ts fg) (ts bg)) "token defined")
+      (when (and (ts fg) (ts bg))
+        (is (>= (contrast (ts fg) (ts bg)) 4.5)
+            (format "%.2f:1" (contrast (ts fg) (ts bg))))))))
+
 (deftest schemes-define-the-same-tokens
   (is (= (set (keys light)) (set (keys dark)))))
