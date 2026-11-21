@@ -86,6 +86,13 @@ A page with no `<style>` at all is readable.
   or set a `data-decision` control's value and dispatch `new Event("change", {bubbles: true})` on it.
   Both work from the first inline script: answers given before the runtime starts are saved when it does.
   Never send answers to the server any other way.
+- To react when an answer changes, watch its controls' `data-state` with a `MutationObserver`.
+  Every change sets `data-state="pending"`: a choice, an edit, Clear, clicking a chosen button again, "Clear carried answers", and `htmlChannel.record`.
+  It turns `saved` once the server has the answer, or `rejected` if the server refused it; it stays `pending` while the server is unreachable.
+  Restoring answers sets only `saved`, or `carried` for an answer from an earlier revision, never `pending`.
+  It runs once, when the server first answers, independent of the `load` event (usually just after it; later if the server was unreachable): read restored answers when `saved` or `carried` appears, not at `load`.
+  Read the control's value in the observer's callback: the kit sets the value before `pending`.
+  A `change` event is no substitute: buttons, Clear and `htmlChannel.record` don't fire one.
 
 Bring your own library when the reader needs to *explore*, not just read.
 Examples are a tree or graph the reader opens node by node (D3), a map (Leaflet), or a table they sort and filter.
