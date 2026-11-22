@@ -36,6 +36,8 @@ Pick the first branch that applies.
    so a condensed view of the message still shows it.
    The URL goes in this final message, after the wait has started, because a client may hide text written between tool calls.
    Give it for every revision too.
+   If `channel_setup` also returned `remote_url_base`, show both, each on its own line:
+   `laptop: <url_base><page>.html` and `phone: <remote_url_base><page>.html`.
 
 ## 2. `html-channel` on PATH (no MCP tools)
 
@@ -47,7 +49,7 @@ Pick the first branch that applies.
    Without background commands that wake you, ask the user to click Done and then tell you in chat.
    Then run `html-channel decisions <session>/<page>`. Act only when `done` is `true`.
    If `deeper` lists targets instead, rewrite the page with them expanded and ask again.
-5. End your turn with `<url_base><page>.html`, as in step 5 of branch 1.
+5. End your turn with `<url_base><page>.html`, as in step 5 of branch 1 (both URLs when `session new` printed `remote_url_base`).
 
 ## 3. Neither is available
 

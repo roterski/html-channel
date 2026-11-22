@@ -26,6 +26,8 @@
   check <session>/<page> [--root]                render in headless Chrome, light and dark; print {errors, screenshots}
 
   --root defaults to $HTML_CHANNEL_ROOT, else ai/html-channel; relative to $CLAUDE_PROJECT_DIR, else the cwd
+  $HTML_CHANNEL_REMOTE_BASE (e.g. http://devbox:8788): a second address the server is reached at;
+    its host is accepted, and results add remote_url_base / remote_url next to the local ones
   health [--port]                     print the running server's /_health; exit 1 if none
   version")
 
@@ -35,6 +37,8 @@
 (defn- print-json [data] (println (json/generate-string data {:pretty true})))
 
 (defn- url-base [port mount s] (str "http://127.0.0.1:" port "/" mount "/" s "/"))
+
+(defn- remote-url-base [mount s] (some-> (server/remote-base) (str "/" mount "/" s "/")))
 
 (defn- serve [{:keys [root port]}]
   (let [root (store/root-from root)
@@ -50,8 +54,9 @@
         s (session/pick nil)
         dir (store/session-dir root s)]
     (fs/create-dirs dir)
-    (print-json {:session s :dir (str (fs/canonicalize dir))
-                 :url_base (url-base (server/port-from port) mount s)})))
+    (print-json (cond-> {:session s :dir (str (fs/canonicalize dir))
+                         :url_base (url-base (server/port-from port) mount s)}
+                  (remote-url-base mount s) (assoc :remote_url_base (remote-url-base mount s))))))
 
 (defn- session-page
   "[session page] from \"<session>/<page>\"."
@@ -85,7 +90,8 @@
   (let [[s page] (session-page cmd target)
         root (store/root-from root)
         mount (registry/register! root)]
-    (print-json (merge {:page page :url (str (url-base (server/port-from port) mount s) page ".html")}
+    (print-json (merge (cond-> {:page page :url (str (url-base (server/port-from port) mount s) page ".html")}
+                         (remote-url-base mount s) (assoc :remote_url (str (remote-url-base mount s) page ".html")))
                        (state-of root s page)))))
 
 (defn- decisions [target opts]

@@ -27,6 +27,10 @@ Drawing a statechart, a chart of modes and the events between them that the read
   `@` is reserved: `<page>@<n>.html` files are revision snapshots, so don't write or edit them.
 - The URL is `http://127.0.0.1:8787/<mount>/<session>/<page>.html`.
   `channel_setup` and `session new` return the `url_base` to put in front of the file name.
+- When the server also has a second address (`HTML_CHANNEL_REMOTE_BASE`, such as a tailnet name a phone reaches it at),
+  they also return `remote_url_base`, and page results carry `remote_url` next to `url`.
+  Then every time this convention says to give the user the URL, give both, each on its own labelled line:
+  `laptop: <url>` and `phone: <remote url>`.
 
 ## Required markup
 
@@ -303,7 +307,8 @@ Don't gather questions into a form at the bottom. Only open notes and the Done b
 
 The agent waits for the click without blocking the conversation:
 it runs `html-channel wait <session>/<page>` as a background command,
-then ends its turn with a short text message that shows the page's full URL on its own line.
+then ends its turn with a short text message that shows the page's full URL on its own line
+(both URLs, labelled, when there is a `remote_url_base`; see Where pages live).
 The URL goes in that final message, because a client may hide text written between tool calls.
 While the wait runs, the user can keep talking to the agent.
 The command exits when the reader acts, and its exit wakes the agent.

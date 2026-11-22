@@ -48,10 +48,42 @@
 
 (def ^:private local-hostnames #{"127.0.0.1" "localhost"})
 
-(defn- local-authority?
-  "True for \"127.0.0.1:8787\" or \"localhost:8787\" (any port, or none)."
+(defn- hostname
+  "\"devbox:8788\" -> \"devbox\"."
   [authority]
-  (contains? local-hostnames (str/replace (str authority) #":\d+$" "")))
+  (str/replace (str authority) #":\d+$" ""))
+
+(defn remote-base-from
+  "A remote base as given, trimmed and without trailing slashes; nil when blank."
+  [raw]
+  (some-> raw str/trim not-empty (str/replace #"/+$" "")))
+
+(defn remote-base
+  "$HTML_CHANNEL_REMOTE_BASE, e.g. \"http://devbox:8788\": a second address this
+  server is reached at, such as a tailnet name served by `tailscale serve`. Its
+  host gets past `foreign-request?`, and agents get page URLs on it next to the
+  local ones. Nil when unset."
+  []
+  (remote-base-from (System/getenv "HTML_CHANNEL_REMOTE_BASE")))
+
+(defn- remote-hostname []
+  (some->> (remote-base) (re-matches #"https?://([^/]+)") second hostname))
+
+(defn- known-host?
+  "Whether a Host header names this machine (any port, or none):
+  127.0.0.1, localhost, or the host of `remote-base`."
+  [host]
+  (let [h (hostname host)]
+    (or (contains? local-hostnames h) (= h (remote-hostname)))))
+
+(defn- page-origin?
+  "Whether an Origin is a page this server served: http on 127.0.0.1 or
+  localhost, or http(s) on the host of `remote-base` (any port)."
+  [origin]
+  (when-let [[_ scheme authority] (re-matches #"(https?)://([^/]+)" (str origin))]
+    (let [h (hostname authority)]
+      (or (and (= "http" scheme) (contains? local-hostnames h))
+          (= h (remote-hostname))))))
 
 (defn foreign-request?
   "True for a request a browser sent on behalf of another website:
@@ -59,14 +91,15 @@
     resolves to 127.0.0.1 so the browser treats it as the same origin;
   - a POST whose Origin isn't a page on this machine: a \"simple\" cross-site
     POST reaches us without a preflight, even though its response is unreadable.
-  Local programs (curl, the CLI, tests) send no Origin and the real Host."
+  Local programs (curl, the CLI, tests) send no Origin and the real Host.
+  The host of `remote-base` counts as this machine: an outside site can't point
+  your own name there the way it points its own name at 127.0.0.1."
   [{:keys [headers request-method]}]
   (let [host (get headers "host")
         origin (get headers "origin")]
     (boolean
-     (or (and host (not (local-authority? host)))
-         (and (= :post request-method) origin
-              (not (some->> origin (re-matches #"http://([^/]+)") second local-authority?)))))))
+     (or (and host (not (known-host? host)))
+         (and (= :post request-method) origin (not (page-origin? origin)))))))
 
 (defn- respond
   ([status] (respond status nil nil))

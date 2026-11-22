@@ -53,6 +53,41 @@
       (is (= 200 (:status (call :post (str base "_decisions") {"host" "localhost:8787"} answer))))
       (is (= 200 (:status (call :get "/_health" {} nil)))))))
 
+(deftest a-remote-base-host-counts-as-this-machine
+  (let [{:keys [root base]} (setup)
+        call (fn [method uri headers body]
+               (:status (server/handler {:request-method method :uri uri :headers headers
+                                         :body (some-> body java.io.StringReader.)})))
+        answer "{\"page\":\"p\",\"id\":\"a\",\"value\":\"x\"}"]
+    (testing "unset: only 127.0.0.1 and localhost, as before"
+      (is (nil? (server/remote-base)))
+      (is (= 403 (call :get "/_health" {"host" "devbox:8788"} nil)))
+      (is (= 403 (call :post (str base "_decisions") {"host" "127.0.0.1:8788" "origin" "http://devbox:8788"} answer)))
+      (is (= 403 (call :post (str base "_decisions") {"host" "127.0.0.1:8787" "origin" "https://127.0.0.1:8787"} answer))))
+    (with-redefs [server/remote-base (constantly "http://devbox:8788")]
+      (testing "its host is served, any port"
+        (is (= 200 (call :get "/_health" {"host" "devbox:8788"} nil)))
+        (is (= 200 (call :get "/_health" {"host" "devbox"} nil))))
+      (testing "a POST from a page on it is accepted, http or https"
+        (doseq [origin ["http://devbox:8788" "https://devbox"]]
+          (is (= 200 (call :post (str base "_decisions") {"host" "devbox:8788" "origin" origin} answer)) origin)))
+      (testing "every other name is still refused"
+        (doseq [host ["devbox.evil.example" "evil.example" "evil.devbox:8788"]]
+          (is (= 403 (call :get "/_health" {"host" host} nil)) host))
+        (doseq [origin ["http://evil.example" "http://devbox.evil.example:8788" "null"]]
+          (is (= 403 (call :post (str base "_decisions") {"host" "devbox:8788" "origin" origin} answer)) origin)))
+      (testing "local pages work as before"
+        (is (= 200 (call :post (str base "_decisions") {"host" "127.0.0.1:8788" "origin" "http://127.0.0.1:8788"} answer)))))
+    (is (= 3 (count (store/entries root "s1"))))))
+
+(deftest remote-base-from-trims
+  (doseq [[raw want] [["http://devbox:8788" "http://devbox:8788"]
+                      ["http://devbox:8788/" "http://devbox:8788"]
+                      ["  http://devbox:8788//  " "http://devbox:8788"]
+                      ["  " nil]
+                      [nil nil]]]
+    (is (= want (server/remote-base-from raw)) (pr-str raw))))
+
 (deftest routes
   (let [{:keys [root base]} (setup)]
     (is (= true (:ok (body-json (req :get "/_health")))))

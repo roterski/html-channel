@@ -90,6 +90,25 @@ All of these processes try to bind the port.
 
 The port is 8787 by default. Change it with `--port` or `HTML_CHANNEL_PORT`.
 
+## Reaching it from another device
+
+The server only listens on `127.0.0.1`, and it refuses requests whose `Host` isn't `127.0.0.1` or `localhost`,
+and POSTs whose `Origin` isn't a page it served.
+That stops DNS rebinding: a site pointing its own name at 127.0.0.1 to read or answer your pages.
+
+To open pages from a phone through a proxy such as `tailscale serve`, give the server that second address:
+
+```sh
+HTML_CHANNEL_REMOTE_BASE=http://devbox:8788   # e.g. in the MCP server's env
+tailscale serve --bg --http=8788 localhost:8788
+```
+
+- Its host (`devbox`) is accepted in `Host`, and `http(s)://devbox[:port]` in `Origin`. Every other name is still refused;
+  an outside site can't point your tailnet name at this machine the way it can point its own name at 127.0.0.1.
+- `channel_setup` and `session new` add `remote_url_base`, and page results add `remote_url`, next to the local ones.
+  The convention tells agents to show both.
+- `check` keeps using the local URL.
+
 ## Where sessions go
 
 Sessions go to `<project>/ai/html-channel/<session>/` by default, where `<project>` is `$CLAUDE_PROJECT_DIR`, else the cwd.

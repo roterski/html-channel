@@ -16,7 +16,7 @@
             [html-channel.session :as session]
             [html-channel.store :as store]))
 
-(def version "0.5.1")
+(def version "0.6.0")
 
 (def poll-ms 500)
 (def progress-every-ms 30000)
@@ -49,22 +49,25 @@
         s (or explicit-session @default-session (swap! default-session #(or % (session/pick nil))))]
     (store/session-dir root s) ; validates the name
     {:root root :session s :mount mount
-     :url-base (str "http://127.0.0.1:" port "/" mount "/" s "/")}))
+     :url-base (str "http://127.0.0.1:" port "/" mount "/" s "/")
+     :remote-url-base (some-> (server/remote-base) (str "/" mount "/" s "/"))}))
 
-(defn- page-result [{:keys [root session url-base]} page]
-  (merge {:page page :url (str url-base page ".html")}
+(defn- page-result [{:keys [root session url-base remote-url-base]} page]
+  (merge (cond-> {:page page :url (str url-base page ".html")}
+           remote-url-base (assoc :remote_url (str remote-url-base page ".html")))
          (store/page-state root session page)))
 
 ;; ---- tools -----------------------------------------------------------------
 
 (defn channel-setup [ctx {:keys [session]}]
-  (let [{:keys [root session url-base]} (channel ctx session)]
+  (let [{:keys [root session url-base remote-url-base]} (channel ctx session)]
     (reset! default-session session)
     (fs/create-dirs (store/session-dir root session))
-    {:dir (str (fs/canonicalize (store/session-dir root session)))
-     :url_base url-base
-     :session session
-     :convention (convention)}))
+    (cond-> {:dir (str (fs/canonicalize (store/session-dir root session)))
+             :url_base url-base
+             :session session
+             :convention (convention)}
+      remote-url-base (assoc :remote_url_base remote-url-base))))
 
 (defn get-decisions [ctx {:keys [page session]}]
   (page-result (channel ctx session) page))
@@ -123,8 +126,9 @@
 (def tools
   [{:name "channel_setup"
     :description (str "Start here before writing an html-channel page. Returns the directory to write "
-                      "pages into, their URL base, the session id, and the page CONVENTION (markup rules). "
-                      "Then write <dir>/<page>.html and give the user its URL.")
+                      "pages into, their URL base (plus remote_url_base when the server has a second "
+                      "address), the session id, and the page CONVENTION (markup rules). "
+                      "Then write <dir>/<page>.html and give the user its URL (both, when there are two).")
     :inputSchema {:type "object" :properties {:session session-arg}}}
    {:name "ask_human"
     :description (str "Wait until the user clicks the Done button on a decision page, then return their "
