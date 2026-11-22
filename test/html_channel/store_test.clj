@@ -87,6 +87,16 @@
     (is (not (contains? (:decisions (store/effective root "s1" "p")) "hunks"))
         "a rev-1 hunk map must not describe the diffs of rev 2")))
 
+(deftest moot-counts-only-at-its-revision
+  (let [root (temp-dir)
+        moot {:evict "you picked In-process"}]
+    (write-page! root "s1" "p" "v1")
+    (store/append-entry! root "s1" {:page "p" :id "moot" :value moot})
+    (is (= moot (get-in (store/effective root "s1" "p") [:decisions "moot" :value])))
+    (write-page! root "s1" "p" "v2")
+    (is (not (contains? (:decisions (store/effective root "s1" "p")) "moot"))
+        "a rev-1 moot map must not describe the links of rev 2")))
+
 (deftest append-entry-rules
   (let [root (temp-dir)]
     (write-page! root "s1" "p" "v1")
@@ -196,6 +206,11 @@
   (let [root (temp-dir)]
     (write-page! root "s1" "p" "v1")
     (is (= "statechart" (:kind (store/append-error! root "s1" {:page "p" :kind "statechart" :message "bad target"}))))))
+
+(deftest moot-is-an-error-kind
+  (let [root (temp-dir)]
+    (write-page! root "s1" "p" "v1")
+    (is (= "moot" (:kind (store/append-error! root "s1" {:page "p" :kind "moot" :message "no container"}))))))
 
 (deftest errors-are-stamped-and-stored-once
   (let [root (temp-dir)

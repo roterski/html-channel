@@ -80,7 +80,7 @@ A page with no `<style>` at all is readable.
 
 - Each `ID` is unique per question on the page.
 - Clicking a chosen button again also takes its answer back (`null`), except Done.
-- The ids `status` (the Done button), `deeper`, `sources` (see Code links) and `hunks` (see Diffs) are reserved.
+- The ids `status` (the Done button), `deeper`, `sources` (see Code links), `hunks` (see Diffs) and `moot` (see Moot) are reserved.
 
 ## JavaScript
 
@@ -248,6 +248,63 @@ Hunk choices need an `ID` no other diff on the page uses.
 The source stays visible with a notice, and you get an error of kind `diff`: unescaped text the browser read as tags, a patch that doesn't parse, a figure without both texts, two equal texts, or hunk choices on a diff whose `ID` is missing or taken (that diff renders without its controls).
 When the highlighter or a language doesn't load, the diff renders without colors and you get a `highlight` error.
 
+## Moot
+
+When one answer makes another question, or one option of it, no longer apply, declare the link and the kit shows it.
+No page script: the kit greys, folds and explains what is moot, keeps it current as answers change, and tells the agent on Done.
+
+```html
+<script type="application/json" id="hc-moot">
+{"evict":      {"when": "cache=inproc", "reason": "you picked In-process for the cache, which evicts on its own"},
+ "size=large": {"when": "cache=inproc|memcached", "reason": "a large cache needs Redis"}}
+</script>
+
+<section data-question="evict">
+  <h2>Eviction</h2>
+  …the evidence, the controls, Clear and the note…
+</section>
+```
+
+- One link list per page: a `<script type="application/json" id="hc-moot">`, anywhere in the page.
+- A key names what goes moot: `ID` for a question, `ID=VALUE` for one option of it.
+- `when` lists terms separated by spaces; the link holds when any one matches.
+  A term is `ID=VALUE`, or `ID=V1|V2` for any of several values.
+  `ID=` matches an unanswered question or an empty field, and a checkbox is `true` or `false`.
+  A question that is itself moot counts as unanswered, so a chain of links settles.
+- `reason` is the line the reader sees while the link holds, after "Moot:".
+  Name the other question and its answer in words: "you picked In-process for the cache".
+  Without one, the kit writes "“Heading” is “Label”" from the other question and reports an error.
+
+A moot question:
+- Wrap every question a key names in an element with `data-question="ID"`, holding its heading, evidence, controls, Clear and note.
+  The question's heading should be the container's first heading, as a direct child.
+- While moot, the container greys and folds to that heading, the reason and a Show button; opened, it stays greyed.
+  It unfolds when the link stops holding. Nothing is disabled, so Clear and the note still work.
+- Its answer stays as the reader left it, and counts again once the link stops holding.
+
+A moot option:
+- `ID=VALUE` names a button (`data-choice="VALUE"`) or a radio (`value="VALUE"`) of question `ID`.
+- The button, or the radio's label, greys and is struck through, with the reason after it. It can still be chosen.
+- Options of a `<select>`, checkboxes and text fields can't be moot.
+
+On Done the kit also records `moot`: each key whose link holds, with the reason the reader saw; `{}` when none does.
+
+```json
+{"evict":"you picked In-process for the cache, which evicts on its own","size=large":"a large cache needs Redis"}
+```
+
+`moot` is not a question, and it is only recorded on a page with a link list that parses.
+A key `ID`: the question is moot, so don't act on its answer. A key `ID=VALUE` whose option is the answer: the reader chose an option another answer rules out, so ask.
+
+### When a link can't be used
+
+Each problem is one error of kind `moot`, reported when the page loads, and the link is dropped:
+a list that isn't a JSON object, a second list (only the first is read), an entry without a string `when`,
+a key or term naming an `ID` no control answers, a term without `=`, a question key with no `data-question` container,
+an option key whose question has no such button or radio, or is a select, checkbox or text field,
+and links that form or depend on a cycle.
+A link without `reason` is kept, with the written reason, and reported too.
+
 ## Depth
 
 What the reader needs for the decision stays visible. Put supporting detail in `<details>`.
@@ -293,6 +350,7 @@ Pick the form that matches the content's shape. These are what the kit offers; a
 | "I can't decide without more on X" | `<button data-deeper="X">` next to X |
 | Accept or reject each change in a diff | `data-hunk-choices` on the diff (see Diffs) |
 | An answer given through a picture | your own JS and `htmlChannel.record` (see JavaScript) |
+| One answer makes another question, or one of its options, no longer apply | a link in the page's link list, not page script (see Moot) |
 
 Put each question right after the table, diagram or chart it's about, so the reader answers with the evidence in view.
 Don't gather questions into a form at the bottom. Only open notes and the Done button go last.
@@ -343,7 +401,7 @@ To revise a page, rewrite the same file.
 - The server snapshots each new version as `<page>@<n>.html`, and that version is revision `n`.
 - An open tab reloads itself when the page gets a new revision.
 - Earlier answers carry over to the new revision for any control with the same `ID`. They are shown as *carried*, and a "Clear carried answers" button appears.
-- `status`, `deeper`, `sources` and `hunks` never carry over: each revision needs its own Done.
+- `status`, `deeper`, `sources`, `hunks` and `moot` never carry over: each revision needs its own Done.
 
 ## What the agent gets back
 
@@ -365,7 +423,7 @@ Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
 ```
 
 In this example, `notes` has `rev` 1, which is lower than the page's `rev` 2. That means the answer was carried over and not re-confirmed.
-Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render), `undeclared`, `code-link` (a malformed repo meta or code reference), `statechart` (a statechart definition problem, see STATECHART.md), `highlight` (code with no or an unknown language, or the highlighter didn't load) and `diff` (a diff that didn't render, or hunk choices without a unique ID).
+Error kinds are `load` (a script, stylesheet or image failed to load), `js` (an uncaught error), `viz` (a block didn't render), `undeclared`, `code-link` (a malformed repo meta or code reference), `statechart` (a statechart definition problem, see STATECHART.md), `highlight` (code with no or an unknown language, or the highlighter didn't load), `diff` (a diff that didn't render, or hunk choices without a unique ID) and `moot` (a problem in the link list, see Moot).
 Explorable pages add `explorable`; explorable pages and pages with a statechart add `inert`, `unprobed` and `probe-cut-off` (see EXPLORABLE.md).
 During `check_page`, `dialog` means the page called `alert()`, `confirm()` or `prompt()`, which would interrupt the reader.
 `check_page` adds `no-reporter` when the page never loaded `/_kit/boot.js`: then no other error could have been seen.

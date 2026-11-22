@@ -1,6 +1,6 @@
 (ns decide
   "Entry point loaded by pages: the core runtime over the http transport, then
-  the depth switch, the visualization adapters, the statecharts, the explorable
+  the links between questions (moot), the depth switch, the visualization adapters, the statecharts, the explorable
   controls, code links, diffs and syntax highlighting.
   On an explorable page, also the structure lint. During a headless check, the
   interaction probe, on explorable pages and on pages with a statechart.
@@ -13,12 +13,14 @@
             [decide.highlight :as highlight]
             [decide.http :as http]
             [decide.lint :as lint]
+            [decide.moot :as moot]
             [decide.probe :as probe]
             [decide.statechart :as statechart]
             [decide.tiers :as tiers]
             [decide.viz :as viz]))
 
 (core/start! (http/transport))
+(moot/start! core/report-error!)
 (tiers/start!)
 (viz/start! core/report-error!)
 (statechart/start! core/report-error!)

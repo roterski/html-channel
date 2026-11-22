@@ -16,7 +16,7 @@
             [html-channel.session :as session]
             [html-channel.store :as store]))
 
-(def version "0.6.0")
+(def version "0.7.0")
 
 (def poll-ms 500)
 (def progress-every-ms 30000)

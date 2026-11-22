@@ -170,10 +170,10 @@ const block_submit_3 = (function (e) {
 return e.preventDefault();
 
 });
-const G__52_4 = hc_1.reportProbe;
-if ((G__52_4 == null)) {
+const G__62_4 = hc_1.reportProbe;
+if ((G__62_4 == null)) {
 } else {
-G__52_4.call(hc_1, "started")};
+G__62_4.call(hc_1, "started")};
 document.addEventListener("submit", block_submit_3, true);
 if (squint_core.truth_(hc_1.setPaused)) {
 hc_1.setPaused(true)};
@@ -190,10 +190,10 @@ scrollTo(0, 0);
 if (squint_core.truth_(hc_1.setPaused)) {
 hc_1.setPaused(was_paused_2)};
 document.removeEventListener("submit", block_submit_3, true);
-const G__53_14 = hc_1.reportProbe;
-if ((G__53_14 == null)) {
+const G__63_14 = hc_1.reportProbe;
+if ((G__63_14 == null)) {
 return null} else {
-return G__53_14.call(hc_1, "done")};
+return G__63_14.call(hc_1, "done")};
 
 };
 var start_BANG_ = function (report_BANG_) {

@@ -15,7 +15,7 @@ return !(document.querySelector("[data-statechart]") == null);
 
 };
 var el_BANG_ = /* @__PURE__ */ (() => {
-const impl58_1 = (function (tag, attrs, children) {
+const impl68_1 = (function (tag, attrs, children) {
 const e_2 = document.createElement(tag);
 for (let G__3 of squint_core.iterable(Object.entries(attrs))) {
 const vec___4_7 = G__3;
@@ -32,13 +32,13 @@ e_2.append(c_11)}
 return e_2;
 
 });
-const f54 = (function (arg55, arg56, ...rest57) {
+const f64 = (function (arg65, arg66, ...rest67) {
 const self__23546__auto___12 = this;
-return impl58_1.call(self__23546__auto___12, arg55, arg56, (((rest57.length === 0)) ? (null) : (rest57)));
+return impl68_1.call(self__23546__auto___12, arg65, arg66, (((rest67.length === 0)) ? (null) : (rest67)));
 
 });
-(f54["squint$lang$variadic"] = impl58_1);
-return f54;
+(f64["squint$lang$variadic"] = impl68_1);
+return f64;
 
 })();
 var chart_name = function (fig, i) {
@@ -119,8 +119,8 @@ var state_label = function (m, uid) {
 return sm.path_of(uid).join(".");
 
 };
-var code_entries = function (p__59) {
-const map___1_3 = p__59;
+var code_entries = function (p__69) {
+const map___1_3 = p__69;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const m_5 = map___1_4;
 const idx_6 = squint_core.get(map___1_4, "idx");
@@ -157,12 +157,12 @@ return null;
 };
 var build_ui_BANG_ = function (fig, m, definition) {
 const inferred_1 = (() => {
-const G__60_2 = definition;
-const G__60_3 = (((G__60_2 == null)) ? (null) : (G__60_2["meta"]));
-const G__60_4 = (((G__60_3 == null)) ? (null) : (G__60_3["inferred"]));
-if ((G__60_4 == null)) {
+const G__70_2 = definition;
+const G__70_3 = (((G__70_2 == null)) ? (null) : (G__70_2["meta"]));
+const G__70_4 = (((G__70_3 == null)) ? (null) : (G__70_3["inferred"]));
+if ((G__70_4 == null)) {
 return null} else {
-return G__60_4["basis"]};
+return G__70_4["basis"]};
 
 })();
 const chart_5 = el_BANG_("div", ({"class": "hc-sc-chart"}));
@@ -272,11 +272,11 @@ return null;
 };
 var paused_QMARK_ = function () {
 return squint_core.boolean$((() => {
-const G__61_1 = window;
-const G__61_2 = (((G__61_1 == null)) ? (null) : (G__61_1.htmlChannel));
-if ((G__61_2 == null)) {
+const G__71_1 = window;
+const G__71_2 = (((G__71_1 == null)) ? (null) : (G__71_1.htmlChannel));
+if ((G__71_2 == null)) {
 return null} else {
-return G__61_2.paused};
+return G__71_2.paused};
 
 })());
 
@@ -284,10 +284,10 @@ return G__61_2.paused};
 var clear_timers_BANG_ = function (st) {
 for (let G__1 of squint_core.iterable(squint_core.get(squint_core.deref(st), "timers"))) {
 const t_2 = G__1;
-const G__62_3 = squint_core.get(t_2, "handle");
-if ((G__62_3 == null)) {
+const G__72_3 = squint_core.get(t_2, "handle");
+if ((G__72_3 == null)) {
 } else {
-clearTimeout(G__62_3)}
+clearTimeout(G__72_3)}
 };
 return squint_core.swap_BANG_(st, squint_core.assoc, "timers", []);
 
@@ -357,10 +357,10 @@ g_2.setAttribute("data-uid", u_6)}}
 for (let G__7 of squint_core.iterable(Array.from(chart.querySelectorAll("g.node, g.cluster")))) {
 const g_8 = G__7;
 const temp__23314__auto___9 = (() => {
-const G__63_10 = g_8.querySelector(":scope > title");
-if ((G__63_10 == null)) {
+const G__73_10 = g_8.querySelector(":scope > title");
+if ((G__73_10 == null)) {
 return null} else {
-return G__63_10.textContent};
+return G__73_10.textContent};
 
 })();
 if (squint_core.truth_(temp__23314__auto___9)) {
@@ -479,12 +479,12 @@ const b_28 = (yield* (function* () {
 const or_29_30 = squint_core.get(old_15, e_27);
 if (squint_core.truth_(or_29_30)) {
 return or_29_30} else {
-const G__64_31 = el_BANG_("button", ({"type": "button", "data-event": e_27}), e_27);
-G__64_31.addEventListener("click", (function (_) {
+const G__74_31 = el_BANG_("button", ({"type": "button", "data-event": e_27}), e_27);
+G__74_31.addEventListener("click", (function (_) {
 return send_BANG_(({"type": e_27}));
 
 }));
-return G__64_31;
+return G__74_31;
 };
 
 })());
@@ -555,9 +555,9 @@ const st_2 = squint_core.atom(({"m": m, "ui": ui_1, "renderer": renderer, "i": i
 const xs_3 = (await xstate_BANG_());
 const machine_4 = xs_3.createMachine(sm.engine_config(m, xs_3.assign));
 const fresh_5 = (function (snapshot) {
-const G__65_6 = xs_3.createActor(machine_4, ((squint_core.truth_(snapshot)) ? (({"snapshot": snapshot})) : (null)));
-G__65_6.start();
-return G__65_6;
+const G__75_6 = xs_3.createActor(machine_4, ((squint_core.truth_(snapshot)) ? (({"snapshot": snapshot})) : (null)));
+G__75_6.start();
+return G__75_6;
 
 });
 const actor_7 = fresh_5(null);
@@ -616,9 +616,9 @@ const cursor_36 = squint_core.get(map___31_34, "cursor");
 const actor_37 = squint_core.get(map___31_34, "actor");
 const current_38 = (((cursor_36 >= 0)) ? (squint_core.nth(log_35, cursor_36)) : (null));
 const entry_39 = ({"kind": "edit", "label": `${k??''}${" = "}${JSON.stringify(v)??''}`, "key": k, "patch": (() => {
-const G__66_40 = ({});
-(G__66_40[k] = v);
-return G__66_40;
+const G__76_40 = ({});
+(G__76_40[k] = v);
+return G__76_40;
 
 })()});
 if ((v === actor_37.getSnapshot().context[k])) {
@@ -655,11 +655,11 @@ const temp__23314__auto___41 = squint_core.get(ui_1, "context");
 if (squint_core.truth_(temp__23314__auto___41)) {
 const fs_42 = temp__23314__auto___41;
 context_inputs_BANG_(fs_42, squint_core.get(m, "context"), (await (async () => {
-const G__67_43 = definition;
-const G__67_44 = (((G__67_43 == null)) ? (null) : (G__67_43["meta"]));
-if ((G__67_44 == null)) {
+const G__77_43 = definition;
+const G__77_44 = (((G__77_43 == null)) ? (null) : (G__77_43["meta"]));
+if ((G__77_44 == null)) {
 return null} else {
-return G__67_44["enum"]};
+return G__77_44["enum"]};
 
 })()), edit_BANG__16)};
 squint_core.get(ui_1, "reset").addEventListener("click", (function (_) {
@@ -711,13 +711,13 @@ return li_55.classList.remove("hc-sc-flash");
 }));
 show_BANG_(fig, st_2, null, send_BANG__15);
 const handle_56 = (function (type, detail) {
-const G__68_57 = type;
-switch (G__68_57) {case "hc-param":
+const G__78_57 = type;
+switch (G__78_57) {case "hc-param":
 if (squint_core.truth_(Object.hasOwn(squint_core.get(m, "context"), detail.name))) {
 const patch_59 = (() => {
-const G__69_60 = ({});
-(G__69_60[detail.name] = detail.value);
-return G__69_60;
+const G__79_60 = ({});
+(G__79_60[detail.name] = detail.value);
+return G__79_60;
 
 })();
 squint_core.swap_BANG_(st_2, squint_core.assoc, "prose-context", Object.assign(({}), squint_core.get(squint_core.deref(st_2), "prose-context"), patch_59));

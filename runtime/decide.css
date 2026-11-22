@@ -138,6 +138,24 @@ input[data-decision][data-state="saved"] { outline: 2px solid #16a34a33; outline
 
 html.decide-is-offline [data-decision] { opacity: .75; }
 
+/* ---- moot (decide.moot) ---------------------------------------------------- */
+
+/* A moot question folds to its first heading and the reason bar; opened, it stays
+   greyed. Folding hides children with CSS, so no node moves: page script and
+   observers keep their references. Like the state markers, it outranks page styles. */
+.hc-moot:not(.hc-moot-open) > :not(.hc-moot-head):not(.hc-moot-bar) { display: none !important; }
+.hc-moot > :not(.hc-moot-bar) { opacity: .5; }
+.hc-moot-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem .8rem; margin: .3rem 0 .8rem; }
+.hc-moot-reason, .hc-moot-option-reason { color: var(--hc-warn); font-weight: 600; }
+.hc-moot-toggle {
+  font: inherit; font-size: .9em; padding: .15rem .7rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--hc-line); background: var(--hc-bg); color: var(--hc-fg);
+}
+/* A moot option greys and is struck through; it can still be chosen, and the
+   chosen and pending markers still show on it. */
+.hc-moot-option { opacity: .5; text-decoration: line-through; }
+.hc-moot-option-reason { font-size: .85em; margin: 0 .4rem; }
+
 /* ---- visualizations (/_kit/viz) ------------------------------------------ */
 
 .hc-viz { margin: .8rem 0; overflow-x: auto; }

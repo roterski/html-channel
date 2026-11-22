@@ -114,8 +114,9 @@
 (def per-revision-ids
   "Decision ids that count only at the revision they were given in, so they
   never carry over: the Done button, requests to go deeper, and what the runtime
-  records on Done: the code-link settings and the map of the page's diff hunks."
-  #{"status" "deeper" "sources" "hunks"})
+  records on Done: the code-link settings, the map of the page's diff hunks, and
+  the map of what the page's links made moot."
+  #{"status" "deeper" "sources" "hunks" "moot"})
 
 (defn- deeper-in
   "Targets requested on `page` at revision `rev` among entries `es`, once each, in order."
@@ -174,7 +175,7 @@
         (spit (fs/file (decisions-file root session)) (str (json/generate-string stored) "\n") :append true))
       stored)))
 
-(def error-kinds #{"load" "js" "viz" "undeclared" "dialog" "explorable" "inert" "unprobed" "code-link" "statechart" "highlight" "diff"})
+(def error-kinds #{"load" "js" "viz" "undeclared" "dialog" "explorable" "inert" "unprobed" "code-link" "statechart" "highlight" "diff" "moot"})
 
 (defn- check-error-file
   "The errors one headless check's page load reported."

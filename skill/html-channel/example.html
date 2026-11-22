@@ -217,9 +217,10 @@ sequenceDiagram
 </section>
 
 <!-- 4. details + radios -->
-<section id="details">
-  <h2>4. Rollout <span class="tag">&lt;details&gt;</span></h2>
-  <p class="use">Use a fold when there's one main point and some supporting detail. The point stays visible, and the detail folds away.</p>
+<section id="details" data-question="rollout">
+  <h2>4. Rollout <span class="tag">&lt;details&gt;</span> <span class="tag">data-question + hc-moot</span></h2>
+  <p class="use">Use a fold when there's one main point and some supporting detail. The point stays visible, and the detail folds away.
+  This question is also linked: pick "Neither, discuss" in question 1 and it folds as moot; "All at once" is moot until question 7 keeps the metrics.</p>
   <div class="demo">
     <p><strong>Recommendation: ship behind a flag, then ramp to 100% over a week.</strong> If the hit rate falls, the flag turns the cache off without a deploy.</p>
     <details><summary>Why not a canary node?</summary>
@@ -347,6 +348,11 @@ sequenceDiagram
     <span class="use">Done ends the agent's <code>ask_human</code> wait. The agent then reads every answer above.</span>
   </div>
 </section>
+
+<script type="application/json" id="hc-moot">
+{"rollout":     {"when": "eviction=neither", "reason": "you picked Neither, discuss for eviction, so there's nothing to roll out yet"},
+ "rollout=all": {"when": "keep-metrics=false", "reason": "without metrics around fetch, an all-at-once rollout can't be watched"}}
+</script>
 
 <script>
 (function () {

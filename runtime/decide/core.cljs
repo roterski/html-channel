@@ -17,6 +17,9 @@
                   :load  (fn [])      -> Promise<{rev done deeper decisions} | nil>
                   :rev   (fn [])      -> Promise<int | nil>}  ; nil = unreachable
 
+  Kit modules that follow answers (decide.moot) register with on-answers-shown!:
+  they run after every recorded answer and every restore, once the controls show it.
+
   Element states: data-state=\"pending\" until the transport confirms, then
   \"saved\"; \"rejected\" when the server refused the answer itself (reported
   as a page error); \"carried\" for an answer restored from an earlier revision.")
@@ -90,12 +93,26 @@
   (swap! state update :carried (fn [ids] (vec (remove #(= % id) ids))))
   (when (empty? (:carried @state)) (remove-clear-button!)))
 
-(defn record! [id value]
+;; fns of no arguments, called once the controls show a changed or restored answer
+(def answer-listeners (atom []))
+
+(defn on-answers-shown!
+  "Calls `f` after every recorded answer and every restore, once the controls show it."
+  [f]
+  (swap! answer-listeners conj f))
+
+(defn answers-shown! []
+  (doseq [f @answer-listeners] (f)))
+
+(defn record!
+  "Pre: the id's controls already show `value` (every caller sets them first)."
+  [id value]
   (uncarry! id)
   (swap! state update :queue conj
          {:page (:page @transport) :id id :value value :rev (:rev @state)
           :at (.toISOString (js/Date.))})
   (mark! id "pending")
+  (answers-shown!)
   (flush!))
 
 ;; ---- element values ----------------------------------------------------------
@@ -135,9 +152,10 @@
 
 (def report-only-ids
   "Ids the runtime records for the agent but never shows back on the page:
-  the code-link settings live in the reader's browser (decide.code-links), and
-  the hunk map describes the page's diffs (decide.diff)."
-  #{"sources" "hunks"})
+  the code-link settings live in the reader's browser (decide.code-links), the
+  hunk map describes the page's diffs (decide.diff), and the moot map what the
+  page's links made moot at Done (decide.moot)."
+  #{"sources" "hunks" "moot"})
 
 (defn show-entry!
   "Shows saved `entry` on `els`. True when it is carried from an earlier revision.
@@ -160,7 +178,8 @@
             :when (not (contains? report-only-ids id))]
       (when (show-entry! (els-for id) entry rev) (swap! carried conj id)))
     (swap! state assoc :carried @carried)
-    (if (seq @carried) (insert-clear-button!) (remove-clear-button!))))
+    (if (seq @carried) (insert-clear-button!) (remove-clear-button!)))
+  (answers-shown!))
 
 (defn restore-within!
   "Shows the loaded answers on the controls under `root`, for controls page code
@@ -176,7 +195,8 @@
         (let [els (.querySelectorAll root (str "[data-decision=\"" (js/CSS.escape id) "\"]"))]
           (when (and (show-entry! els entry rev) (not (.includes (:carried @state) id)))
             (swap! state update :carried conj id)
-            (insert-clear-button!)))))))
+            (insert-clear-button!))))
+      (answers-shown!))))
 
 ;; ---- events ------------------------------------------------------------------
 

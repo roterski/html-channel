@@ -116,10 +116,24 @@ return remove_clear_button_BANG_();
 };
 
 };
+var answer_listeners = squint_core.atom([]);
+var on_answers_shown_BANG_ = function (f) {
+return squint_core.swap_BANG_(answer_listeners, squint_core.conj, f);
+
+};
+var answers_shown_BANG_ = function () {
+for (let G__1 of squint_core.iterable(squint_core.deref(answer_listeners))) {
+const f_2 = G__1;
+f_2()
+}
+return null;
+
+};
 var record_BANG_ = function (id, value) {
 uncarry_BANG_(id);
 squint_core.swap_BANG_(state, squint_core.update, "queue", squint_core.conj, ({"page": squint_core.get(squint_core.deref(transport), "page"), "id": id, "value": value, "rev": squint_core.get(squint_core.deref(state), "rev"), "at": (new Date()).toISOString()}));
 mark_BANG_(id, "pending");
+answers_shown_BANG_();
 return flush_BANG_();
 
 };
@@ -177,7 +191,7 @@ b_2.classList.toggle("chosen", ((squint_core.truth_(targets)) ? (targets) : ([])
 return null;
 
 };
-var report_only_ids = (new Set (["sources", "hunks"]));
+var report_only_ids = (new Set (["sources", "hunks", "moot"]));
 var show_entry_BANG_ = function (els, entry, rev) {
 const v_1 = squint_core.get(entry, "value");
 const carried_QMARK__2 = (((squint_core.get(entry, "rev") < rev)) && (((!(v_1 == null)) && ((els.length > 0)))));
@@ -202,8 +216,9 @@ squint_core.swap_BANG_(carried_1, squint_core.conj, id_7)}}
 };
 squint_core.swap_BANG_(state, squint_core.assoc, "carried", squint_core.deref(carried_1));
 if (squint_core.truth_(squint_core.seq(squint_core.deref(carried_1)))) {
-return insert_clear_button_BANG_()} else {
-return remove_clear_button_BANG_()};
+insert_clear_button_BANG_()} else {
+remove_clear_button_BANG_()};
+return answers_shown_BANG_();
 
 };
 var restore_within_BANG_ = function (root) {
@@ -231,8 +246,8 @@ return and_13_14};
 })())) {
 squint_core.swap_BANG_(state, squint_core.update, "carried", squint_core.conj, id_10);
 insert_clear_button_BANG_()}}
-}
-return null;
+};
+return answers_shown_BANG_();
 };
 
 };
@@ -361,4 +376,4 @@ return setInterval(check_BANG_, 3000);
 
 };
 
-export { restore_BANG_, restore_within_BANG_, transport, check_BANG_, show_value_BANG_, els_for, uncarry_BANG_, mark_BANG_, clear_BANG_, save_early_answers_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, report_only_ids, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, show_entry_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_, send_queue_BANG_ }
+export { restore_BANG_, restore_within_BANG_, transport, check_BANG_, show_value_BANG_, els_for, answers_shown_BANG_, uncarry_BANG_, mark_BANG_, clear_BANG_, save_early_answers_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, report_only_ids, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, show_entry_BANG_, answer_listeners, on_answers_shown_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_, send_queue_BANG_ }
