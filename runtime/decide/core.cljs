@@ -158,8 +158,17 @@
   [f]
   (swap! answer-listeners conj f))
 
+(defn call-listener!
+  "Runs a kit module's listener `f` on `args`. A throw becomes a js page error,
+  so a module's bug can't stop an answer being sent, skip the listeners after
+  it, or reach the page script that recorded the answer."
+  [f & args]
+  (try (apply f args)
+       (catch :default e
+         (report-error! "js" (str "a kit listener failed: " (or (.-message e) e)) nil))))
+
 (defn answers-shown! []
-  (doseq [f @answer-listeners] (f)))
+  (doseq [f @answer-listeners] (call-listener! f)))
 
 ;; fns of [id value], called on every recorded answer (not on restores)
 (def record-listeners (atom []))
@@ -181,7 +190,7 @@
       (swap! answers assoc id {:value value :rev (:rev entry) :at (:at entry)})))
   (mirror-queue!)
   (mark! id "pending")
-  (doseq [f @record-listeners] (f id value))
+  (doseq [f @record-listeners] (call-listener! f id value))
   (answers-shown!)
   (flush!))
 

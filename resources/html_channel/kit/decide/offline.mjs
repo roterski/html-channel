@@ -22,8 +22,8 @@ return ({"session": squint_core.get(fields_3, "session"), "page": squint_core.ge
 };
 
 };
-var storage_key = function (p__69) {
-const map___1_3 = p__69;
+var storage_key = function (p__74) {
+const map___1_3 = p__74;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const session_5 = squint_core.get(map___1_4, "session");
 const page_6 = squint_core.get(map___1_4, "page");
@@ -34,10 +34,10 @@ return `${"html-channel:"}${session_5??''}${"/"}${page_6??''}${"@"}${rev_7??''}`
 var stored = function (k) {
 const or_3_4 = (() => {
 try{
-const G__70_1 = localStorage.getItem(k);
-if ((G__70_1 == null)) {
+const G__75_1 = localStorage.getItem(k);
+if ((G__75_1 == null)) {
 return null} else {
-return JSON.parse(G__70_1)};
+return JSON.parse(G__75_1)};
 }
 catch(__2){
 return null;
@@ -49,8 +49,8 @@ return or_3_4} else {
 return ({})};
 
 };
-var transport = function (p__71) {
-const map___1_3 = p__71;
+var transport = function (p__76) {
+const map___1_3 = p__76;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const copy_5 = map___1_4;
 const session_6 = squint_core.get(map___1_4, "session");

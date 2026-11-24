@@ -20,12 +20,12 @@ return null}}};
 
 };
 var typed_name = function () {
-const G__40_1 = document.querySelector(".hc-download-name");
-const G__40_2 = (((G__40_1 == null)) ? (null) : (G__40_1.value));
-const G__40_3 = (((G__40_2 == null)) ? (null) : (G__40_2.trim()));
-if ((G__40_3 == null)) {
+const G__44_1 = document.querySelector(".hc-download-name");
+const G__44_2 = (((G__44_1 == null)) ? (null) : (G__44_1.value));
+const G__44_3 = (((G__44_2 == null)) ? (null) : (G__44_2.trim()));
+if ((G__44_3 == null)) {
 return null} else {
-return squint_core.not_empty(G__40_3)};
+return squint_core.not_empty(G__44_3)};
 
 };
 var respondent = function () {
@@ -37,8 +37,8 @@ return typed_name()};
 var file_text = function () {
 const t_1 = squint_core.deref(core.transport);
 const reports_2 = core.done_reports();
-const decisions_3 = squint_core.reduce((function (m, p__41) {
-const vec___4_7 = p__41;
+const decisions_3 = squint_core.reduce((function (m, p__45) {
+const vec___4_7 = p__45;
 const id_8 = squint_core.nth(vec___4_7, 0, null);
 const entry_9 = squint_core.nth(vec___4_7, 1, null);
 if (squint_core.truth_(core.report_only_ids.has(id_8))) {
@@ -56,11 +56,11 @@ return s.toLowerCase().replace((new RegExp("[^a-z0-9]+", "g")), "-").replace((ne
 var file_name = function () {
 const rev_1 = squint_core.get(squint_core.deref(core.state), "rev");
 const who_2 = ((!("connected" === page_state())) ? ((() => {
-const G__42_3 = typed_name();
-const G__42_4 = (((G__42_3 == null)) ? (null) : (slug(G__42_3)));
-if ((G__42_4 == null)) {
+const G__46_3 = typed_name();
+const G__46_4 = (((G__46_3 == null)) ? (null) : (slug(G__46_3)));
+if ((G__46_4 == null)) {
 return null} else {
-return squint_core.not_empty(G__42_4)};
+return squint_core.not_empty(G__46_4)};
 
 })()) : (null));
 return `${squint_core.get(squint_core.deref(core.transport), "page")??''}${((!(rev_1 == null)) ? (`${"@"}${rev_1??''}`) : (null))??''}${((squint_core.truth_(who_2)) ? (`-${who_2??''}`) : (null))??''}${".edn"}`;

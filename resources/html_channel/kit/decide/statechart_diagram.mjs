@@ -46,8 +46,8 @@ return c_1};
 var label_of = function (t) {
 const g_1 = ((squint_core.truth_(squint_core.get(t, "guard"))) ? (`${"["}${sm.guard_text(squint_core.get(t, "guard"))??''}${"]"}`) : (null));
 return squint_core.vec(squint_core.remove(squint_core.nil_QMARK_, [(() => {
-const G__90_2 = squint_core.get(t, "kind");
-switch (G__90_2) {case "always":
+const G__95_2 = squint_core.get(t, "kind");
+switch (G__95_2) {case "always":
 if (squint_core.truth_(g_1)) {
 return null} else {
 return "always";
@@ -60,8 +60,8 @@ return squint_core.get(t, "event")};
 })(), g_1])).join(" ");
 
 };
-var drawn_transitions = function (p__91) {
-const map___1_3 = p__91;
+var drawn_transitions = function (p__96) {
+const map___1_3 = p__96;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const idx_5 = squint_core.get(map___1_4, "idx");
 return squint_core.vec(squint_core.lazy((function* () {
@@ -103,8 +103,8 @@ return squint_core.get(mermaid_entities, c);
 }));
 
 };
-var mermaid = function (p__92, active, theme, accent) {
-const map___1_3 = p__92;
+var mermaid = function (p__97, active, theme, accent) {
+const map___1_3 = p__97;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const m_5 = map___1_4;
 const root_6 = squint_core.get(map___1_4, "root");
@@ -116,8 +116,8 @@ return out_8.push(`${"  ".repeat(depth)??''}${s??''}`);
 });
 const by_block_10 = squint_core.group_by("block", drawn_transitions(m_5));
 const node_name_11 = (function (n) {
-const G__93_12 = squint_core.get(n, "kind");
-switch (G__93_12) {case "history":
+const G__98_12 = squint_core.get(n, "kind");
+switch (G__98_12) {case "history":
 if (("deep" === squint_core.get(n, "history"))) {
 return "H*"} else {
 return "H"};
@@ -146,8 +146,8 @@ ln_9(depth, `${"[*] --> "}${did(idx_7, squint_core.get(parent, "initial"))??''}`
 for (let G__25 of squint_core.iterable(kids_24)) {
 const c_26 = G__25;
 ln_9(depth, `${"state \""}${mermaid_label(node_name_11(c_26))??''}${"\" as "}${squint_core.get(c_26, "diagram-id")??''}`);
-const G__94_27 = ((squint_core.truth_(squint_core.seq(drawn_children(c_26)))) ? (squint_core.get(c_26, "kind")) : ("atomic"));
-switch (G__94_27) {case "compound":
+const G__99_27 = ((squint_core.truth_(squint_core.seq(drawn_children(c_26)))) ? (squint_core.get(c_26, "kind")) : ("atomic"));
+switch (G__99_27) {case "compound":
 ln_9(depth, `${"state "}${squint_core.get(c_26, "diagram-id")??''}${" {"}`);
 emit_level((depth + 1), c_26);
 ln_9(depth, "}");
@@ -201,8 +201,8 @@ var initial_name = function (diagram_id) {
 return `hc_initial_${diagram_id??''}`;
 
 };
-var smcat = function (p__95, active) {
-const map___1_3 = p__95;
+var smcat = function (p__100, active) {
+const map___1_3 = p__100;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const m_5 = map___1_4;
 const root_6 = squint_core.get(map___1_4, "root");
@@ -212,8 +212,8 @@ const by_block_9 = squint_core.group_by("block", drawn_transitions(m_5));
 const attrs_10 = (function (n) {
 const kind_11 = ((squint_core.truth_(squint_core.seq(drawn_children(n)))) ? (squint_core.get(n, "kind")) : (((((("compound" === squint_core.get(n, "kind"))) || (("parallel" === squint_core.get(n, "kind"))))) ? ("atomic") : (squint_core.get(n, "kind")))));
 const type_12 = (() => {
-const G__96_13 = kind_11;
-switch (G__96_13) {case "parallel":
+const G__101_13 = kind_11;
+switch (G__101_13) {case "parallel":
 return "parallel";
 
 break;

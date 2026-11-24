@@ -22,8 +22,8 @@ return `${":"}${v[kw_name]??''}`} else {
 if (squint_core.array_QMARK_(v)) {
 return `${"["}${v.map(write).join(" ")??''}${"]"}`} else {
 if ("else") {
-return `${"{"}${Object.entries(v).map((function (p__43) {
-const vec___1_4 = p__43;
+return `${"{"}${Object.entries(v).map((function (p__47) {
+const vec___1_4 = p__47;
 const k_5 = squint_core.nth(vec___1_4, 0, null);
 const x_6 = squint_core.nth(vec___1_4, 1, null);
 return `${JSON.stringify(k_5)??''}${" "}${write(x_6)??''}`;
@@ -33,8 +33,8 @@ return null}}}}}}};
 
 };
 var write_fields = function (fields) {
-return `${"{"}${fields.map((function (p__44) {
-const vec___1_4 = p__44;
+return `${"{"}${fields.map((function (p__48) {
+const vec___1_4 = p__48;
 const k_5 = squint_core.nth(vec___1_4, 0, null);
 const v_6 = squint_core.nth(vec___1_4, 1, null);
 return `${":"}${k_5??''}${" "}${write(v_6)??''}`;

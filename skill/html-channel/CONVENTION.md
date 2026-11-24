@@ -267,24 +267,31 @@ No page script: the kit greys, folds and explains what is moot, keeps it current
 
 - One link list per page: a `<script type="application/json" id="hc-moot">`, anywhere in the page.
 - A key names what goes moot: `ID` for a question, `ID=VALUE` for one option of it.
+  A key repeated in the list keeps its last entry: JSON drops the others.
 - `when` lists terms separated by spaces; the link holds when any one matches.
   A term is `ID=VALUE`, or `ID=V1|V2` for any of several values.
-  `ID=` matches an unanswered question or an empty field, and a checkbox is `true` or `false`.
+  `ID=` matches an unanswered question or an empty field; write it as a term of its own, never inside a list of values.
+  A checkbox is `true` or `false` once answered; one never answered matches `ID=` and also what it shows: `ID=false` unticked, `ID=true` when ticked in the markup.
   A question that is itself moot counts as unanswered, so a chain of links settles.
+- A link may name controls, containers and options your page JS or the kit's diffs add after load: it shows nothing until they're on the page, and works from then on.
 - `reason` is the line the reader sees while the link holds, after "Moot:".
   Name the other question and its answer in words: "you picked In-process for the cache".
   Without one, the kit writes "“Heading” is “Label”" from the other question and reports an error.
 
 A moot question:
 - Wrap every question a key names in an element with `data-question="ID"`, holding its heading, evidence, controls, Clear and note.
-  The question's heading should be the container's first heading, as a direct child.
-- While moot, the container greys and folds to that heading, the reason and a Show button; opened, it stays greyed.
+  Its title is the `<summary>` of a `<details>` container, else its first heading, at any depth.
+  In a `<details>` container, the reason and Show button sit in the `<summary>`, so they show while it's closed; Show also opens it.
+- Put `data-question` on an element around the question, never on a control, and keep the controls its `when` reads outside it: folding would hide them.
+- Loose text directly inside the container is wrapped in a `<span>` when it first folds, so it folds too.
+- While moot, the container greys and folds to its direct child that holds the title, the reason and a Show button; opened, it stays greyed.
   It unfolds when the link stops holding. Nothing is disabled, so Clear and the note still work.
 - Its answer stays as the reader left it, and counts again once the link stops holding.
 
 A moot option:
 - `ID=VALUE` names a button (`data-choice="VALUE"`) or a radio (`value="VALUE"`) of question `ID`.
-- The button, or the radio's label, greys and is struck through, with the reason after it. It can still be chosen.
+- The button, or the radio's `<label>`, greys and is struck through, with the reason after it. It can still be chosen.
+  A radio without a label greys alone, and is reported.
 - Options of a `<select>`, checkboxes and text fields can't be moot.
 
 On Done the kit also records `moot`: each key whose link holds, with the reason the reader saw; `{}` when none does.
@@ -298,12 +305,18 @@ A key `ID`: the question is moot, so don't act on its answer. A key `ID=VALUE` w
 
 ### When a link can't be used
 
-Each problem is one error of kind `moot`, reported when the page loads, and the link is dropped:
+Each problem is one error of kind `moot`.
+The list's shape is checked when the page loads, and a link with a shape problem is dropped:
 a list that isn't a JSON object, a second list (only the first is read), an entry without a string `when`,
-a key or term naming an `ID` no control answers, a term without `=`, a question key with no `data-question` container,
-an option key whose question has no such button or radio, or is a select, checkbox or text field,
-and links that form or depend on a cycle.
+a term without `=`, an empty value in a list of values (`ID=a|`), and links that form a cycle.
+Links that read a cycle's questions keep working, and read them as answered, since those questions are never moot.
 A link without `reason` is kept, with the written reason, and reported too.
+A link that can't show yet waits, and is reported if it still can't 1.5 s after the page loads:
+a key or term naming an `ID` no control answers, a question key with no `data-question` container,
+a container that is a control or holds the controls its `when` reads,
+and an option key whose question has no such button or radio, or is a select, checkbox or text field.
+Two cases show partly and are reported at the same time: a radio option without a `<label>` (the radio greys alone),
+and several elements with the same `data-question` (only the first folds).
 
 ## Depth
 

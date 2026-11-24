@@ -183,10 +183,36 @@ var on_answers_shown_BANG_ = function (f) {
 return squint_core.swap_BANG_(answer_listeners, squint_core.conj, f);
 
 };
+var call_listener_BANG_ = /* @__PURE__ */ (() => {
+const impl25_1 = (function (f, args) {
+try{
+return squint_core.apply(f, args);
+}
+catch(e_2){
+return report_error_BANG_("js", `${"a kit listener failed: "}${(() => {
+const or_3_4 = e_2.message;
+if (squint_core.truth_(or_3_4)) {
+return or_3_4} else {
+return e_2};
+
+})()??''}`, null);
+}
+;
+
+});
+const f22 = (function (arg23, ...rest24) {
+const self__23546__auto___5 = this;
+return impl25_1.call(self__23546__auto___5, arg23, (((rest24.length === 0)) ? (null) : (rest24)));
+
+});
+(f22["squint$lang$variadic"] = impl25_1);
+return f22;
+
+})();
 var answers_shown_BANG_ = function () {
 for (let G__1 of squint_core.iterable(squint_core.deref(answer_listeners))) {
 const f_2 = G__1;
-f_2()
+call_listener_BANG_(f_2)
 }
 return null;
 
@@ -207,7 +233,7 @@ mirror_queue_BANG_();
 mark_BANG_(id, "pending");
 for (let G__2 of squint_core.iterable(squint_core.deref(record_listeners))) {
 const f_3 = G__2;
-f_3(id, value)
+call_listener_BANG_(f_3, id, value)
 };
 answers_shown_BANG_();
 return flush_BANG_();
@@ -219,8 +245,8 @@ return squint_core.swap_BANG_(done_report_reads, squint_core.conj, [id, read]);
 
 };
 var done_reports = function () {
-return squint_core.reduce((function (m, p__22) {
-const vec___1_4 = p__22;
+return squint_core.reduce((function (m, p__26) {
+const vec___1_4 = p__26;
 const id_5 = squint_core.nth(vec___1_4, 0, null);
 const read_6 = squint_core.nth(vec___1_4, 1, null);
 const v_7 = read_6();
@@ -449,10 +475,10 @@ return answers_shown_BANG_();
 var claim_lock_hold_ms = 250;
 var claim_orphaned_queues_once_BANG_ = async function () {
 const temp__23255__auto___1 = (await (async () => {
-const G__23_2 = navigator;
-if ((G__23_2 == null)) {
+const G__27_2 = navigator;
+if ((G__27_2 == null)) {
 return null} else {
-return G__23_2.locks};
+return G__27_2.locks};
 
 })());
 if (squint_core.truth_(temp__23255__auto___1)) {
@@ -543,4 +569,4 @@ return setInterval(check_BANG_, 3000);
 
 };
 
-export { restore_BANG_, orphaned_entries_BANG_, restore_within_BANG_, transport, check_BANG_, done_reports, tab_id, show_value_BANG_, els_for, claim_lock_hold_ms, answers_shown_BANG_, uncarry_BANG_, mark_BANG_, clear_BANG_, save_early_answers_BANG_, report_on_done_BANG_, on_click, record_done_reports_BANG_, el_value, insert_clear_button_BANG_, record_listeners, on_record_BANG_, report_error_BANG_, answers, orphan_after_ms, start_BANG_, queue_key_prefix, report_only_ids, done_report_reads, set_online_BANG_, claim_orphaned_queues_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, queue_key, flush_BANG_, clear_carried_BANG_, mirror_queue_BANG_, show_entry_BANG_, answer_listeners, on_answers_shown_BANG_, record_from_page_BANG_, load_BANG_, claim_orphaned_queues_once_BANG_, show_deeper_BANG_, send_queue_BANG_ }
+export { restore_BANG_, orphaned_entries_BANG_, restore_within_BANG_, transport, check_BANG_, done_reports, call_listener_BANG_, tab_id, show_value_BANG_, els_for, claim_lock_hold_ms, answers_shown_BANG_, uncarry_BANG_, mark_BANG_, clear_BANG_, save_early_answers_BANG_, report_on_done_BANG_, on_click, record_done_reports_BANG_, el_value, insert_clear_button_BANG_, record_listeners, on_record_BANG_, report_error_BANG_, answers, orphan_after_ms, start_BANG_, queue_key_prefix, report_only_ids, done_report_reads, set_online_BANG_, claim_orphaned_queues_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, queue_key, flush_BANG_, clear_carried_BANG_, mirror_queue_BANG_, show_entry_BANG_, answer_listeners, on_answers_shown_BANG_, record_from_page_BANG_, load_BANG_, claim_orphaned_queues_once_BANG_, show_deeper_BANG_, send_queue_BANG_ }

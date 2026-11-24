@@ -154,8 +154,8 @@ return null;
 return acc_1;
 
 };
-var uid_of_diagram_id = function (p__97, diagram_id) {
-const map___1_3 = p__97;
+var uid_of_diagram_id = function (p__102, diagram_id) {
+const map___1_3 = p__102;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const idx_5 = squint_core.get(map___1_4, "idx");
 return squint_core.some((function (_PERCENT_1) {
@@ -249,8 +249,8 @@ var guard_fn = function (g) {
 const vec___1_4 = squint_core.first(Object.entries(g));
 const op_5 = squint_core.nth(vec___1_4, 0, null);
 const arg_6 = squint_core.nth(vec___1_4, 1, null);
-const G__98_7 = op_5;
-switch (G__98_7) {case "and":
+const G__103_7 = op_5;
+switch (G__103_7) {case "and":
 const fs_9 = squint_core.mapv(guard_fn, arg_6);
 return function (c) {
 return squint_core.every_QMARK_((function (_PERCENT_1) {
@@ -284,8 +284,8 @@ default:
 const vec___12_15 = arg_6;
 const k_16 = squint_core.nth(vec___12_15, 0, null);
 const v_17 = squint_core.nth(vec___12_15, 1, null);
-const G__99_18 = op_5;
-switch (G__99_18) {case "eq":
+const G__104_18 = op_5;
+switch (G__104_18) {case "eq":
 return function (c) {
 return squint_core._EQ_(c[k_16], v_17);
 
@@ -328,7 +328,7 @@ return (c[k_16] >= v_17);
 
 break;
 default:
-throw (new Error(`${"No matching clause: "}${G__99_18??''}`))};
+throw (new Error(`${"No matching clause: "}${G__104_18??''}`))};
 };
 
 };
@@ -336,8 +336,8 @@ var guard_text = function (g) {
 const vec___1_4 = squint_core.first(Object.entries(g));
 const op_5 = squint_core.nth(vec___1_4, 0, null);
 const arg_6 = squint_core.nth(vec___1_4, 1, null);
-const G__100_7 = op_5;
-switch (G__100_7) {case "and":
+const G__105_7 = op_5;
+switch (G__105_7) {case "and":
 return squint_core.mapv(guard_text, arg_6).join(" && ");
 
 break;
@@ -356,8 +356,8 @@ return `${squint_core.first(arg_6)??''}${" "}${squint_core.get(compare_ops, op_5
 var assign_problem = function (a, context) {
 if (squint_core.not(obj_QMARK_(a))) {
 return `${"assign must be an object like {\"retries\": {\"add\": 1}}, got "}${JSON.stringify(a)??''}`} else {
-return squint_core.some((function (p__101) {
-const vec___1_4 = p__101;
+return squint_core.some((function (p__106) {
+const vec___1_4 = p__106;
 const k_5 = squint_core.nth(vec___1_4, 0, null);
 const op_6 = squint_core.nth(vec___1_4, 1, null);
 if (squint_core.not(Object.hasOwn(context, k_5))) {
@@ -587,8 +587,8 @@ const acc_1 = [];
 const down_2 = (function down (u) {
 const n_3 = idx[u];
 acc_1.push(u);
-const G__102_4 = squint_core.get(n_3, "kind");
-switch (G__102_4) {case "compound":
+const G__107_4 = squint_core.get(n_3, "kind");
+switch (G__107_4) {case "compound":
 if (squint_core.truth_(squint_core.get(n_3, "initial"))) {
 return down(squint_core.get(n_3, "initial"));
 };
@@ -628,8 +628,8 @@ down_2(uid);
 return acc_1;
 
 };
-var unreachable = function (p__103) {
-const map___1_3 = p__103;
+var unreachable = function (p__108) {
+const map___1_3 = p__108;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const root_5 = squint_core.get(map___1_4, "root");
 const idx_6 = squint_core.get(map___1_4, "idx");
@@ -691,32 +691,32 @@ return or_1_2} else {
 return uid};
 
 };
-var engine_config = function (p__104, assign) {
-const map___1_3 = p__104;
+var engine_config = function (p__109, assign) {
+const map___1_3 = p__109;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const root_5 = squint_core.get(map___1_4, "root");
 const idx_6 = squint_core.get(map___1_4, "idx");
 const context_7 = squint_core.get(map___1_4, "context");
 const transition_8 = (function (t) {
-const G__105_9 = ({});
-const G__105_10 = ((squint_core.truth_(squint_core.seq(squint_core.get(t, "targets")))) ? (({...G__105_9,["target"]:squint_core.vec(squint_core.distinct(squint_core.lazy((function* () {
+const G__110_9 = ({});
+const G__110_10 = ((squint_core.truth_(squint_core.seq(squint_core.get(t, "targets")))) ? (({...G__110_9,["target"]:squint_core.vec(squint_core.distinct(squint_core.lazy((function* () {
 for (let G__11 of squint_core.iterable(squint_core.get(t, "targets"))) {
 const u_12 = G__11;
 yield `${"#"}${drawn_target(idx_6, u_12)??''}`;
 }
 return null;
 
-}))))})) : (G__105_9));
-const G__105_13 = ((squint_core.truth_(squint_core.get(t, "guard"))) ? (squint_core.assoc(G__105_10, "guard", (() => {
+}))))})) : (G__110_9));
+const G__110_13 = ((squint_core.truth_(squint_core.get(t, "guard"))) ? (squint_core.assoc(G__110_10, "guard", (() => {
 const f_14 = guard_fn(squint_core.get(t, "guard"));
 return function (args) {
 return f_14(args.context);
 
 };
 
-})())) : (G__105_10));
+})())) : (G__110_10));
 if (squint_core.truth_(squint_core.get(t, "assign"))) {
-return squint_core.assoc(G__105_13, "actions", [assign((() => {
+return squint_core.assoc(G__110_13, "actions", [assign((() => {
 const a_15 = squint_core.get(t, "assign");
 return function (args) {
 return assign_patch(a_15, args.context);
@@ -724,7 +724,7 @@ return assign_patch(a_15, args.context);
 };
 
 })())])} else {
-return G__105_13};
+return G__110_13};
 
 });
 const node_16 = (function node (n) {
@@ -745,19 +745,19 @@ return null;
 
 })));
 const kids_22 = ((squint_core.truth_(squint_core.get(n, "collapsed"))) ? ([]) : (squint_core.get(n, "children")));
-const G__106_23 = ({"id": ((squint_core._EQ_("", squint_core.get(n, "uid"))) ? ("hc-root") : (squint_core.get(n, "uid")))});
-const G__106_24 = ((squint_core.truth_(squint_core.seq(Object.keys(on_18)))) ? (({...G__106_23,["on"]:on_18})) : (G__106_23));
-const G__106_25 = ((squint_core.truth_(squint_core.seq(always_19))) ? (squint_core.assoc(G__106_24, "always", always_19)) : (G__106_24));
-const G__106_26 = ((((("compound" === squint_core.get(n, "kind"))) && (squint_core.not(squint_core.get(n, "collapsed"))))) ? (squint_core.assoc(G__106_25, "initial", squint_core.get(idx_6[squint_core.get(n, "initial")], "key"))) : (G__106_25));
-const G__106_27 = ((((("parallel" === squint_core.get(n, "kind"))) && (squint_core.not(squint_core.get(n, "collapsed"))))) ? (squint_core.assoc(G__106_26, "type", "parallel")) : (G__106_26));
-const G__106_28 = ((("final" === squint_core.get(n, "kind"))) ? (squint_core.assoc(G__106_27, "type", "final")) : (G__106_27));
-const G__106_29 = ((("history" === squint_core.get(n, "kind"))) ? (squint_core.assoc(G__106_28, "type", "history", "history", squint_core.get(n, "history"))) : (G__106_28));
+const G__111_23 = ({"id": ((squint_core._EQ_("", squint_core.get(n, "uid"))) ? ("hc-root") : (squint_core.get(n, "uid")))});
+const G__111_24 = ((squint_core.truth_(squint_core.seq(Object.keys(on_18)))) ? (({...G__111_23,["on"]:on_18})) : (G__111_23));
+const G__111_25 = ((squint_core.truth_(squint_core.seq(always_19))) ? (squint_core.assoc(G__111_24, "always", always_19)) : (G__111_24));
+const G__111_26 = ((((("compound" === squint_core.get(n, "kind"))) && (squint_core.not(squint_core.get(n, "collapsed"))))) ? (squint_core.assoc(G__111_25, "initial", squint_core.get(idx_6[squint_core.get(n, "initial")], "key"))) : (G__111_25));
+const G__111_27 = ((((("parallel" === squint_core.get(n, "kind"))) && (squint_core.not(squint_core.get(n, "collapsed"))))) ? (squint_core.assoc(G__111_26, "type", "parallel")) : (G__111_26));
+const G__111_28 = ((("final" === squint_core.get(n, "kind"))) ? (squint_core.assoc(G__111_27, "type", "final")) : (G__111_27));
+const G__111_29 = ((("history" === squint_core.get(n, "kind"))) ? (squint_core.assoc(G__111_28, "type", "history", "history", squint_core.get(n, "history"))) : (G__111_28));
 if (squint_core.truth_(squint_core.seq(kids_22))) {
-return squint_core.assoc(G__106_29, "states", squint_core.reduce((function (m, c) {
+return squint_core.assoc(G__111_29, "states", squint_core.reduce((function (m, c) {
 return squint_core.assoc(m, squint_core.get(c, "key"), node(c));
 
 }), ({}), kids_22))} else {
-return G__106_29};
+return G__111_29};
 
 });
 const cfg_30 = node_16(root_5);
@@ -773,8 +773,8 @@ return args.event.patch;
 }))]})));
 
 };
-var active_uids = function (p__107, v) {
-const map___1_3 = p__107;
+var active_uids = function (p__112, v) {
+const map___1_3 = p__112;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const root_5 = squint_core.get(map___1_4, "root");
 const idx_6 = squint_core.get(map___1_4, "idx");
@@ -804,8 +804,8 @@ walk_8("", v);
 return acc_7;
 
 };
-var highlighted = function (p__108, active) {
-const map___1_3 = p__108;
+var highlighted = function (p__113, active) {
+const map___1_3 = p__113;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const idx_5 = squint_core.get(map___1_4, "idx");
 return squint_core.vec(squint_core.remove((function (_PERCENT_1) {
@@ -814,8 +814,8 @@ return squint_core.get(idx_5[_PERCENT_1], "region?");
 }), active));
 
 };
-var events_of = function (p__109, active) {
-const map___1_3 = p__109;
+var events_of = function (p__114, active) {
+const map___1_3 = p__114;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const root_5 = squint_core.get(map___1_4, "root");
 const idx_6 = squint_core.get(map___1_4, "idx");
@@ -837,8 +837,8 @@ out_8.push(e_13)}
 return out_8;
 
 };
-var delays_of = function (p__110, active) {
-const map___1_3 = p__110;
+var delays_of = function (p__115, active) {
+const map___1_3 = p__115;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const idx_5 = squint_core.get(map___1_4, "idx");
 return squint_core.vec(squint_core.lazy((function* () {
@@ -855,8 +855,8 @@ return null;
 })));
 
 };
-var has_history_QMARK_ = function (p__111) {
-const map___1_3 = p__111;
+var has_history_QMARK_ = function (p__116) {
+const map___1_3 = p__116;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const idx_5 = squint_core.get(map___1_4, "idx");
 return squint_core.boolean$(squint_core.some((function (_PERCENT_1) {

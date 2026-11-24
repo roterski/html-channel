@@ -150,9 +150,11 @@ html:not(.decide-is-offline):not(.decide-share) .hc-download-name { display: non
 
 /* ---- moot (decide.moot) ---------------------------------------------------- */
 
-/* A moot question folds to its first heading and the reason bar; opened, it stays
-   greyed. Folding hides children with CSS, so no node moves: page script and
-   observers keep their references. Like the state markers, it outranks page styles. */
+/* A moot question folds to the child holding its title and the reason bar; opened, it stays
+   greyed. Folding hides element children with CSS, so no element moves: page
+   script and observers keep their references. Loose text directly inside is
+   wrapped in a <span> when the question first folds (decide.moot), since CSS
+   can't hide a bare text node. Like the state markers, it outranks page styles. */
 .hc-moot:not(.hc-moot-open) > :not(.hc-moot-head):not(.hc-moot-bar) { display: none !important; }
 .hc-moot > :not(.hc-moot-bar) { opacity: .5; }
 .hc-moot-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem .8rem; margin: .3rem 0 .8rem; }
