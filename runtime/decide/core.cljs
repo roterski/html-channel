@@ -13,12 +13,17 @@
   work before this module starts: /_kit/boot.js keeps them until `start!`.
 
   A transport is {:page id
+                  :session id
+                  :mode  \"served\" | \"share\"   ; share: an offline copy, answers kept in the browser
                   :send! (fn [entry]) -> Promise<{outcome \"saved\"|\"rejected\"|\"unreachable\", reason}>
                   :load  (fn [])      -> Promise<{rev done deeper decisions} | nil>
                   :rev   (fn [])      -> Promise<int | nil>}  ; nil = unreachable
 
   Kit modules that follow answers (decide.moot) register with on-answers-shown!:
   they run after every recorded answer and every restore, once the controls show it.
+  Kit modules that report to the agent on Done (code links, diffs, moot) register
+  a read with report-on-done!: Done records each read before `status`, and
+  done-reports gives the same values without recording them (decide.download).
 
   Element states: data-state=\"pending\" until the transport confirms, then
   \"saved\"; \"rejected\" when the server refused the answer itself (reported
@@ -30,6 +35,12 @@
 ;; :carried  ids whose shown value comes from an earlier revision
 ;; :flushing the promise of the send in progress, else nil
 (def state (atom {:online nil :queue [] :flushing nil :rev nil :carried []}))
+
+;; id -> {:value :rev :at}: every answer the page shows, restored or recorded,
+;; whether or not the transport has confirmed it. Read by decide.download.
+;; Invariant: no "deeper" key. A Deeper click is a request to the agent, not an
+;; answer; the server reports it apart from the answers, under `deeper`.
+(def answers (atom {}))
 
 (defn els-for [id]
   (js/document.querySelectorAll (str "[data-decision=\"" (js/CSS.escape id) "\"]")))
@@ -45,6 +56,49 @@
     (.toggle (.-classList js/document.documentElement) "decide-is-offline" (not online?))))
 
 ;; ---- queue -----------------------------------------------------------------
+
+;; The unsent queue is mirrored to localStorage, one key per tab, so answers given
+;; while the server is away outlive a closed tab: another tab of the page claims
+;; them (claim-orphaned-queues!). Each tab refreshes its key's :beat on every poll;
+;; a key not refreshed for orphan-after-ms belongs to a closed tab.
+
+(def tab-id (str (js/Date.now) "-" (.slice (str (js/Math.random)) 2 10)))
+
+(def orphan-after-ms 10000)
+
+(defn queue-key-prefix [] (str "html-channel:queue:" js/location.pathname "#"))
+
+(defn queue-key [] (str (queue-key-prefix) tab-id))
+
+(defn mirror-queue!
+  "Writes this tab's queue, stamped now, or removes its key when the queue is empty.
+  Storage that throws (blocked, full) leaves the queue in memory only."
+  []
+  (try
+    (if (seq (:queue @state))
+      (.setItem js/localStorage (queue-key)
+                (js/JSON.stringify {:beat (js/Date.now) :queue (:queue @state)}))
+      (.removeItem js/localStorage (queue-key)))
+    (catch :default _ nil)))
+
+(defn orphaned-entries!
+  "Removes the mirrored queues of this page's closed tabs and returns their entries,
+  oldest first. A key that doesn't parse counts as orphaned."
+  []
+  (try
+    (let [prefix (queue-key-prefix)
+          own (queue-key)
+          now (js/Date.now)]
+      (->> (js/Object.keys js/localStorage)
+           (filter #(and (.startsWith % prefix) (not= % own)))
+           (mapcat (fn [k]
+                     (let [m (try (js/JSON.parse (.getItem js/localStorage k)) (catch :default _ nil))]
+                       (if (and m (< (- now (:beat m)) orphan-after-ms))
+                         []
+                         (do (.removeItem js/localStorage k) (or (:queue m) []))))))
+           (sort-by :at)
+           vec))
+    (catch :default _ [])))
 
 (defn report-error!
   "Reports a page error through /_kit/boot.js; the console when the page lacks it."
@@ -65,12 +119,15 @@
             id (:id entry)
             settled! (fn [s]
                        (swap! state update :queue #(vec (rest %)))
+                       (mirror-queue!)
                        (when-not (some #(= (:id %) id) (:queue @state))
                          (mark! id s)))]
         (case outcome
           "saved" (do (settled! "saved") (recur))
           "rejected" (do (settled! "rejected")
-                         (report-error! "js" (str "answer " (js/JSON.stringify id) " rejected by the server: " reason)
+                         (report-error! "js" (str "answer " (js/JSON.stringify id) " rejected by "
+                                                  (if (= "share" (:mode @transport)) "this browser" "the server")
+                                                  ": " reason)
                                         nil)
                          (recur))
           (set-online! false)))))
@@ -104,16 +161,52 @@
 (defn answers-shown! []
   (doseq [f @answer-listeners] (f)))
 
+;; fns of [id value], called on every recorded answer (not on restores)
+(def record-listeners (atom []))
+
+(defn on-record!
+  "Calls `(f id value)` each time an answer is recorded: a choice, an edit, a
+  Clear, htmlChannel.record, or Done's reports and status. Restores don't call it."
+  [f]
+  (swap! record-listeners conj f))
+
 (defn record!
   "Pre: the id's controls already show `value` (every caller sets them first)."
   [id value]
   (uncarry! id)
-  (swap! state update :queue conj
-         {:page (:page @transport) :id id :value value :rev (:rev @state)
-          :at (.toISOString (js/Date.))})
+  (let [entry {:page (:page @transport) :id id :value value :rev (:rev @state)
+               :at (.toISOString (js/Date.))}]
+    (swap! state update :queue conj entry)
+    (when-not (= "deeper" id)
+      (swap! answers assoc id {:value value :rev (:rev entry) :at (:at entry)})))
+  (mirror-queue!)
   (mark! id "pending")
+  (doseq [f @record-listeners] (f id value))
   (answers-shown!)
   (flush!))
+
+;; ---- reports on Done ---------------------------------------------------------
+
+;; [[id read] …] in registration order; read returns the value to report, or nil
+(def done-report-reads (atom []))
+
+(defn report-on-done!
+  "Registers `read`, a fn of no arguments, as the value of report-only `id`:
+  recorded on Done, before `status`, and read by Download. nil reports nothing."
+  [id read]
+  (swap! done-report-reads conj [id read]))
+
+(defn done-reports
+  "{id value} for every registered read that has something to report now."
+  []
+  (reduce (fn [m [id read]]
+            (let [v (read)]
+              (if (nil? v) m (assoc m id v))))
+          {} @done-report-reads))
+
+(defn record-done-reports! []
+  (doseq [[id v] (js/Object.entries (done-reports))]
+    (record! id v)))
 
 ;; ---- element values ----------------------------------------------------------
 
@@ -173,6 +266,8 @@
   (restore-within!). Pre: `rev` is the page's current revision."
   [decisions rev]
   (swap! state assoc :loaded {:decisions decisions :rev rev})
+  (doseq [[id entry] (js/Object.entries decisions)]
+    (swap! answers assoc id (select-keys entry [:value :rev :at])))
   (let [carried (atom [])]
     (doseq [[id entry] (js/Object.entries decisions)
             :when (not (contains? report-only-ids id))]
@@ -206,7 +301,8 @@
 
 (defn on-click
   "A choice records its value; clicking the chosen one again clears it, except
-  Done. <button data-clear=\"ID\"> clears ID, leaving its note."
+  Done, which first records the registered reports (report-on-done!).
+  <button data-clear=\"ID\"> clears ID, leaving its note."
   [e]
   (let [t (.-target e)]
     (if-let [btn (.closest t "button[data-decision][data-choice]")]
@@ -215,6 +311,8 @@
           (clear! id)
           (do (doseq [b (els-for id)] (.remove (.-classList b) "chosen"))
               (.add (.-classList btn) "chosen")
+              (when (and (= "status" id) (= "done" (.. btn -dataset -choice)))
+                (record-done-reports!))
               (record! id (.. btn -dataset -choice)))))
       (if-let [btn (.closest t "button[data-clear]")]
         (clear! (.. btn -dataset -clear))
@@ -227,6 +325,49 @@
     (when (and (.. el -dataset -decision) (not= "BUTTON" (.-tagName el)))
       (record! (.. el -dataset -decision) (el-value el)))))
 
+;; ---- closed tabs' queues -------------------------------------------------
+
+(defn claim-orphaned-queues!
+  "Queues the unsent answers of this page's closed tabs (orphaned-entries!) and
+  shows them as pending, skipping any entry older than the answer the page already
+  shows for its id, so a claim never overrides a newer answer.
+  Pre: the page has loaded its saved answers (:rev is set), so the comparison sees
+  them; called before check! flushes, so claimed entries are sent with this tab's own."
+  []
+  (let [claimed (filter (fn [entry]
+                          (let [shown (:at (get @answers (:id entry)))]
+                            (not (and shown (> shown (:at entry))))))
+                        (orphaned-entries!))]
+    (when (seq claimed)
+      (doseq [entry claimed
+              :let [id (:id entry)]]
+        (doseq [el (els-for id)] (show-value! el (:value entry)))
+        (swap! state update :queue conj entry)
+        (when-not (= "deeper" id)
+          (swap! answers assoc id (select-keys entry [:value :rev :at])))
+        (mark! id "pending"))
+      (mirror-queue!)
+      (answers-shown!))))
+
+(def claim-lock-hold-ms
+  "How long a tab keeps the claim lock after claiming: one tab's localStorage
+  change reaches other tabs shortly after, not at once."
+  250)
+
+(defn ^:async claim-orphaned-queues-once!
+  "claim-orphaned-queues! under a Web Lock all tabs of the page share, so two tabs
+  never claim the same queue. A tab that finds the lock taken skips this poll; the
+  next one retries. Without Web Locks, claims unguarded.
+  Pre: as claim-orphaned-queues!."
+  []
+  (if-let [locks (some-> js/navigator .-locks)]
+    (js-await (.request locks (str "html-channel:claim:" js/location.pathname) {:ifAvailable true}
+                        (fn [lock]
+                          (when lock
+                            (claim-orphaned-queues!)
+                            (js/Promise. (fn [resolve] (js/setTimeout resolve claim-lock-hold-ms)))))))
+    (claim-orphaned-queues!)))
+
 ;; ---- polling -----------------------------------------------------------------
 
 (defn ^:async load! []
@@ -236,9 +377,13 @@
     (show-deeper! (:deeper eff))))
 
 (defn ^:async check!
-  "Health and revision poll: toggles the banner, flushes the queue, loads the
-  page's answers once, and reloads when the page has a newer revision."
+  "Health and revision poll: once the page has loaded its answers, claims closed
+  tabs' unsent answers; refreshes this tab's mirror, toggles the banner, flushes
+  the queue, loads the page's answers once, and reloads when the page has a newer
+  revision."
   []
+  (when (some? (:rev @state)) (js-await (claim-orphaned-queues-once!)))
+  (when (seq (:queue @state)) (mirror-queue!))
   (let [rev (js-await ((:rev @transport)))]
     (set-online! (some? rev))
     (when (some? rev)
@@ -270,6 +415,7 @@
 
 (defn start! [t]
   (reset! transport t)
+  (.toggle (.-classList js/document.documentElement) "decide-share" (= "share" (:mode t)))
   (set! js/window.htmlChannel (or js/window.htmlChannel {}))
   (set! (.-record js/window.htmlChannel) record-from-page!)
   (save-early-answers!)

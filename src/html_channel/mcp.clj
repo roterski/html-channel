@@ -10,13 +10,14 @@
   (:require [babashka.fs :as fs]
             [cheshire.core :as json]
             [clojure.java.io :as io]
+            [html-channel.answers-file :as answers-file]
             [html-channel.check :as check]
             [html-channel.registry :as registry]
             [html-channel.server :as server]
             [html-channel.session :as session]
             [html-channel.store :as store]))
 
-(def version "0.7.0")
+(def version "0.8.0")
 
 (def poll-ms 500)
 (def progress-every-ms 30000)
@@ -69,8 +70,11 @@
              :convention (convention)}
       remote-url-base (assoc :remote_url_base remote-url-base))))
 
-(defn get-decisions [ctx {:keys [page session]}]
-  (page-result (channel ctx session) page))
+(defn get-decisions [ctx {:keys [page session file]}]
+  (cond
+    file (answers-file/page-state (:root ctx) (str (fs/path (store/project-dir) file)))
+    page (page-result (channel ctx session) page)
+    :else (throw (ex-info "get_decisions needs a page, or a file" {}))))
 
 (defn check-page [ctx {:keys [page session]}]
   (let [{:keys [root session url-base]} (channel ctx session)]
@@ -140,8 +144,14 @@
                       "Report-only pages without a Done button don't need this.")
     :inputSchema {:type "object" :properties {:page page-arg :session session-arg} :required ["page"]}}
    {:name "get_decisions"
-    :description "Current state of a page without waiting: {done, rev, deeper, decisions, errors}."
-    :inputSchema {:type "object" :properties {:page page-arg :session session-arg} :required ["page"]}}
+    :description (str "Current state of a page without waiting: {done, rev, deeper, decisions, errors}. "
+                      "With file (an answers .edn a page's Download gave), the same for that file, plus "
+                      "respondent, state, exported_at and checked; page and session are then not needed.")
+    :inputSchema {:type "object"
+                  :properties {:page page-arg :session session-arg
+                               :file {:type "string"
+                                      :description (str "Path of an answers .edn file; a relative one resolves "
+                                                        "against the project, like --root.")}}}}
    {:name "check_page"
     :description (str "Render a page you wrote in headless Chrome, light and dark, before showing it to the "
                       "user. Returns the errors the page reported (failed loads, script errors, diagrams "

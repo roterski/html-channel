@@ -109,6 +109,20 @@ tailscale serve --bg --http=8788 localhost:8788
   The convention tells agents to show both.
 - `check` keeps using the local URL.
 
+## Answering without the server
+
+Every decision page has **Download answers** next to Done: the answers as an `.edn` file, for when the reader can't reach
+the server or wants to answer later and send the file.
+While the server is unreachable, Done hides, the banner says the answers are kept and can be saved to a file, an optional name field appears,
+and leaving with answers not yet downloaded asks first. Answers given meanwhile are sent once the server is back;
+a closed tab's are sent the next time a tab of the page is open in that browser.
+
+Hand the file to any agent session. Its first line names the command that reads it:
+
+```sh
+html-channel decisions --file form@1.edn   # the same JSON as `decisions`, plus respondent, state and checked
+```
+
 ## Where sessions go
 
 Sessions go to `<project>/ai/html-channel/<session>/` by default, where `<project>` is `$CLAUDE_PROJECT_DIR`, else the cwd.
@@ -122,6 +136,7 @@ html-channel serve [--root ai/html-channel] [--port 8787]
 html-channel mcp [--root] [--max-wait 1500] [--port]
 html-channel session new [--root]
 html-channel decisions <session>/<page> [--root]
+html-channel decisions --file <answers.edn> [--root]
 html-channel wait <session>/<page> [--root] [--max-wait S]
 html-channel check <session>/<page> [--root]
 html-channel health [--port]

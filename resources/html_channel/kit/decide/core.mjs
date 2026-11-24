@@ -1,6 +1,7 @@
 import * as squint_core from '../squint-core.js';
 var transport = squint_core.atom(null);
 var state = squint_core.atom(({"online": null, "queue": [], "flushing": null, "rev": null, "carried": []}));
+var answers = squint_core.atom(({}));
 var els_for = function (id) {
 return document.querySelectorAll(`${"[data-decision=\""}${CSS.escape(id)??''}${"\"]"}`);
 
@@ -22,6 +23,66 @@ const b_2 = temp__23314__auto___1;
 b_2.hidden = online_QMARK_};
 return document.documentElement.classList.toggle("decide-is-offline", squint_core.not(online_QMARK_));
 };
+
+};
+var tab_id = `${Date.now()??''}-${`${Math.random()??''}`.slice(2, 10)??''}`;
+var orphan_after_ms = 10000;
+var queue_key_prefix = function () {
+return `${"html-channel:queue:"}${location.pathname??''}${"#"}`;
+
+};
+var queue_key = function () {
+return `${queue_key_prefix()??''}${tab_id??''}`;
+
+};
+var mirror_queue_BANG_ = function () {
+try{
+if (squint_core.truth_(squint_core.seq(squint_core.get(squint_core.deref(state), "queue")))) {
+return localStorage.setItem(queue_key(), JSON.stringify(({"beat": Date.now(), "queue": squint_core.get(squint_core.deref(state), "queue")})))} else {
+return localStorage.removeItem(queue_key())};
+}
+catch(__1){
+return null;
+}
+;
+
+};
+var orphaned_entries_BANG_ = function () {
+try{
+const prefix_1 = queue_key_prefix();
+const own_2 = queue_key();
+const now_3 = Date.now();
+return squint_core.vec(squint_core.sort_by("at", squint_core.mapcat((function (k) {
+const m_4 = (() => {
+try{
+return JSON.parse(localStorage.getItem(k));
+}
+catch(__5){
+return null;
+}
+
+})();
+if (squint_core.truth_(((squint_core.truth_(m_4)) ? (((now_3 - squint_core.get(m_4, "beat")) < orphan_after_ms)) : (m_4)))) {
+return []} else {
+localStorage.removeItem(k);
+const or_6_7 = squint_core.get(m_4, "queue");
+if (squint_core.truth_(or_6_7)) {
+return or_6_7} else {
+return []};
+};
+
+}), squint_core.filter((function (_PERCENT_1) {
+const and_8_9 = _PERCENT_1.startsWith(prefix_1);
+if (squint_core.truth_(and_8_9)) {
+return !squint_core._EQ_(_PERCENT_1, own_2)} else {
+return and_8_9};
+
+}), Object.keys(localStorage)))));
+}
+catch(__10){
+return [];
+}
+;
 
 };
 var report_error_BANG_ = function (kind, message, source) {
@@ -55,6 +116,7 @@ squint_core.swap_BANG_(state, squint_core.update, "queue", (function (_PERCENT_1
 return squint_core.vec(squint_core.rest(_PERCENT_1));
 
 }));
+mirror_queue_BANG_();
 if (squint_core.truth_(squint_core.some((function (_PERCENT_1) {
 return squint_core._EQ_(squint_core.get(_PERCENT_1, "id"), id_9);
 
@@ -72,7 +134,7 @@ continue;
 break;
 case "rejected":
 settled_BANG__10("rejected");
-report_error_BANG_("js", `${"answer "}${JSON.stringify(id_9)??''}${" rejected by the server: "}${reason_8??''}`, null);
+report_error_BANG_("js", `${"answer "}${JSON.stringify(id_9)??''}${" rejected by "}${((("share" === squint_core.get(squint_core.deref(transport), "mode"))) ? ("this browser") : ("the server"))??''}${": "}${reason_8??''}`, null);
 continue;
 
 break;
@@ -129,12 +191,54 @@ f_2()
 return null;
 
 };
+var record_listeners = squint_core.atom([]);
+var on_record_BANG_ = function (f) {
+return squint_core.swap_BANG_(record_listeners, squint_core.conj, f);
+
+};
 var record_BANG_ = function (id, value) {
 uncarry_BANG_(id);
-squint_core.swap_BANG_(state, squint_core.update, "queue", squint_core.conj, ({"page": squint_core.get(squint_core.deref(transport), "page"), "id": id, "value": value, "rev": squint_core.get(squint_core.deref(state), "rev"), "at": (new Date()).toISOString()}));
+const entry_1 = ({"page": squint_core.get(squint_core.deref(transport), "page"), "id": id, "value": value, "rev": squint_core.get(squint_core.deref(state), "rev"), "at": (new Date()).toISOString()});
+squint_core.swap_BANG_(state, squint_core.update, "queue", squint_core.conj, entry_1);
+if (("deeper" === id)) {
+} else {
+squint_core.swap_BANG_(answers, squint_core.assoc, id, ({"value": value, "rev": entry_1["rev"], "at": entry_1["at"]}))};
+mirror_queue_BANG_();
 mark_BANG_(id, "pending");
+for (let G__2 of squint_core.iterable(squint_core.deref(record_listeners))) {
+const f_3 = G__2;
+f_3(id, value)
+};
 answers_shown_BANG_();
 return flush_BANG_();
+
+};
+var done_report_reads = squint_core.atom([]);
+var report_on_done_BANG_ = function (id, read) {
+return squint_core.swap_BANG_(done_report_reads, squint_core.conj, [id, read]);
+
+};
+var done_reports = function () {
+return squint_core.reduce((function (m, p__22) {
+const vec___1_4 = p__22;
+const id_5 = squint_core.nth(vec___1_4, 0, null);
+const read_6 = squint_core.nth(vec___1_4, 1, null);
+const v_7 = read_6();
+if ((v_7 == null)) {
+return m} else {
+return squint_core.assoc(m, id_5, v_7)};
+
+}), ({}), squint_core.deref(done_report_reads));
+
+};
+var record_done_reports_BANG_ = function () {
+for (let G__1 of squint_core.iterable(Object.entries(done_reports()))) {
+const vec___2_5 = G__1;
+const id_6 = squint_core.nth(vec___2_5, 0, null);
+const v_7 = squint_core.nth(vec___2_5, 1, null);
+record_BANG_(id_6, v_7)
+}
+return null;
 
 };
 var el_value = function (el) {
@@ -205,17 +309,23 @@ return carried_QMARK__2;
 };
 var restore_BANG_ = function (decisions, rev) {
 squint_core.swap_BANG_(state, squint_core.assoc, "loaded", ({"decisions": decisions, "rev": rev}));
-const carried_1 = squint_core.atom([]);
-for (let G__2 of squint_core.iterable(Object.entries(decisions))) {
-const vec___3_6 = G__2;
-const id_7 = squint_core.nth(vec___3_6, 0, null);
-const entry_8 = squint_core.nth(vec___3_6, 1, null);
-if (!squint_core.contains_QMARK_(report_only_ids, id_7)) {
-if (squint_core.truth_(show_entry_BANG_(els_for(id_7), entry_8, rev))) {
-squint_core.swap_BANG_(carried_1, squint_core.conj, id_7)}}
+for (let G__1 of squint_core.iterable(Object.entries(decisions))) {
+const vec___2_5 = G__1;
+const id_6 = squint_core.nth(vec___2_5, 0, null);
+const entry_7 = squint_core.nth(vec___2_5, 1, null);
+squint_core.swap_BANG_(answers, squint_core.assoc, id_6, squint_core.select_keys(entry_7, ["value", "rev", "at"]))
 };
-squint_core.swap_BANG_(state, squint_core.assoc, "carried", squint_core.deref(carried_1));
-if (squint_core.truth_(squint_core.seq(squint_core.deref(carried_1)))) {
+const carried_8 = squint_core.atom([]);
+for (let G__9 of squint_core.iterable(Object.entries(decisions))) {
+const vec___10_13 = G__9;
+const id_14 = squint_core.nth(vec___10_13, 0, null);
+const entry_15 = squint_core.nth(vec___10_13, 1, null);
+if (!squint_core.contains_QMARK_(report_only_ids, id_14)) {
+if (squint_core.truth_(show_entry_BANG_(els_for(id_14), entry_15, rev))) {
+squint_core.swap_BANG_(carried_8, squint_core.conj, id_14)}}
+};
+squint_core.swap_BANG_(state, squint_core.assoc, "carried", squint_core.deref(carried_8));
+if (squint_core.truth_(squint_core.seq(squint_core.deref(carried_8)))) {
 insert_clear_button_BANG_()} else {
 remove_clear_button_BANG_()};
 return answers_shown_BANG_();
@@ -278,6 +388,8 @@ const b_8 = G__7;
 b_8.classList.remove("chosen")
 };
 btn_3.classList.add("chosen");
+if (((("status" === id_4)) && (("done" === btn_3.dataset.choice)))) {
+record_done_reports_BANG_()};
 return record_BANG_(id_4, btn_3.dataset.choice);
 };
 } else {
@@ -309,6 +421,56 @@ return record_BANG_(el_1.dataset.decision, el_value(el_1));
 };
 
 };
+var claim_orphaned_queues_BANG_ = function () {
+const claimed_1 = squint_core.filter((function (entry) {
+const shown_2 = squint_core.get(squint_core.get(squint_core.deref(answers), squint_core.get(entry, "id")), "at");
+return squint_core.not(((squint_core.truth_(shown_2)) ? ((shown_2 > squint_core.get(entry, "at"))) : (shown_2)));
+
+}), orphaned_entries_BANG_());
+if (squint_core.truth_(squint_core.seq(claimed_1))) {
+for (let G__3 of squint_core.iterable(claimed_1)) {
+const entry_4 = G__3;
+const id_5 = squint_core.get(entry_4, "id");
+for (let G__6 of squint_core.iterable(els_for(id_5))) {
+const el_7 = G__6;
+show_value_BANG_(el_7, squint_core.get(entry_4, "value"))
+};
+squint_core.swap_BANG_(state, squint_core.update, "queue", squint_core.conj, entry_4);
+if (("deeper" === id_5)) {
+} else {
+squint_core.swap_BANG_(answers, squint_core.assoc, id_5, squint_core.select_keys(entry_4, ["value", "rev", "at"]))};
+mark_BANG_(id_5, "pending")
+};
+mirror_queue_BANG_();
+return answers_shown_BANG_();
+};
+
+};
+var claim_lock_hold_ms = 250;
+var claim_orphaned_queues_once_BANG_ = async function () {
+const temp__23255__auto___1 = (await (async () => {
+const G__23_2 = navigator;
+if ((G__23_2 == null)) {
+return null} else {
+return G__23_2.locks};
+
+})());
+if (squint_core.truth_(temp__23255__auto___1)) {
+const locks_3 = temp__23255__auto___1;
+return (await locks_3.request(`${"html-channel:claim:"}${location.pathname??''}`, ({"ifAvailable": true}), (function (lock) {
+if (squint_core.truth_(lock)) {
+claim_orphaned_queues_BANG_();
+return (new Promise((function (resolve) {
+return setTimeout(resolve, claim_lock_hold_ms);
+
+})));
+};
+
+})));
+} else {
+return claim_orphaned_queues_BANG_()};
+
+};
 var load_BANG_ = async function () {
 const temp__23314__auto___1 = (await squint_core.get(squint_core.deref(transport), "load")());
 if (squint_core.truth_(temp__23314__auto___1)) {
@@ -320,6 +482,10 @@ return show_deeper_BANG_(squint_core.get(eff_2, "deeper"));
 
 };
 var check_BANG_ = async function () {
+if (!(squint_core.get(squint_core.deref(state), "rev") == null)) {
+(await claim_orphaned_queues_once_BANG_())};
+if (squint_core.truth_(squint_core.seq(squint_core.get(squint_core.deref(state), "queue")))) {
+mirror_queue_BANG_()};
 const rev_1 = (await squint_core.get(squint_core.deref(transport), "rev")());
 set_online_BANG_(!(rev_1 == null));
 if (!(rev_1 == null)) {
@@ -360,6 +526,7 @@ return null;
 };
 var start_BANG_ = function (t) {
 squint_core.reset_BANG_(transport, t);
+document.documentElement.classList.toggle("decide-share", ("share" === squint_core.get(t, "mode")));
 window.htmlChannel = (() => {
 const or_1_2 = window.htmlChannel;
 if (squint_core.truth_(or_1_2)) {
@@ -376,4 +543,4 @@ return setInterval(check_BANG_, 3000);
 
 };
 
-export { restore_BANG_, restore_within_BANG_, transport, check_BANG_, show_value_BANG_, els_for, answers_shown_BANG_, uncarry_BANG_, mark_BANG_, clear_BANG_, save_early_answers_BANG_, on_click, el_value, insert_clear_button_BANG_, report_error_BANG_, start_BANG_, report_only_ids, set_online_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, flush_BANG_, clear_carried_BANG_, show_entry_BANG_, answer_listeners, on_answers_shown_BANG_, record_from_page_BANG_, load_BANG_, show_deeper_BANG_, send_queue_BANG_ }
+export { restore_BANG_, orphaned_entries_BANG_, restore_within_BANG_, transport, check_BANG_, done_reports, tab_id, show_value_BANG_, els_for, claim_lock_hold_ms, answers_shown_BANG_, uncarry_BANG_, mark_BANG_, clear_BANG_, save_early_answers_BANG_, report_on_done_BANG_, on_click, record_done_reports_BANG_, el_value, insert_clear_button_BANG_, record_listeners, on_record_BANG_, report_error_BANG_, answers, orphan_after_ms, start_BANG_, queue_key_prefix, report_only_ids, done_report_reads, set_online_BANG_, claim_orphaned_queues_BANG_, record_BANG_, state, on_change, remove_clear_button_BANG_, queue_key, flush_BANG_, clear_carried_BANG_, mirror_queue_BANG_, show_entry_BANG_, answer_listeners, on_answers_shown_BANG_, record_from_page_BANG_, load_BANG_, claim_orphaned_queues_once_BANG_, show_deeper_BANG_, send_queue_BANG_ }

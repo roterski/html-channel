@@ -23,9 +23,11 @@
   when they appear; the bar appears with the first one. Changing or removing a
   linked reference's data-src replaces or removes its link.
   On Done, the settings in effect are recorded as the decision `sources`,
-  {format, repos {name {root default overridden}}}, queued before `status`.
+  {format, repos {name {root default overridden}}}, queued before `status`
+  (decide.core/report-on-done!); Download reads the same value.
   Malformed metas and references are reported as kind \"code-link\" and stay
-  plain text.")
+  plain text."
+  (:require [decide.core :as core]))
 
 (def shared-key "html-channel:code-links:shared")
 
@@ -497,20 +499,19 @@
   (when-let [btn (.closest (.-target e) "button.hc-src-copy")]
     (copy! btn)))
 
-(defn on-done
-  "Capture phase: records `sources` before core's bubble-phase handler records
-  `status`, so the agent reads the settings the answers were given under."
-  [e]
-  (when (and (:bar @state) (.closest (.-target e) "[data-decision=status][data-choice=done]"))
-    (.record js/window.htmlChannel "sources" (sources))))
+(defn sources-report
+  "The settings the answers were given under, reported on Done and in Download;
+  nil on a page without code links."
+  []
+  (when (:bar @state) (sources)))
 
 (defn start!
   "Links the page's references now and as they appear. `report!` is (fn [kind message source]).
-  Pre: decide.core has started, so window.htmlChannel.record saves answers."
+  Pre: decide.core has started."
   [report!]
   (reset! state {:repos (read-repos report!) :report! report! :bar nil})
   (when (link-within! js/document.body) (refresh-hrefs!))
   (.observe (js/MutationObserver. on-mutations) js/document.body
             {:childList true :subtree true :attributes true :attributeFilter ["data-src"]})
-  (.addEventListener js/document "click" on-done true)
+  (core/report-on-done! "sources" sources-report)
   (.addEventListener js/document "click" on-click))

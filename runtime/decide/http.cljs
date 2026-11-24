@@ -6,6 +6,7 @@
   (let [parts (-> js/location .-pathname (.split "/"))
         file (.pop parts)]
     {:base (str (.-origin (js/URL. (.-url js/import.meta))) (.join parts "/"))
+     :session (aget parts (dec (.-length parts)))
      :page (.replace file #"\.html?$" "")}))
 
 (defn ^:async get-json [url]
@@ -29,9 +30,11 @@
     (catch :default _ {:outcome "unreachable"})))
 
 (defn transport []
-  (let [{:keys [base page]} (page-context)
+  (let [{:keys [base session page]} (page-context)
         q (str "?page=" (js/encodeURIComponent page))]
     {:page page
+     :session session
+     :mode "served"
      :send! (fn [entry] (post-entry (str base "/_decisions") entry))
      :load (fn [] (get-json (str base "/_decisions" q)))
      :rev (fn [] (.then (get-json (str base "/_rev" q)) #(some-> % :rev)))}))

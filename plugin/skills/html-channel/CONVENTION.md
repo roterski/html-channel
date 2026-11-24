@@ -46,7 +46,7 @@ Put this in `<body>`:
 
 ```html
 <div id="decide-offline" style="position:sticky;top:0;background:#fef3c7;color:#78350f;border:1px solid #f59e0b;padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;font:14px system-ui">
-  <strong>html-channel server is not running</strong>: your answers won't be saved.
+  <strong>html-channel server is not running</strong>: your answers stay in this browser and are sent once it's back.
   Start it with <code>html-channel serve</code> in the project; this notice then disappears on its own.
 </div>
 ```
@@ -403,9 +403,34 @@ To revise a page, rewrite the same file.
 - Earlier answers carry over to the new revision for any control with the same `ID`. They are shown as *carried*, and a "Clear carried answers" button appears.
 - `status`, `deeper`, `sources`, `hunks` and `moot` never carry over: each revision needs its own Done.
 
+## Answering without the server
+
+Every decision page also offers **Download answers**, next to Done. The kit adds it; write nothing for it.
+
+- It saves the page's answers as an `.edn` file, unsent ones included, and records nothing: Done stays the only signal you get.
+- While the server is unreachable, the kit hides Done, adds "Download keeps your answers" to the banner, shows an optional name field,
+  and asks before the reader leaves with answers they haven't downloaded.
+  Answers given meanwhile are kept in the browser and sent once the server is back; a closed tab's are sent the next time a tab of the page is open in that browser.
+- Report-only pages get no Download.
+
+A reader may send you that file instead of clicking Done. Read it with `html-channel decisions --file <answers.edn>`,
+or `get_decisions` with `file` (a relative path resolves against the project). The file's first line names the command.
+Both print the JSON `html-channel decisions` prints (see What the agent gets back), so read it the same way, plus:
+
+- `respondent`: the name the reader typed; `":author"` when they downloaded while connected, which means the person you work with; `null` when neither.
+- `state`: the page's state at Download: `connected`, `disconnected`, or `share` for an offline copy of the page, which keeps answers in the reader's browser and has no Done.
+- `exported_at` and `file`.
+- `checked`: `true` when the revision the answers were given at, `<session>/<page>@<rev>.html`, exists under the root.
+  When `false`, `reason` says why and the answers are still printed: say they couldn't be checked against the page, then read them as usual.
+
+`done` is always `true`: Download is how a reader finishes without the server.
+`sources`, `hunks` and `moot` appear among `decisions`, as they do after Done.
+Nothing is written to `decisions.jsonl`: each file is one reader's answers, kept apart.
+
 ## What the agent gets back
 
-Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`:
+Every saved answer is one line appended to `<root>/<session>/decisions.jsonl`.
+Answers a reader downloaded instead come as a file (see Answering without the server).
 
 ```json
 {"page":"cache-layer-review","session":"3f9c2a1b","rev":2,"id":"eviction","value":"lru","at":"2026-10-16T13:08:34.844Z"}

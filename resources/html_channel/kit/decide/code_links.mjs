@@ -1,4 +1,6 @@
 import * as squint_core from '../squint-core.js';
+import * as core from './core.mjs';
+import * as decide_DOT_core from './core.mjs';
 var shared_key = "html-channel:code-links:shared";
 var page_key = function () {
 return `${"html-channel:code-links:"}${location.pathname??''}`;
@@ -748,15 +750,9 @@ return copy_BANG_(btn_2);
 };
 
 };
-var on_done = function (e) {
-if (squint_core.truth_((() => {
-const and_1_2 = squint_core.get(squint_core.deref(state), "bar");
-if (squint_core.truth_(and_1_2)) {
-return e.target.closest("[data-decision=status][data-choice=done]")} else {
-return and_1_2};
-
-})())) {
-return window.htmlChannel.record("sources", sources());
+var sources_report = function () {
+if (squint_core.truth_(squint_core.get(squint_core.deref(state), "bar"))) {
+return sources();
 };
 
 };
@@ -765,9 +761,9 @@ squint_core.reset_BANG_(state, ({"repos": read_repos(report_BANG_), "report!": r
 if (squint_core.truth_(link_within_BANG_(document.body))) {
 refresh_hrefs_BANG_()};
 (new MutationObserver(on_mutations)).observe(document.body, ({"childList": true, "subtree": true, "attributes": true, "attributeFilter": ["data-src"]}));
-document.addEventListener("click", on_done, true);
+core.report_on_done_BANG_("sources", sources_report);
 return document.addEventListener("click", on_click);
 
 };
 
-export { sources, absolute_path, meta_fields, decoded, shared_record, declared_QMARK_, shared_key, copy_BANG_, github_url, relink_BANG_, svg_ns, refresh_bar_BANG_, save_shared_defaults_BANG_, settings, flash_BANG_, identifiers, repo_row, label, encode_path, decorate_BANG_, valid_web, last_decoration_id, repo_problem, block_of, copy_button, on_click, same_repo_QMARK_, href, link_BANG_, per_repo, valid_format, ensure_bar_BANG_, overridden_QMARK_, start_BANG_, vscode_url, read_repos, on_mutations, link_el, undecorate_BANG_, name_re, src_re, absolute_re, write_json_BANG_, copy_text, link_within_BANG_, remote_of, formats, update_page_settings_BANG_, state, parse_src, settings_changed_BANG_, format_name, web_re, present, without_trailing_slash, el_BANG_, declared_ref, refresh_hrefs_BANG_, page_settings, page_key, bar_BANG_, read_json, on_done, remove_key_BANG_, xlink_ns, select_text_BANG_, shared_defaults }
+export { sources, absolute_path, meta_fields, decoded, shared_record, sources_report, declared_QMARK_, shared_key, copy_BANG_, github_url, relink_BANG_, svg_ns, refresh_bar_BANG_, save_shared_defaults_BANG_, settings, flash_BANG_, identifiers, repo_row, label, encode_path, decorate_BANG_, valid_web, last_decoration_id, repo_problem, block_of, copy_button, on_click, same_repo_QMARK_, href, link_BANG_, per_repo, valid_format, ensure_bar_BANG_, overridden_QMARK_, start_BANG_, vscode_url, read_repos, on_mutations, link_el, undecorate_BANG_, name_re, src_re, absolute_re, write_json_BANG_, copy_text, link_within_BANG_, remote_of, formats, update_page_settings_BANG_, state, parse_src, settings_changed_BANG_, format_name, web_re, present, without_trailing_slash, el_BANG_, declared_ref, refresh_hrefs_BANG_, page_settings, page_key, bar_BANG_, read_json, remove_key_BANG_, xlink_ns, select_text_BANG_, shared_defaults }

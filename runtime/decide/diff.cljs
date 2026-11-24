@@ -505,12 +505,10 @@
         (when choice-id (swap! hunk-map assoc choice-id diff-keys))
         (core/restore-within! container)))))
 
-(defn on-done
-  "Capture phase: records `hunks` before core's bubble-phase handler records `status`."
-  [e]
-  (when (and (seq (js/Object.keys @hunk-map))
-             (.closest (.-target e) "[data-decision=status][data-choice=done]"))
-    (.record js/window.htmlChannel "hunks" @hunk-map)))
+(defn hunks-report
+  "The hunk map, reported on Done and in Download; nil when no diff has hunk choices."
+  []
+  (when (seq (js/Object.keys @hunk-map)) @hunk-map))
 
 (defn ^:async start!
   "Renders the page's diffs. `report!` is (fn [kind message source]).
@@ -518,7 +516,7 @@
   [report!]
   (let [srcs (js/Array.from (js/document.querySelectorAll "pre[data-diff], figure[data-diff]"))]
     (when (seq srcs)
-      (.addEventListener js/document "click" on-done true)
+      (core/report-on-done! "hunks" hunks-report)
       (let [id-counts (reduce (fn [m s] (let [v (.trim (or (.getAttribute s "data-diff") ""))]
                                           (if (seq v) (assoc m v (inc (get m v 0))) m)))
                               {} srcs)]

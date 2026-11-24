@@ -270,11 +270,11 @@
       (if-let [r (aget now (:key l))] (show-option! l r) (unshow-option! l)))
     (reset! moot-now now)))
 
-(defn on-done
-  "Capture phase: records `moot` before core's bubble-phase handler records `status`."
-  [e]
-  (when (.closest (.-target e) "[data-decision=status][data-choice=done]")
-    (.record js/window.htmlChannel "moot" @moot-now)))
+(defn moot-report
+  "The links that hold now, reported on Done and in Download.
+  Pre: the page has a link list that parses (start! registers this only then)."
+  []
+  @moot-now)
 
 (defn start!
   "Reads the page's link list, reports its problems, shows what is moot now, and
@@ -291,6 +291,6 @@
         (doseq [p problems] (report! "moot" p "hc-moot"))
         (when ls
           (reset! links ls)
-          (.addEventListener js/document "click" on-done true)
+          (core/report-on-done! "moot" moot-report)
           (core/on-answers-shown! update!)
           (update!))))))

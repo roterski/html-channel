@@ -61,14 +61,14 @@ return squint_core.last(src.replace(/^[^:]*:/, "").replace(/#.*$/, "").split("/"
 
 };
 var class_language = function (el) {
-const G__39_1 = el.classList;
-const G__39_2 = (((G__39_1 == null)) ? (null) : (Array.from(G__39_1)));
-if ((G__39_2 == null)) {
+const G__46_1 = el.classList;
+const G__46_2 = (((G__46_1 == null)) ? (null) : (Array.from(G__46_1)));
+if ((G__46_2 == null)) {
 return null} else {
 return squint_core.some((function (_PERCENT_1) {
 return squint_core.second(squint_core.re_find(/^(?:language|lang)-(.+)$/, _PERCENT_1));
 
-}), G__39_2)};
+}), G__46_2)};
 
 };
 var declared = function (els) {
@@ -203,8 +203,8 @@ return null;
 return squint_core.vec(squint_core.concat(blocks_1, inline_9));
 
 };
-var request = function (p__40) {
-const map___1_3 = p__40;
+var request = function (p__47) {
+const map___1_3 = p__47;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const scope_5 = squint_core.get(map___1_4, "scope");
 const or_6_7 = declared(scope_5);
@@ -223,12 +223,12 @@ return `${"<"}${el.localName??''}${((squint_core.truth_(src_1)) ? (`${" data-src
 
 };
 var token_span = /* @__PURE__ */ (() => {
-let f41_1 = null;
-const impl44_2 = (function (t) {
+let f48_1 = null;
+const impl51_2 = (function (t) {
 return token_span(t, t.content);
 
 });
-const impl45_3 = (function (t, text) {
+const impl52_3 = (function (t, text) {
 const s_4 = document.createElement("span");
 const fs_5 = (() => {
 const or_6_7 = t.fontStyle;
@@ -247,22 +247,22 @@ s_4.style.fontWeight = "bold"};
 return s_4;
 
 });
-f41_1 = (function (...args42) {
-const self46_8 = this;
-const G__47_9 = args42.length;
-switch (G__47_9) {case 1:
-return impl44_2.call(self46_8, args42[0]);
+f48_1 = (function (...args49) {
+const self53_8 = this;
+const G__54_9 = args49.length;
+switch (G__54_9) {case 1:
+return impl51_2.call(self53_8, args49[0]);
 
 break;
 case 2:
-return impl45_3.call(self46_8, args42[0], args42[1]);
+return impl52_3.call(self53_8, args49[0], args49[1]);
 
 break;
 default:
-throw (new Error(`${"Invalid arity: "}${args42.length??''}`))};
+throw (new Error(`${"Invalid arity: "}${args49.length??''}`))};
 
 });
-return f41_1;
+return f48_1;
 
 })();
 var highlight_BANG_ = async function (host, lang) {

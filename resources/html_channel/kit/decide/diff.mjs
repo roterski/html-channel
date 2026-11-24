@@ -22,7 +22,7 @@ return squint_core.reset_BANG_(jsdiff_promise, import(versions.jsdiff))};
 
 };
 var el_BANG_ = /* @__PURE__ */ (() => {
-const impl26_1 = (function (tag, attrs, children) {
+const impl28_1 = (function (tag, attrs, children) {
 const e_2 = document.createElement(tag);
 for (let G__3 of squint_core.iterable(Object.entries(((squint_core.truth_(attrs)) ? (attrs) : (({})))))) {
 const vec___4_7 = G__3;
@@ -38,13 +38,13 @@ e_2.append(c_11)}
 return e_2;
 
 });
-const f22 = (function (arg23, arg24, ...rest25) {
+const f24 = (function (arg25, arg26, ...rest27) {
 const self__23546__auto___12 = this;
-return impl26_1.call(self__23546__auto___12, arg23, arg24, (((rest25.length === 0)) ? (null) : (rest25)));
+return impl28_1.call(self__23546__auto___12, arg25, arg26, (((rest27.length === 0)) ? (null) : (rest27)));
 
 });
-(f22["squint$lang$variadic"] = impl26_1);
-return f22;
+(f24["squint$lang$variadic"] = impl28_1);
+return f24;
 
 })();
 var fnv1a = function (s) {
@@ -175,8 +175,8 @@ const temp__23255__auto___5 = squint_core.first(ls_1);
 if (squint_core.truth_(temp__23255__auto___5)) {
 const l_6 = temp__23255__auto___5;
 const text_7 = squint_core.subs(l_6, 1);
-const G__27_8 = squint_core.subs(l_6, 0, 1);
-switch (G__27_8) {case "-":
+const G__29_8 = squint_core.subs(l_6, 0, 1);
+switch (G__29_8) {case "-":
 let G__10 = squint_core.rest(ls_1);
 let G__11 = (o_2 + 1);
 let G__12 = n_3;
@@ -230,8 +230,8 @@ return squint_core.reset_BANG_(cur_2, null);
 });
 for (let G__4 of squint_core.iterable(rows)) {
 const r_5 = G__4;
-const G__28_6 = squint_core.get(r_5, "kind");
-switch (G__28_6) {case "ctx":
+const G__30_6 = squint_core.get(r_5, "kind");
+switch (G__30_6) {case "ctx":
 flush_BANG__3();
 out_1.push(({"ctx": r_5}));
 
@@ -378,16 +378,16 @@ var color_text_rows_BANG_ = function (ot, nt, rows) {
 for (let G__1 of squint_core.iterable(rows)) {
 const r_2 = G__1;
 (r_2["tokens"] = ((("del" === squint_core.get(r_2, "kind"))) ? ((() => {
-const G__29_3 = ot;
-if ((G__29_3 == null)) {
+const G__31_3 = ot;
+if ((G__31_3 == null)) {
 return null} else {
-return G__29_3[(squint_core.get(r_2, "old") - 1)]};
+return G__31_3[(squint_core.get(r_2, "old") - 1)]};
 
 })()) : ((() => {
-const G__30_4 = nt;
-if ((G__30_4 == null)) {
+const G__32_4 = nt;
+if ((G__32_4 == null)) {
 return null} else {
-return G__30_4[(squint_core.get(r_2, "new") - 1)]};
+return G__32_4[(squint_core.get(r_2, "new") - 1)]};
 
 })())))
 }
@@ -412,8 +412,8 @@ const vec___9_12 = G__8;
 const a_13 = squint_core.nth(vec___9_12, 0, null);
 const b_14 = squint_core.nth(vec___9_12, 1, null);
 const s_15 = highlight.token_span(t_4, squint_core.subs(t_4.content, (a_13 - start_5), (b_14 - start_5)));
-if (squint_core.truth_(squint_core.some((function (p__31) {
-const vec___16_19 = p__31;
+if (squint_core.truth_(squint_core.some((function (p__33) {
+const vec___16_19 = p__33;
 const ms_20 = squint_core.nth(vec___16_19, 0, null);
 const me_21 = squint_core.nth(vec___16_19, 1, null);
 if ((ms_20 <= a_13)) {
@@ -524,8 +524,8 @@ var range_label = function (start, count) {
 return `${(((count === 0)) ? ((start - 1)) : (start))??''}${","}${count??''}`;
 
 };
-var hunk_head = function (model, p__32, hunk) {
-const map___1_3 = p__32;
+var hunk_head = function (model, p__34, hunk) {
+const map___1_3 = p__34;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const path_5 = squint_core.get(map___1_4, "path");
 const deleted_QMARK__6 = squint_core.get(map___1_4, "deleted?");
@@ -545,8 +545,8 @@ return and_10_11};
 })())) ? (el_BANG_("code", ({"data-src": `${squint_core.get(model, "repo")??''}${":"}${path_5??''}${"#L"}${new_start_7}${(((nl_8 > 1)) ? (`-L${(new_start_7 + nl_8 + -1)}`) : (""))??''}`}), `${path_5??''}${":"}${new_start_7}`)) : (null)));
 
 };
-var file_head = function (model, p__33) {
-const map___1_3 = p__33;
+var file_head = function (model, p__35) {
+const map___1_3 = p__35;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const path_5 = squint_core.get(map___1_4, "path");
 const deleted_QMARK__6 = squint_core.get(map___1_4, "deleted?");
@@ -584,10 +584,10 @@ if (squint_core.truth_(squint_core.deref(lines_6))) {
 } else {
 const rs_7 = squint_core.mapv((function (o) {
 return ({"kind": "ctx", "old": o, "new": (o + delta), "text": old_lines_3[(o - 1)], "tokens": (() => {
-const G__34_8 = ot;
-if ((G__34_8 == null)) {
+const G__36_8 = ot;
+if ((G__36_8 == null)) {
 return null} else {
-return G__34_8[(o - 1)]};
+return G__36_8[(o - 1)]};
 
 })()});
 
@@ -677,10 +677,10 @@ color_text_rows_BANG_(ot_6, nt_7, rs_21)} else {
 if (squint_core.truth_(texts_5)) {
 const prev_22 = squint_core.get(hunks_11, (i_19 - 1));
 const from_23 = ((squint_core.truth_(prev_22)) ? ((squint_core.get(prev_22, "old-start") + squint_core.get(prev_22, "old-lines"))) : (1));
-const G__35_24 = gap(model, from_23, (squint_core.get(h_20, "old-start") - 1), (squint_core.get(h_20, "new-start") - squint_core.get(h_20, "old-start")), ot_6);
-if ((G__35_24 == null)) {
+const G__37_24 = gap(model, from_23, (squint_core.get(h_20, "old-start") - 1), (squint_core.get(h_20, "new-start") - squint_core.get(h_20, "old-start")), ot_6);
+if ((G__37_24 == null)) {
 } else {
-section_9.append(G__35_24)}};
+section_9.append(G__37_24)}};
 section_9.append(hunk_head(model, file, h_20), body(rs_21, num_8));
 if (squint_core.truth_(id)) {
 const k_25 = squint_core.get(ks_12, i_19);
@@ -689,10 +689,10 @@ section_9.append(choice_controls(`${id??''}${"."}${k_25??''}`, choices))}
 };
 if (squint_core.truth_(((squint_core.truth_(texts_5)) ? (squint_core.seq(hunks_11)) : (texts_5)))) {
 const l_26 = squint_core.last(hunks_11);
-const G__36_27 = gap(model, (squint_core.get(l_26, "old-start") + squint_core.get(l_26, "old-lines")), old_count_13, ((squint_core.get(l_26, "new-start") + squint_core.get(l_26, "new-lines")) - (squint_core.get(l_26, "old-start") + squint_core.get(l_26, "old-lines"))), ot_6);
-if ((G__36_27 == null)) {
+const G__38_27 = gap(model, (squint_core.get(l_26, "old-start") + squint_core.get(l_26, "old-lines")), old_count_13, ((squint_core.get(l_26, "new-start") + squint_core.get(l_26, "new-lines")) - (squint_core.get(l_26, "old-start") + squint_core.get(l_26, "old-lines"))), ot_6);
+if ((G__38_27 == null)) {
 } else {
-section_9.append(G__36_27)}};
+section_9.append(G__38_27)}};
 return ({"node": section_9, "hunks": keyed_10, "problem": squint_core.deref(problem_4)});
 
 };
@@ -762,12 +762,12 @@ return `${"diff #"}${i??''}`};
 
 };
 var choices_of = function (src) {
-const G__37_1 = src.getAttribute("data-hunk-choices");
-const G__37_2 = (((G__37_1 == null)) ? (null) : (squint_core.re_seq(/\S+/, G__37_1)));
-const G__37_3 = (((G__37_2 == null)) ? (null) : (squint_core.vec(G__37_2)));
-if ((G__37_3 == null)) {
+const G__39_1 = src.getAttribute("data-hunk-choices");
+const G__39_2 = (((G__39_1 == null)) ? (null) : (squint_core.re_seq(/\S+/, G__39_1)));
+const G__39_3 = (((G__39_2 == null)) ? (null) : (squint_core.vec(G__39_2)));
+if ((G__39_3 == null)) {
 return null} else {
-return squint_core.not_empty(G__37_3)};
+return squint_core.not_empty(G__39_3)};
 
 };
 var render_diff_BANG_ = async function (jsdiff, src, i, id_counts, report_BANG_) {
@@ -838,22 +838,16 @@ return core.restore_within_BANG_(container_10);
 return null}}};
 
 };
-var on_done = function (e) {
-if (squint_core.truth_((() => {
-const and_1_2 = squint_core.seq(Object.keys(squint_core.deref(hunk_map)));
-if (squint_core.truth_(and_1_2)) {
-return e.target.closest("[data-decision=status][data-choice=done]")} else {
-return and_1_2};
-
-})())) {
-return window.htmlChannel.record("hunks", squint_core.deref(hunk_map));
+var hunks_report = function () {
+if (squint_core.truth_(squint_core.seq(Object.keys(squint_core.deref(hunk_map))))) {
+return squint_core.deref(hunk_map);
 };
 
 };
 var start_BANG_ = async function (report_BANG_) {
 const srcs_1 = Array.from(document.querySelectorAll("pre[data-diff], figure[data-diff]"));
 if (squint_core.truth_(squint_core.seq(srcs_1))) {
-document.addEventListener("click", on_done, true);
+core.report_on_done_BANG_("hunks", hunks_report);
 const id_counts_2 = squint_core.reduce((function (m, s) {
 const v_3 = (() => {
 const or_4_5 = s.getAttribute("data-diff");
@@ -893,4 +887,4 @@ return report_BANG_("diff", `${"jsdiff didn't load, so "}${squint_core.count(src
 
 };
 
-export { signs, range_label, diff_label, gap, choice_label, hunk_map, body, file_section, split_row, unified_table, max_marked_line, jsdiff_promise, tokens_or_nil, build_shown_splits_BANG_, tokens_of_lines, side_cells, numeric_sort, sign_cell, layouts, blocks, jsdiff_BANG_, start_BANG_, color_text_rows_BANG_, layout_bar, context_lines, min_similarity, choices_of, mark_words_BANG_, split_table, texts_model, render_diff_BANG_, stored_layout, el_BANG_, hunk_of, layout_key, ensure_newline, file_head, fnv1a, rows, choice_controls, line_nodes, hunk_head, language, patch_model, fail_BANG_, patch_path, hunk_keys, on_done, set_layout_BANG_, spoken, color_patch_rows_BANG_, file_name }
+export { signs, range_label, diff_label, gap, choice_label, hunk_map, body, file_section, split_row, unified_table, max_marked_line, jsdiff_promise, tokens_or_nil, build_shown_splits_BANG_, tokens_of_lines, side_cells, hunks_report, numeric_sort, sign_cell, layouts, blocks, jsdiff_BANG_, start_BANG_, color_text_rows_BANG_, layout_bar, context_lines, min_similarity, choices_of, mark_words_BANG_, split_table, texts_model, render_diff_BANG_, stored_layout, el_BANG_, hunk_of, layout_key, ensure_newline, file_head, fnv1a, rows, choice_controls, line_nodes, hunk_head, language, patch_model, fail_BANG_, patch_path, hunk_keys, set_layout_BANG_, spoken, color_patch_rows_BANG_, file_name }

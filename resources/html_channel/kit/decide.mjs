@@ -5,6 +5,8 @@ import * as core from './decide/core.mjs';
 import * as decide_DOT_core from './decide/core.mjs';
 import * as diff from './decide/diff.mjs';
 import * as decide_DOT_diff from './decide/diff.mjs';
+import * as download from './decide/download.mjs';
+import * as decide_DOT_download from './decide/download.mjs';
 import * as explore from './decide/explore.mjs';
 import * as decide_DOT_explore from './decide/explore.mjs';
 import * as highlight from './decide/highlight.mjs';
@@ -15,6 +17,8 @@ import * as lint from './decide/lint.mjs';
 import * as decide_DOT_lint from './decide/lint.mjs';
 import * as moot from './decide/moot.mjs';
 import * as decide_DOT_moot from './decide/moot.mjs';
+import * as offline from './decide/offline.mjs';
+import * as decide_DOT_offline from './decide/offline.mjs';
 import * as probe from './decide/probe.mjs';
 import * as decide_DOT_probe from './decide/probe.mjs';
 import * as statechart from './decide/statechart.mjs';
@@ -23,7 +27,16 @@ import * as tiers from './decide/tiers.mjs';
 import * as decide_DOT_tiers from './decide/tiers.mjs';
 import * as viz from './decide/viz.mjs';
 import * as decide_DOT_viz from './decide/viz.mjs';
-core.start_BANG_(http.transport());
+core.start_BANG_((() => {
+const temp__23255__auto___1 = offline.share_meta();
+if (squint_core.truth_(temp__23255__auto___1)) {
+const copy_2 = temp__23255__auto___1;
+return offline.transport(copy_2);
+} else {
+return http.transport()};
+
+})());
+download.start_BANG_();
 moot.start_BANG_(core.report_error_BANG_);
 tiers.start_BANG_();
 viz.start_BANG_(core.report_error_BANG_);

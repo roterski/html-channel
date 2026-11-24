@@ -116,11 +116,11 @@
 
 /* The base look has zero specificity, like the element styles; the state
    markers below (chosen, pending, saved, carried) outrank page styles. */
-:where(button[data-decision], button[data-deeper]) {
+:where(button[data-decision], button[data-deeper], button.hc-download-button) {
   font: inherit; padding: .4rem .9rem; border-radius: 6px; cursor: pointer;
   border: 1px solid var(--hc-line); background: var(--hc-bg); color: var(--hc-fg);
 }
-:where(button[data-decision]:hover, button[data-deeper]:hover) { border-color: var(--hc-muted); }
+:where(button[data-decision]:hover, button[data-deeper]:hover, button.hc-download-button:hover) { border-color: var(--hc-muted); }
 button[data-decision].chosen, button[data-deeper].chosen {
   background: var(--hc-accent); border-color: var(--hc-accent); color: var(--hc-on-accent);
 }
@@ -137,6 +137,16 @@ input[data-decision][data-state="saved"] { outline: 2px solid #16a34a33; outline
 }
 
 html.decide-is-offline [data-decision] { opacity: .75; }
+
+/* ---- Download (decide.download) --------------------------------------------- */
+/* Done counts only while connected; an offline copy (share) has no server, banner or Deeper */
+html.decide-is-offline [data-decision="status"][data-choice="done"],
+html.decide-share [data-decision="status"][data-choice="done"],
+html.decide-share button[data-deeper],
+html.decide-share #decide-offline { display: none !important; }
+.hc-download { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: 0 .4rem; }
+.hc-download-name { width: 14rem; max-width: 100%; font: inherit; padding: .35rem .6rem; }
+html:not(.decide-is-offline):not(.decide-share) .hc-download-name { display: none; }
 
 /* ---- moot (decide.moot) ---------------------------------------------------- */
 

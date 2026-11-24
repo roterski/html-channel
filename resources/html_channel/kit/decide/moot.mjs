@@ -129,10 +129,10 @@ return ({"error": `${"no element has data-question=\""}${id_8??''}${"\" to fold"
 const reason_19 = ((squint_core.truth_(((squint_core.string_QMARK_(entry.reason)) && (squint_core.seq(entry.reason.trim()))))) ? (entry.reason.trim()) : (null));
 if (squint_core.truth_(squint_core.get(place_16, "error"))) {
 return ({"problem": `${where_4}${": "}${squint_core.get(place_16, "error")??''}`})} else {
-const G__52_20 = ({"link": squint_core.merge(({"key": key, "id": id_8, "value": value_9, "terms": terms_14, "reason": reason_19}), place_16)});
+const G__59_20 = ({"link": squint_core.merge(({"key": key, "id": id_8, "value": value_9, "terms": terms_14, "reason": reason_19}), place_16)});
 if ((reason_19 == null)) {
-return ({...G__52_20,["problem"]:`${where_4}${" has no \"reason\", so the kit writes one"}`})} else {
-return G__52_20};
+return ({...G__59_20,["problem"]:`${where_4}${" has no \"reason\", so the kit writes one"}`})} else {
+return G__59_20};
 };
 } else {
 return null}}};
@@ -189,8 +189,8 @@ const parsed_6 = squint_core.nth(vec___1_4, 0, null);
 const parse_error_7 = squint_core.nth(vec___1_4, 1, null);
 if (squint_core.not(plain_object_QMARK_(parsed_6))) {
 return ({"problems": [`${"the link list isn't a JSON object"}${((squint_core.truth_(parse_error_7)) ? (`${": "}${parse_error_7??''}`) : (null))??''}`]})} else {
-const read_11 = squint_core.map((function (p__53) {
-const vec___12_15 = p__53;
+const read_11 = squint_core.map((function (p__60) {
+const vec___12_15 = p__60;
 const k_16 = squint_core.nth(vec___12_15, 0, null);
 const v_17 = squint_core.nth(vec___12_15, 1, null);
 return read_link(k_16, v_17);
@@ -207,13 +207,13 @@ return ({"links": ({"questions": ordered_20, "options": squint_core.vec(squint_c
 return !(squint_core.get(_PERCENT_1, "value") == null);
 
 }), usable_18))}), "problems": (() => {
-const G__54_22 = squint_core.vec(squint_core.keep("problem", read_11));
+const G__61_22 = squint_core.vec(squint_core.keep("problem", read_11));
 if (squint_core.truth_(squint_core.seq(stuck_21))) {
-return squint_core.conj(G__54_22, `${"the links "}${squint_core.into_array(squint_core.map((function (_PERCENT_1) {
+return squint_core.conj(G__61_22, `${"the links "}${squint_core.into_array(squint_core.map((function (_PERCENT_1) {
 return `${"\""}${squint_core.get(_PERCENT_1, "key")??''}${"\""}`;
 
 }), stuck_21)).join(", ")??''}${" form or depend on a cycle, so they're dropped"}`)} else {
-return G__54_22};
+return G__61_22};
 
 })()});
 };
@@ -284,11 +284,11 @@ return v};
 var written_reason = function (id, v) {
 const c_1 = document.querySelector(`${"[data-question=\""}${CSS.escape(id)??''}${"\"]"}`);
 const heading_text_2 = (() => {
-const G__55_3 = c_1;
-const G__55_4 = (((G__55_3 == null)) ? (null) : (first_heading(G__55_3)));
-if ((G__55_4 == null)) {
+const G__62_3 = c_1;
+const G__62_4 = (((G__62_3 == null)) ? (null) : (first_heading(G__62_3)));
+if ((G__62_4 == null)) {
 return null} else {
-return text_of(G__55_4)};
+return text_of(G__62_4)};
 
 })();
 const h_5 = ((squint_core.truth_(squint_core.seq(heading_text_2))) ? (heading_text_2) : (id));
@@ -297,8 +297,8 @@ return `${"“"}${h_5??''}${"” is unanswered"}`} else {
 return `${"“"}${h_5??''}${"” is “"}${answer_label(id, v)??''}${"”"}`};
 
 };
-var evaluate = function (p__56) {
-const map___1_3 = p__56;
+var evaluate = function (p__63) {
+const map___1_3 = p__63;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const questions_5 = squint_core.get(map___1_4, "questions");
 const options_6 = squint_core.get(map___1_4, "options");
@@ -350,8 +350,8 @@ var bar_of = function (container) {
 return container.querySelector(":scope > .hc-moot-bar");
 
 };
-var show_question_BANG_ = function (p__57, reason) {
-const map___1_3 = p__57;
+var show_question_BANG_ = function (p__64, reason) {
+const map___1_3 = p__64;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const container_5 = squint_core.get(map___1_4, "container");
 const bar_6 = (() => {
@@ -385,8 +385,8 @@ return bar_11;
 return bar_6.querySelector(".hc-moot-reason").textContent = `${"Moot: "}${reason??''}`;
 
 };
-var unshow_question_BANG_ = function (p__58) {
-const map___1_3 = p__58;
+var unshow_question_BANG_ = function (p__65) {
+const map___1_3 = p__65;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const container_5 = squint_core.get(map___1_4, "container");
 const temp__23314__auto___6 = bar_of(container_5);
@@ -394,11 +394,11 @@ if (squint_core.truth_(temp__23314__auto___6)) {
 const bar_7 = temp__23314__auto___6;
 bar_7.remove();
 container_5.classList.remove("hc-moot", "hc-moot-open");
-const G__59_8 = first_heading(container_5);
-const G__59_9 = (((G__59_8 == null)) ? (null) : (G__59_8.classList));
-if ((G__59_9 == null)) {
+const G__66_8 = first_heading(container_5);
+const G__66_9 = (((G__66_8 == null)) ? (null) : (G__66_8.classList));
+if ((G__66_9 == null)) {
 return null} else {
-return G__59_9.remove("hc-moot-head")};
+return G__66_9.remove("hc-moot-head")};
 };
 
 };
@@ -409,8 +409,8 @@ return n_1;
 };
 
 };
-var show_option_BANG_ = function (p__60, reason) {
-const map___1_3 = p__60;
+var show_option_BANG_ = function (p__67, reason) {
+const map___1_3 = p__67;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const target_5 = squint_core.get(map___1_4, "target");
 const r_6 = (() => {
@@ -428,8 +428,8 @@ return r_9;
 return r_6.textContent = `${"Moot: "}${reason??''}`;
 
 };
-var unshow_option_BANG_ = function (p__61) {
-const map___1_3 = p__61;
+var unshow_option_BANG_ = function (p__68) {
+const map___1_3 = p__68;
 const map___1_4 = ((squint_core.truth_(squint_core.sequential_QMARK_(map___1_3))) ? (((squint_core.truth_(squint_core.vector_QMARK_(map___1_3))) ? (map___1_3) : (squint_core.seq_to_map_for_destructuring(map___1_3)))) : (map___1_3));
 const target_5 = squint_core.get(map___1_4, "target");
 const temp__23314__auto___6 = option_reason_of(target_5);
@@ -466,10 +466,8 @@ unshow_option_BANG_(l_14)}
 return squint_core.reset_BANG_(moot_now, now_8);
 
 };
-var on_done = function (e) {
-if (squint_core.truth_(e.target.closest("[data-decision=status][data-choice=done]"))) {
-return window.htmlChannel.record("moot", squint_core.deref(moot_now));
-};
+var moot_report = function () {
+return squint_core.deref(moot_now);
 
 };
 var start_BANG_ = function (report_BANG_) {
@@ -488,7 +486,7 @@ report_BANG_("moot", p_10, "hc-moot")
 };
 if (squint_core.truth_(ls_7)) {
 squint_core.reset_BANG_(links, ls_7);
-document.addEventListener("click", on_done, true);
+core.report_on_done_BANG_("moot", moot_report);
 core.on_answers_shown_BANG_(update_BANG_);
 return update_BANG_();
 };
@@ -496,4 +494,4 @@ return update_BANG_();
 
 };
 
-export { control_kind, split_at_eq, unshow_question_BANG_, update_BANG_, radio_label, written_reason, first_heading, option_target, unshow_option_BANG_, plain_object_QMARK_, show_option_BANG_, text_of, moot_now, evaluate, parse_terms, start_BANG_, links, answer_of, option_reason_of, read_links, bar_of, dependency_order, answer_label, controls, show_question_BANG_, toggle_BANG_, choice_control_QMARK_, on_done, read_link }
+export { control_kind, split_at_eq, unshow_question_BANG_, moot_report, update_BANG_, radio_label, written_reason, first_heading, option_target, unshow_option_BANG_, plain_object_QMARK_, show_option_BANG_, text_of, moot_now, evaluate, parse_terms, start_BANG_, links, answer_of, option_reason_of, read_links, bar_of, dependency_order, answer_label, controls, show_question_BANG_, toggle_BANG_, choice_control_QMARK_, read_link }

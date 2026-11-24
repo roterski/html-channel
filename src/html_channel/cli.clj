@@ -5,6 +5,7 @@
             [babashka.http-client :as hc]
             [cheshire.core :as json]
             [clojure.string :as str]
+            [html-channel.answers-file :as answers-file]
             [html-channel.check :as check]
             [html-channel.mcp :as mcp]
             [html-channel.registry :as registry]
@@ -20,6 +21,8 @@
   mcp [--root] [--max-wait 1500] [--port]        MCP server on stdio (channel_setup, ask_human, get_decisions, check_page)
   session new [--root]                           print {session, dir, url_base} for a new page session
   decisions <session>/<page> [--root]            print {done, rev, deeper, decisions, errors} as JSON
+  decisions --file <answers.edn> [--root]        the same for a file a page's Download gave, plus respondent,
+                                                 state, exported_at and checked (its page snapshot exists)
   wait <session>/<page> [--root] [--max-wait S]  block until Done, Deeper or a new revision, then print
                                                  decisions' JSON plus status: done|deeper|superseded|waiting.
                                                  Run it in the background: its exit wakes the agent
@@ -94,8 +97,10 @@
                          (remote-url-base mount s) (assoc :remote_url (str (remote-url-base mount s) page ".html")))
                        (state-of root s page)))))
 
-(defn- decisions [target opts]
-  (print-page "decisions" target opts store/page-state))
+(defn- decisions [target {:keys [file root] :as opts}]
+  (if file
+    (print-json (answers-file/page-state (store/root-from root) file))
+    (print-page "decisions" target opts store/page-state)))
 
 (defn- wait-for-reader [target {:keys [max-wait] :as opts}]
   (print-page "wait" target opts #(wait/await-reader %1 %2 %3 {:max-wait-s max-wait})))

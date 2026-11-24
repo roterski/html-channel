@@ -24,13 +24,17 @@
 
 (def default-root "ai/html-channel")
 
+(defn project-dir
+  "The project relative paths resolve against: $CLAUDE_PROJECT_DIR, else the cwd."
+  ([] (project-dir (System/getenv)))
+  ([env] (or (not-empty (get env "CLAUDE_PROJECT_DIR")) (System/getProperty "user.dir"))))
+
 (defn root-from
   "The channel root: `opt`, else $HTML_CHANNEL_ROOT, else `default-root`.
-  A relative root resolves against the project: $CLAUDE_PROJECT_DIR, else the cwd."
+  A relative root resolves against the project (project-dir)."
   ([opt] (root-from opt (System/getenv)))
   ([opt env]
-   (let [project (or (not-empty (get env "CLAUDE_PROJECT_DIR")) (System/getProperty "user.dir"))]
-     (str (fs/path project (or opt (not-empty (get env "HTML_CHANNEL_ROOT")) default-root))))))
+   (str (fs/path (project-dir env) (or opt (not-empty (get env "HTML_CHANNEL_ROOT")) default-root)))))
 
 (def name-re #"[a-z0-9][a-z0-9-]{0,63}")
 

@@ -46,15 +46,18 @@ def main():
             # --- D: server dies mid-session
             stop(server)
             expect(page.locator("#decide-offline")).to_be_visible(timeout=WAIT_MS)
-            page.click("button[data-choice=done]")
-            expect(page.locator("button[data-choice=done]")).to_have_attribute("data-state", "pending")
-            assert not any(e["id"] == "status" for e in entries(root, "e2e")), "saved while server was down"
+            expect(page.locator("button[data-choice=done]")).to_be_hidden()  # Done counts only while connected
+            page.click("button[data-choice=lru]")
+            expect(page.locator("button[data-choice=lru]")).to_have_attribute("data-state", "pending")
+            assert entries(root, "e2e")[-1]["value"] != "lru", "saved while server was down"
             sb.serve(root)
             expect(page.locator("#decide-offline")).to_be_hidden(timeout=WAIT_MS)
-            expect(page.locator("button[data-choice=done]")).to_have_attribute("data-state", "saved", timeout=WAIT_MS)
+            expect(page.locator("button[data-choice=lru]")).to_have_attribute("data-state", "saved", timeout=WAIT_MS)
             last = entries(root, "e2e")[-1]
-            assert (last["id"], last["value"]) == ("status", "done"), last
-            print("D ok: banner shown while down, queued click flushed after restart")
+            assert (last["id"], last["value"]) == ("eviction", "lru"), last
+            page.click("button[data-choice=done]")
+            expect(page.locator("button[data-choice=done]")).to_have_attribute("data-state", "saved", timeout=WAIT_MS)
+            print("D ok: banner shown and Done hidden while down, queued answer flushed after restart, Done back")
             browser.close()
     finally:
         sb.close()
