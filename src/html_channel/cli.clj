@@ -1,5 +1,5 @@
 (ns html-channel.cli
-  "html-channel serve|mcp|session new|decisions|wait|check|health|version"
+  "html-channel serve|mcp|session new|decisions|wait|check|export|health|version"
   (:require [babashka.cli :as cli]
             [babashka.fs :as fs]
             [babashka.http-client :as hc]
@@ -7,6 +7,7 @@
             [clojure.string :as str]
             [html-channel.answers-file :as answers-file]
             [html-channel.check :as check]
+            [html-channel.export :as export]
             [html-channel.mcp :as mcp]
             [html-channel.registry :as registry]
             [html-channel.server :as server]
@@ -18,7 +19,7 @@
   "html-channel — interactive HTML pages as an output channel for agents
 
   serve [--root ai/html-channel] [--port 8787]   serve registered roots; stand by if the port is taken
-  mcp [--root] [--max-wait 1500] [--port]        MCP server on stdio (channel_setup, ask_human, get_decisions, check_page)
+  mcp [--root] [--max-wait 1500] [--port]        MCP server on stdio (channel_setup, ask_human, get_decisions, check_page, export_page)
   session new [--root]                           print {session, dir, url_base} for a new page session
   decisions <session>/<page> [--root]            print {done, rev, deeper, decisions, errors} as JSON
   decisions --file <answers.edn> [--root]        the same for a file a page's Download gave, plus respondent,
@@ -27,6 +28,9 @@
                                                  decisions' JSON plus status: done|deeper|superseded|waiting.
                                                  Run it in the background: its exit wakes the agent
   check <session>/<page> [--root]                render in headless Chrome, light and dark; print {errors, screenshots}
+  export <session>/<page> [--out PATH] [--root]  write an offline copy: one .html that runs from disk, no server;
+                                                 answers come back as a file from its Download (see decisions --file).
+                                                 Default <root>/<session>/<page>@<rev>.offline.html; print {path, rev, bytes}
 
   --root defaults to $HTML_CHANNEL_ROOT, else ai/html-channel; relative to $CLAUDE_PROJECT_DIR, else the cwd
   $HTML_CHANNEL_REMOTE_BASE (e.g. http://devbox:8788): a second address the server is reached at;
@@ -114,6 +118,10 @@
       (do (binding [*out* *err*] (println "html-channel: no server on port" (server/port-from port)))
           (System/exit 1)))))
 
+(defn- export-page [target {:keys [root out]}]
+  (let [[s page] (session-page "export" target)]
+    (print-json (export/export! (store/root-from root) s page out))))
+
 (defn -main [& args]
   (let [[cmd & more] args
         {:keys [opts args]} (cli/parse-args more spec)]
@@ -125,6 +133,7 @@
         "decisions" (decisions (first args) opts)
         "wait" (wait-for-reader (first args) opts)
         "check" (do (check-page (first args) opts) (System/exit 0))
+        "export" (export-page (first args) opts)
         "health" (health opts)
         "version" (println "html-channel" mcp/version)
         (do (println usage) (System/exit (if cmd 1 0))))

@@ -123,6 +123,19 @@ Hand the file to any agent session. Its first line names the command that reads 
 html-channel decisions --file form@1.edn   # the same JSON as `decisions`, plus respondent, state and checked
 ```
 
+For a reader the server can't reach, such as a teammate, an agent can make an **offline copy**: one `.html` that runs from disk.
+
+```sh
+html-channel export <session>/<page>   # writes <root>/<session>/<page>@<rev>.offline.html
+```
+
+The copy carries the kit inline, keeps answers in the reader's browser, and has Download instead of Done.
+Diffs and hunk choices work without internet; highlighting and diagrams need it.
+
+Where it runs: desktop Chrome and Safari, tested 2026-11-24 (answer, reload, Download, read back). Firefox: untested.
+iPhone: not supported, because a local `.html` opens only in the Files preview, which runs no scripts
+(tested 2026-11-24; Share and "Open with…" offered no browser). Android: untested.
+
 ## Where sessions go
 
 Sessions go to `<project>/ai/html-channel/<session>/` by default, where `<project>` is `$CLAUDE_PROJECT_DIR`, else the cwd.
@@ -139,6 +152,7 @@ html-channel decisions <session>/<page> [--root]
 html-channel decisions --file <answers.edn> [--root]
 html-channel wait <session>/<page> [--root] [--max-wait S]
 html-channel check <session>/<page> [--root]
+html-channel export <session>/<page> [--out PATH] [--root]
 html-channel health [--port]
 html-channel version
 ```

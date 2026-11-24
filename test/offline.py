@@ -9,9 +9,9 @@ answers survive a closed tab, and leaving asks first. An offline copy (an
 hc-offline meta with mode=share) keeps answers in the browser and shows no Done,
 banner or Deeper. `html-channel decisions --file` reads the file back.
 """
-import json, subprocess, time
+import json, pathlib, subprocess, time
 from playwright.sync_api import sync_playwright, expect
-from support import REPO, Sandbox, entries, fail, run, stop, wait_for, write_page
+from support import DEMO, REPO, Sandbox, entries, fail, run, stop, wait_for, write_page
 
 PORT = 18797
 
@@ -295,6 +295,53 @@ def orphan_claims(sb, root, s, context):
     d.close()
 
 
+def exported(sb, root, s, browser):
+    """An offline copy of the demo, opened from disk with every http(s) request blocked."""
+    write_page(root, s, "demo", DEMO.read_text())
+    r = subprocess.run(["bb", "-m", "html-channel.cli", "export", "%s/demo" % s, "--root", str(root)],
+                       cwd=REPO, env=sb.env(), capture_output=True, text=True)
+    if r.returncode != 0:
+        fail("export failed: %s" % r.stderr)
+    out = json.loads(r.stdout)
+    path = pathlib.Path(out["path"])
+    if path.name != "demo@1.offline.html" or path.parent != (root / s).resolve():
+        fail("export wrote %s" % path)
+    context = browser.new_context()
+    requests = []
+    context.route("http*://**/*", lambda route: (requests.append(route.request.url), route.abort()))
+    page = context.new_page()
+    page.goto(path.as_uri())
+    expect(page.locator(".hc-download-button")).to_be_visible(timeout=4500)
+    for sel in [DONE, "#decide-offline"]:
+        expect(page.locator(sel)).to_be_hidden()
+    accept = page.locator('.hc-diff button[data-choice="accept"]').first
+    expect(accept).to_be_visible(timeout=4500)
+    print("ok: export: the copy runs from disk with no network; Download shown, Done and banner hidden; the diff renders")
+
+    page.locator('[data-decision="eviction"][data-choice="lru"]').click()
+    accept.click()
+    expect(accept).to_have_attribute("data-state", "saved")
+    page.reload()
+    expect(page.locator('[data-decision="eviction"][data-choice="lru"]')).to_have_class("chosen", timeout=4500)
+    print("ok: export: answers kept across a reload of the file")
+
+    name, file = download(page)
+    st = read_back(sb, root, file)
+    if (name, st["state"], st["session"], st["page"], st["rev"], st["checked"], value(st, "eviction")) != \
+            ("demo@1.edn", "share", s, "demo", 1, True, "lru"):
+        fail("export read back: %r %s" % (name, {k: st[k] for k in ["state", "session", "page", "rev", "checked"]}))
+    hunk_answers = [k for k, v in st["decisions"].items() if k.startswith("fetch-cache.") and v["value"] == "accept"]
+    hunk_keys = list((value(st, "hunks") or {}).get("fetch-cache", {}))
+    if len(hunk_answers) != 1 or hunk_answers[0].split(".", 1)[1] not in hunk_keys:
+        fail("export: hunk answer %r not among the file's hunks %r" % (hunk_answers, hunk_keys))
+    print("ok: export: Download reads back checked against the snapshot, with the hunk answer and its hunk")
+    server = [u for u in requests if "127.0.0.1" in u or "localhost" in u]
+    if server:
+        fail("the offline copy asked the server: %r" % server)
+    print("ok: export: the copy never asks a server")
+    context.close()
+
+
 def main():
     sb = Sandbox(PORT)
     try:
@@ -315,6 +362,7 @@ def main():
             share(sb, root, s, browser.new_context())
             share_storage_refused(sb, root, s, browser.new_context())
             orphan_claims(sb, root, s, browser.new_context())
+            exported(sb, root, s, browser)
             disconnected(sb, root, s, browser.new_context(), server)
             browser.close()
     finally:

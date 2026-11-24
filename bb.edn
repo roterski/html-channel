@@ -27,6 +27,9 @@
                  (fs/copy "node_modules/squint-cljs/src/squint/core.js" (fs/path kit "squint-core.js"))
                  (fs/copy "runtime/decide.css" (fs/path kit "decide.css"))
                  (fs/copy "runtime/boot.js" (fs/path kit "boot.js"))
+                 ;; jsdiff, as jsdelivr serves runtime/viz/versions.cljs's jsdiff URL: html-channel export inlines it
+                 (fs/create-dirs (fs/path kit "vendor"))
+                 (fs/copy "runtime/vendor/jsdiff.mjs" (fs/path kit "vendor" "jsdiff.mjs"))
                  (doseq [doc ["CONVENTION.md" "EXPLORABLE.md" "STATECHART.md"]
                          dest ["resources/html_channel" "skill/html-channel"]]
                    (fs/create-dirs dest)

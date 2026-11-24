@@ -2,6 +2,7 @@
   (:require [clojure.test :as t]
             [html-channel.answers-file-test]
             [html-channel.check-test]
+            [html-channel.export-test]
             [html-channel.mcp-test]
             [html-channel.registry-test]
             [html-channel.server-test]
@@ -12,6 +13,7 @@
 (defn -main [& _]
   (let [{:keys [fail error]} (t/run-tests 'html-channel.answers-file-test
                                           'html-channel.check-test
+                                          'html-channel.export-test
                                           'html-channel.mcp-test
                                           'html-channel.store-test
                                           'html-channel.registry-test

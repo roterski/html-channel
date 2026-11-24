@@ -24,8 +24,15 @@
   var check = new URLSearchParams(location.search).get("_check");
   var hc = window.htmlChannel = window.htmlChannel || {};
   hc.booted = true;
+  // An offline copy (html-channel export puts its hc-offline meta before this
+  // script) has no server: errors go to the console, and nothing is sent.
+  var offlineCopy = !!document.querySelector('meta[name="hc-offline"]');
 
   function post(route, body) {
+    if (offlineCopy) {
+      if (route === "_errors") console.error("html-channel:", body.kind, body.message, body.source || "");
+      return;
+    }
     // no Content-Type header => a "simple" request, no preflight
     fetch(dir + route, { method: "POST", body: JSON.stringify(body), keepalive: true })
       .catch(function () {});

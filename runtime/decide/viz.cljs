@@ -2,7 +2,7 @@
   "Renders <pre data-viz=\"<lib>\"> blocks, and inline <span data-viz=\"<lib>\"> ones, with the adapters a page declares in
   <meta name=\"hc-libs\" content=\"<lib> …\">.
 
-  An adapter is /_kit/viz/<lib>.mjs (dashes become underscores) exporting
+  An adapter is /_kit/viz/<lib>.mjs (dashes become underscores; see import-adapter) exporting
   render_BANG_ [blocks fail!] -> Promise. It renders each block it can in
   place, and calls (fail! pre index message) for each one it can't.
   This namespace owns what a reader and the agent see on failure: the block
@@ -14,8 +14,15 @@
   (some-> (js/document.querySelector "meta[name=hc-libs]")
           (.getAttribute "content") (.split #"[\s,]+") (.filter #(pos? (.-length %)))))
 
-(defn adapter-url [lib]
-  (.-href (js/URL. (str "../viz/" (.replaceAll lib "-" "_") ".mjs") js/import.meta.url)))
+(defn import-adapter
+  "Loads the adapter of `lib`. Each import is a literal specifier, so html-channel
+  export can rewrite it to the module inlined in an offline copy."
+  [lib]
+  (case lib
+    "mermaid" (js/import "../viz/mermaid.mjs")
+    "vega-lite" (js/import "../viz/vega_lite.mjs")
+    "katex" (js/import "../viz/katex.mjs")
+    (js/Promise.reject (js/Error. (str "the kit has no adapter for \"" lib "\"")))))
 
 (defn notice!
   "Shows `text` right after the block, which stays visible as source."
@@ -48,7 +55,7 @@
             :let [bs (get by-lib lib)]
             :when (seq bs)]
       (try
-        (let [adapter (js-await (js/import (adapter-url lib)))]
+        (let [adapter (js-await (import-adapter lib))]
           (js-await (.render_BANG_ adapter bs (fn [pre i message] (block-failed! report! lib pre i message)))))
         (catch :default e
           (let [why (str lib " didn't load, so its blocks show as source: " (.-message e))]

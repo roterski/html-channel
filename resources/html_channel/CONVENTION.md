@@ -421,10 +421,26 @@ To revise a page, rewrite the same file.
 Every decision page also offers **Download answers**, next to Done. The kit adds it; write nothing for it.
 
 - It saves the page's answers as an `.edn` file, unsent ones included, and records nothing: Done stays the only signal you get.
-- While the server is unreachable, the kit hides Done, adds "Download keeps your answers" to the banner, shows an optional name field,
+- While the server is unreachable, the kit hides Done, adds to the banner that Download saves the answers to a file, shows an optional name field,
   and asks before the reader leaves with answers they haven't downloaded.
   Answers given meanwhile are kept in the browser and sent once the server is back; a closed tab's are sent the next time a tab of the page is open in that browser.
 - Report-only pages get no Download.
+
+### Offline copies
+
+For a reader the server can't reach (a teammate, another machine), make an offline copy:
+`html-channel export <session>/<page>`, or `export_page`. It's one `.html` file that runs from disk with no server.
+Check the page first: the copy runs the same kit, inlined.
+
+- It's written next to the page, as `<page>@<rev>.offline.html`, unless you give `--out` (`out`). Give the reader its path or the file.
+- It has no Done, banner or Deeper buttons, and keeps answers in the reader's browser until they Download them.
+  Diffs and their hunk choices work offline; highlighting and Mermaid, Vega-Lite and KaTeX blocks need internet, and show their source without it.
+- It carries the page as written, code-link repo roots included: your checkout paths are its defaults, and each reader re-points them in the code-links bar.
+  The file's `sources` says which roots they used (`overridden`). Tell the user the copy holds those paths before they send it.
+- It opens in desktop browsers. On an iPhone, a local `.html` opens only in the Files preview, which runs no scripts, so the copy can't be answered there.
+- Don't write the `hc-offline` meta yourself: export stamps the page's revision, which exists only once the page has been checked or served.
+
+### Reading a downloaded file
 
 A reader may send you that file instead of clicking Done. Read it with `html-channel decisions --file <answers.edn>`,
 or `get_decisions` with `file` (a relative path resolves against the project). The file's first line names the command.

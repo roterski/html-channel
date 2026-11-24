@@ -11,8 +11,22 @@ return (_PERCENT_1.length > 0);
 }))};
 
 };
-var adapter_url = function (lib) {
-return (new URL(`${"../viz/"}${lib.replaceAll("-", "_")??''}${".mjs"}`, import.meta.url)).href;
+var import_adapter = function (lib) {
+const G__121_1 = lib;
+switch (G__121_1) {case "mermaid":
+return import("../viz/mermaid.mjs");
+
+break;
+case "vega-lite":
+return import("../viz/vega_lite.mjs");
+
+break;
+case "katex":
+return import("../viz/katex.mjs");
+
+break;
+default:
+return Promise.reject((new Error(`${"the kit has no adapter for \""}${lib??''}${"\""}`)))};
 
 };
 var notice_BANG_ = function (pre, text) {
@@ -53,7 +67,7 @@ const lib_14 = G__13;
 const bs_15 = by_lib_5[lib_14];
 if (squint_core.truth_(squint_core.seq(bs_15))) {
 try{
-const adapter_16 = (await import(adapter_url(lib_14)));
+const adapter_16 = (await import_adapter(lib_14));
 (await adapter_16.render_BANG_(bs_15, (function (pre, i, message) {
 return block_failed_BANG_(report_BANG_, lib_14, pre, i, message);
 
@@ -71,4 +85,4 @@ return null;
 
 };
 
-export { declared_libs, adapter_url, notice_BANG_, block_failed_BANG_, start_BANG_ }
+export { declared_libs, import_adapter, notice_BANG_, block_failed_BANG_, start_BANG_ }

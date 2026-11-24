@@ -12,12 +12,13 @@
             [clojure.java.io :as io]
             [html-channel.answers-file :as answers-file]
             [html-channel.check :as check]
+            [html-channel.export :as export]
             [html-channel.registry :as registry]
             [html-channel.server :as server]
             [html-channel.session :as session]
             [html-channel.store :as store]))
 
-(def version "0.8.0")
+(def version "0.9.0")
 
 (def poll-ms 500)
 (def progress-every-ms 30000)
@@ -79,6 +80,10 @@
 (defn check-page [ctx {:keys [page session]}]
   (let [{:keys [root session url-base]} (channel ctx session)]
     (check/check-page root session page (str url-base page ".html"))))
+
+(defn export-page [ctx {:keys [page session out]}]
+  (let [{:keys [root session]} (channel ctx session)]
+    (export/export! root session page (some->> out (fs/path (store/project-dir)) str))))
 
 (def deeper-hint
   (str "The reader asked to go deeper on the targets in `deeper`. Rewrite the page with those "
@@ -157,7 +162,18 @@
                       "user. Returns the errors the page reported (failed loads, script errors, diagrams "
                       "that didn't render) and the paths of a light and a dark screenshot: read them to "
                       "check contrast and layout. Without Chrome, returns only errors from earlier page loads.")
-    :inputSchema {:type "object" :properties {:page page-arg :session session-arg} :required ["page"]}}])
+    :inputSchema {:type "object" :properties {:page page-arg :session session-arg} :required ["page"]}}
+   {:name "export_page"
+    :description (str "Write an offline copy of a page: one .html that runs from disk in a desktop browser, "
+                      "with no server, for a reader you can't serve the page to. It has no Done: the reader "
+                      "sends back the .edn its Download gives, which get_decisions with file reads. "
+                      "Check the page first. Returns {path, rev, bytes}; the default path is "
+                      "<page>@<rev>.offline.html in the session's directory.")
+    :inputSchema {:type "object"
+                  :properties {:page page-arg :session session-arg
+                               :out {:type "string"
+                                     :description "Where to write; a relative path resolves against the project."}}
+                  :required ["page"]}}])
 
 ;; ---- JSON-RPC --------------------------------------------------------------
 
@@ -178,6 +194,7 @@
          "ask_human" (ask-human ctx arguments progress!)
          "get_decisions" (get-decisions ctx arguments)
          "check_page" (check-page ctx arguments)
+         "export_page" (export-page ctx arguments)
          (throw (ex-info (str "unknown tool " name) {}))))
       (catch InterruptedException e (throw e))
       (catch Exception e
